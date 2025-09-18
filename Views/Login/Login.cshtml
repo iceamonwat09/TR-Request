@@ -1,0 +1,195 @@
+﻿@model TrainingRequestApp.Models.LoginViewModel
+
+<!-- 🌟 Center Card in View -->
+<div class="d-flex justify-content-center align-items-center min-vh-100">
+    <div class="login-container">
+        <div class="login-box shadow-lg">
+            <div class="login-header">
+                <h3>🔑 Training Request</h3>
+                <p class="text-muted">Sign in to continue</p>
+            </div>
+
+            <!-- ✅ Success Message -->
+            @if (TempData["SuccessMessage"] != null)
+            {
+                <div class="alert alert-success text-center">
+                    @TempData["SuccessMessage"]
+                </div>
+            }
+
+            <!-- ❌ Error Message -->
+            @if (ViewBag.ErrorMessage != null)
+            {
+                <div class="alert alert-danger text-center">
+                    @ViewBag.ErrorMessage
+                </div>
+            }
+
+            <!-- 🛠️ Form -->
+            <form method="post" action="/Login/Authenticate" onsubmit="return validateLogin()">
+                @Html.AntiForgeryToken() <!-- ✅ ป้องกัน CSRF -->
+                <!-- 🆔 UserID Input -->
+                <div class="input-group">
+                    <span class="input-icon"><i class="fas fa-user"></i></span>
+                    <input type="text" class="form-control input-field" asp-for="UserID" id="userid" name="UserID" placeholder="User ID (7 digits)" maxlength="7" required>
+                </div>
+                <span class="text-danger" asp-validation-for="UserID"></span>
+
+                <!-- 🔒 Password Input -->
+                <div class="input-group">
+                    <span class="input-icon"><i class="fas fa-lock"></i></span>
+                    <input type="password" class="form-control input-field" asp-for="Password" id="passwordInput" name="Password" placeholder="Password" required>
+                    <span class="input-icon password-toggle" onclick="togglePassword('passwordInput')">
+                        <i class="fas fa-eye"></i>
+                    </span>
+                </div>
+                <span class="text-danger" asp-validation-for="Password"></span>
+
+                <!-- 🔹 Remember Me -->
+                <div class="form-check text-start mt-2">
+                    <input type="checkbox" class="form-check-input" asp-for="RememberMe">
+                    <label class="form-check-label" asp-for="RememberMe">Remember Me</label>
+                </div>
+
+                <!-- 🔘 Login Button -->
+                <button type="submit" class="btn btn-primary login-btn mt-3">Login</button>
+
+                <!-- 📝 Register & Forgot Password -->
+                <div class="text-center mt-3">
+                    <a href="/Account/Register" class="text-decoration-none">Create an Account</a> |
+                    <a href="/Account/ForgotPassword" class="text-decoration-none text-muted">Forgot Password?</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ✅ Validate Login Script -->
+<script>
+    function validateLogin() {
+        var userid = document.getElementById("userid").value;
+        var password = document.getElementById("passwordInput").value;
+
+        if (userid.trim() === "" || password.trim() === "") {
+            alert("⚠️ Please enter both UserID and Password!");
+            return false;
+        }
+        
+        if (userid.length !== 7) {
+            alert("⚠️ UserID must be exactly 7 characters!");
+            return false;
+        }
+        
+        return true;
+    }
+
+    function togglePassword(id) {
+        var passwordInput = document.getElementById(id);
+        var icon = passwordInput.nextElementSibling.querySelector("i");
+        if (passwordInput.type === "password") {
+            passwordInput.type = "text";
+            icon.classList.remove("fa-eye");
+            icon.classList.add("fa-eye-slash");
+        } else {
+            passwordInput.type = "password";
+            icon.classList.remove("fa-eye-slash");
+            icon.classList.add("fa-eye");
+        }
+    }
+</script>
+
+<!-- ✅ Custom CSS -->
+<style>
+    body {
+        background: #f8f9fa;
+        font-family: 'Poppins', sans-serif;
+    }
+
+    .login-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+    }
+
+    .login-box {
+        background: white;
+        padding: 40px;
+        border-radius: 12px;
+        box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.1);
+        width: 100%;
+        max-width: 380px;
+        text-align: center;
+    }
+
+    .login-header h3 {
+        font-weight: bold;
+        color: #333;
+    }
+
+    .login-header p {
+        color: #6c757d;
+        font-size: 14px;
+    }
+
+    .input-group {
+        display: flex;
+        align-items: center;
+        background: #f8f9fa;
+        border-radius: 8px;
+        margin-bottom: 15px;
+        padding: 12px;
+        border: 1px solid #ced4da;
+    }
+
+    .input-field {
+        border: none;
+        background: transparent;
+        flex: 1;
+        outline: none;
+        padding: 8px;
+        font-size: 16px;
+        color: #495057;
+    }
+
+    .input-icon {
+        color: #6c757d;
+        margin-right: 10px;
+        font-size: 18px;
+    }
+
+    .password-toggle {
+        cursor: pointer;
+        font-size: 18px;
+    }
+
+    .login-btn {
+        width: 100%;
+        background: #007bff;
+        color: white;
+        font-size: 16px;
+        font-weight: bold;
+        padding: 12px;
+        border: none;
+        border-radius: 8px;
+    }
+
+        .login-btn:hover {
+            background: #0056b3;
+            box-shadow: 0px 0px 10px rgba(0, 91, 187, 0.4);
+        }
+
+    a {
+        color: #007bff;
+        transition: 0.3s ease-in-out;
+    }
+
+        a:hover {
+            text-decoration: underline;
+            color: #0056b3;
+        }
+</style>
+
+<!-- ✅ Load FontAwesome -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">

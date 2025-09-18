@@ -1,0 +1,767 @@
+@model TrainingRequestApp.Models.TrainingRequest
+
+<div class="container-fluid py-4" style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); min-height: 100vh;">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-11">
+                <div class="card shadow-lg border-0" style="border-radius: 15px;">
+                    <div class="card-header bg-primary text-center py-4" style="border-radius: 15px 15px 0 0;">
+                        <h2 class="mb-0 text-white fw-bold">
+                            📌 เพิ่มคำร้องขออบรม
+                        </h2>
+                    </div>
+
+                    <div class="card-body p-4">
+                        <form asp-action="Create" method="post" enctype="multipart/form-data">
+
+                            <!-- การเลือกบริษัทและประเภทการอบรม -->
+                            <div class="row mb-4">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label class="form-label fw-bold text-dark mb-3">
+                                            🏢 เลือกบริษัท
+                                        </label>
+                                        <div class="d-flex gap-4">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="Company" asp-for="Company" value="F2-สมุทรสาคร" id="company1" style="transform: scale(1.2);">
+                                                <label class="form-check-label fw-medium" for="company1">
+                                                    F2-สมุทรสาคร
+                                                </label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="Company" asp-for="Company" value="F4-ปราจีนบุรี" id="company2" style="transform: scale(1.2);">
+                                                <label class="form-check-label fw-medium" for="company2">
+                                                    F4-ปราจีนบุรี
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label class="form-label fw-bold text-dark mb-3">
+                                            📚 ประเภทการอบรม
+                                        </label>
+                                        <div class="d-flex gap-4">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="TrainingType" asp-for="TrainingType" value="Public" id="type1" style="transform: scale(1.2);">
+                                                <label class="form-check-label fw-medium" for="type1">
+                                                    Public
+                                                </label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="TrainingType" asp-for="TrainingType" value="In House" id="type2" style="transform: scale(1.2);">
+                                                <label class="form-check-label fw-medium" for="type2">
+                                                    In House
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <hr class="my-4">
+
+                            <!-- ส่วนแรก - ข้อมูลหลัก -->
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label asp-for="Factory" class="form-label fw-bold">🏭 โรงงาน</label>
+                                        <input asp-for="Factory" class="form-control form-control-lg" style="border-radius: 10px;" />
+                                    </div>
+                                    <div class="form-group">
+                                        <label asp-for="CCEmail" class="form-label fw-bold">📧 CC.Mail</label>
+                                        <input asp-for="CCEmail" class="form-control form-control-lg" type="email" style="border-radius: 10px;" />
+                                    </div>
+                                    <div class="form-group">
+                                        <label asp-for="Department" class="form-label fw-bold">🏢 ฝ่าย</label>
+                                        <input asp-for="Department" class="form-control form-control-lg" style="border-radius: 10px;" />
+                                    </div>
+                                    <div class="form-group">
+                                        <label asp-for="EmployeeCode" class="form-label fw-bold">🆔 รหัสพนักงาน</label>
+                                        <input asp-for="EmployeeCode" class="form-control form-control-lg" style="border-radius: 10px;" />
+                                    </div>
+                                    <div class="form-group">
+                                        <label asp-for="TotalCost" class="form-label fw-bold">💰 ยอดรวมค่าใช้จ่ายทั้งหมด</label>
+                                        <input asp-for="TotalCost" class="form-control form-control-lg" type="number" style="border-radius: 10px;" />
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label asp-for="StartDate" class="form-label fw-bold">📅 วันที่เริ่มอบรม</label>
+                                                <input asp-for="StartDate" class="form-control form-control-lg" type="date" style="border-radius: 10px;" />
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label asp-for="EndDate" class="form-label fw-bold">📅 วันที่สิ้นสุดการอบรม</label>
+                                                <input asp-for="EndDate" class="form-control form-control-lg" type="date" style="border-radius: 10px;" />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label asp-for="SeminarTitle" class="form-label fw-bold">📖 เรื่องสัมมนา</label>
+                                        <input asp-for="SeminarTitle" class="form-control form-control-lg" style="border-radius: 10px;" />
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label asp-for="TrainingLocation" class="form-label fw-bold">📍 สถานที่อบรม</label>
+                                        <input asp-for="TrainingLocation" class="form-control form-control-lg" style="border-radius: 10px;" />
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label asp-for="Instructor" class="form-label fw-bold">👨‍🏫 วิทยากร/สถาบัน</label>
+                                                <input asp-for="Instructor" class="form-control form-control-lg" style="border-radius: 10px;" />
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label asp-for="CostPerPerson" class="form-label fw-bold">💰 ค่าใช้จ่ายต่อคน (บาท)</label>
+                                                <input asp-for="CostPerPerson" class="form-control form-control-lg" type="number" style="border-radius: 10px;" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- วัตถุประสงค์การอบรม -->
+                                <div class="form-group mt-4">
+                                    <label class="form-label fw-bold">🎯 วัตถุประสงค์การอบรมสัมมนา:</label>
+                                    <div class="card mt-3" style="background-color: #f8f9fa; border-radius: 12px;">
+                                        <div class="card-body">
+                                            <div class="row g-3">
+                                                <div class="col-md-6">
+                                                    <div class="form-check p-3" style="background-color: white; border-radius: 10px; border: 1px solid #dee2e6;">
+                                                        <input class="form-check-input" type="radio" name="TrainingObjective" asp-for="TrainingObjective" value="เพิ่มพูนความรู้ตามนโยบาย" id="objective1">
+                                                        <label class="form-check-label" for="objective1">เพื่อเพิ่มพูนความรู้ตามนโยบาย (12 ชม.)</label>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="form-check p-3" style="background-color: white; border-radius: 10px; border: 1px solid #dee2e6;">
+                                                        <input class="form-check-input" type="radio" name="TrainingObjective" asp-for="TrainingObjective" value="บรรลุตามคาดหวัง" id="objective2">
+                                                        <label class="form-check-label" for="objective2">เพื่อให้บรรลุตามความคาดหวัง/Competency (GAP)</label>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="form-check p-3" style="background-color: white; border-radius: 10px; border: 1px solid #dee2e6;">
+                                                        <input class="form-check-input" type="radio" name="TrainingObjective" asp-for="TrainingObjective" value="สอดคล้องตามกฎหมาย" id="objective3">
+                                                        <label class="form-check-label" for="objective3">เพื่อความสอดคล้องตามกฎหมาย/ข้อกำหนดลูกค้า</label>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="p-3" style="background-color: white; border-radius: 10px; border: 1px solid #dee2e6;">
+                                                        <div class="form-check">
+                                                            <input class="form-check-input" type="radio" name="TrainingObjective" asp-for="TrainingObjective" value="อื่นๆ" id="objective4">
+                                                            <label class="form-check-label" for="objective4">อื่นๆ (ระบุ)</label>
+                                                        </div>
+                                                        <input type="text" class="form-control mt-2" asp-for="OtherObjective" placeholder="กรุณาระบุหากเลือก 'อื่นๆ'" style="border-radius: 8px;">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- ตารางประวัติการอบรม - แก้ไขส่วนนี้ -->
+                                <div class="mt-5">
+                                    <div class="card border-0 shadow-lg" style="border-radius: 15px;">
+                                        <!-- เพิ่มปุ่ม + ใน card-header -->
+                                        <div class="card-header bg-secondary py-3" style="border-radius: 15px 15px 0 0;">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <h4 class="mb-0 text-white fw-bold">
+                                                    📜 ประวัติการขออบรมและค่าใช้จ่ายที่ขออนุมัติ
+                                                </h4>
+                                                <button type="button" class="btn add-employee-btn text-white" data-bs-toggle="modal" data-bs-target="#employeeSearchModal">
+                                                    <i class="fas fa-plus"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <div class="card-body p-0">
+                                            <div class="table-responsive">
+                                                <!-- เพิ่ม id="employeeTable" -->
+                                                <table class="table table-bordered mb-0" style="font-size: 0.9rem;" id="employeeTable">
+                                                    <thead>
+                                                        <tr class="table-primary">
+                                                            <th class="text-center py-3 fw-bold border-2" style="min-width: 80px; vertical-align: middle;">
+                                                                ลำดับ
+                                                            </th>
+                                                            <th class="text-center py-3 fw-bold border-2" style="min-width: 100px; vertical-align: middle;">
+                                                                รหัส
+                                                            </th>
+                                                            <th class="text-center py-3 fw-bold border-2" style="min-width: 150px; vertical-align: middle;">
+                                                                ชื่อ - นามสกุล
+                                                            </th>
+                                                            <th class="text-center py-3 fw-bold border-2" style="min-width: 120px; vertical-align: middle;">
+                                                                ตำแหน่ง
+                                                            </th>
+                                                            <th class="text-center py-3 fw-bold border-2" colspan="2" style="background-color: #e3f2fd; min-width: 200px;">
+                                                                ประวัติการอบรม ไม่รวมครั้งนี้
+                                                            </th>
+                                                            <th class="text-center py-3 fw-bold border-2" colspan="2" style="background-color: #f3e5f5; min-width: 200px;">
+                                                                ประวัติการอบรม ในครั้งนี้
+                                                            </th>
+                                                            <th class="text-center py-3 fw-bold border-2" style="min-width: 140px; vertical-align: middle;">
+                                                                ชั่วโมงคงเหลือ<br>
+                                                                <small>(โควต้า 12 ชม./ปี)</small>
+                                                            </th>
+                                                            <th class="text-center py-3 fw-bold border-2" style="min-width: 140px; vertical-align: middle;">
+                                                                ยอดเงินคงเหลือ<br>
+                                                                <small>(โควต้า 10,000 บ./ปี)</small>
+                                                            </th>
+                                                            <th class="text-center py-3 fw-bold border-2" style="min-width: 160px; vertical-align: middle;">
+                                                                ตรวจสอบประวัติอบรม<br>
+                                                                <small>ตลอดอายุงาน</small>
+                                                            </th>
+                                                            <th class="text-center py-3 fw-bold border-2" style="min-width: 120px; vertical-align: middle;">
+                                                                หมายเหตุ
+                                                            </th>
+                                                            <!-- เพิ่มคอลัมน์ จัดการ -->
+                                                            <th class="text-center py-3 fw-bold border-2" style="min-width: 80px; vertical-align: middle;">
+                                                                จัดการ
+                                                            </th>
+                                                        </tr>
+                                                        <tr class="table-light">
+                                                            <th colspan="4" class="p-3 border-2"></th>
+                                                            <th class="text-center py-2 fw-semibold border-2" style="background-color: #e3f2fd;">
+                                                                ชั่วโมงสะสมปีนี้
+                                                            </th>
+                                                            <th class="text-center py-2 fw-semibold border-2" style="background-color: #e3f2fd;">
+                                                                ยอดเงินสะสมปีนี้
+                                                            </th>
+                                                            <th class="text-center py-2 fw-semibold border-2" style="background-color: #f3e5f5;">
+                                                                ชั่วโมงสะสมครั้งนี้
+                                                            </th>
+                                                            <th class="text-center py-2 fw-semibold border-2" style="background-color: #f3e5f5;">
+                                                                ยอดเงินครั้งนี้
+                                                            </th>
+                                                            <!-- เพิ่ม colspan="5" แทน 4 -->
+                                                            <th colspan="5" class="p-3 border-2"></th>
+                                                        </tr>
+                                                    </thead>
+                                                    <!-- ลบข้อมูล static ออก และใส่ id -->
+                                                    <tbody id="employeeTableBody">
+                                                        <!-- Dynamic rows will be inserted here -->
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- ข้อมูลเพิ่มเติม -->
+                                <div class="form-group mt-4">
+                                    <label asp-for="URLSource" class="form-label fw-bold">🔗 แหล่งที่มา URL (ห้ามพิมพ์ข้อความ ให้วางลิงก์เท่านั้น)</label>
+                                    <input asp-for="URLSource" class="form-control form-control-lg" type="url" placeholder="https://example.com" onkeypress="return false;" style="border-radius: 10px;" />
+                                </div>
+
+                                <div class="form-group">
+                                    <label asp-for="AdditionalNotes" class="form-label fw-bold">📝 ระบุข้อมูลเพิ่มเติมให้ OD รับทราบ (ถ้ามี)</label>
+                                    <textarea asp-for="AdditionalNotes" class="form-control" rows="3" style="border-radius: 10px;"></textarea>
+                                </div>
+
+                                <div class="form-group mt-4">
+                                    <label asp-for="AttachedFiles" class="form-label fw-bold">📎 ไฟล์แนบ</label>
+                                    <input asp-for="AttachedFiles" class="form-control form-control-lg" type="file" style="border-radius: 10px;" />
+                                </div>
+
+                                <div class="form-group">
+                                    <label asp-for="ExpectedOutcome" class="form-label fw-bold">🎯 ผลคาดว่าจะได้รับ</label>
+                                    <textarea asp-for="ExpectedOutcome" class="form-control" rows="3" style="border-radius: 10px;"></textarea>
+                                </div>
+
+                                <!-- ปุ่มบันทึก -->
+                                <div class="text-center mt-5">
+                                    <button type="submit" class="btn btn-primary btn-lg text-white px-5 py-3 fw-bold" style="border-radius: 25px; box-shadow: 0 4px 15px rgba(13, 110, 253, 0.3);">
+                                        💾 บันทึก
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Employee Search Modal - เพิ่มส่วนนี้ -->
+<div class="modal fade" id="employeeSearchModal" tabindex="-1" aria-labelledby="employeeSearchModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content" style="border-radius: 15px;">
+            <div class="modal-header bg-primary text-white" style="border-radius: 15px 15px 0 0;">
+                <h5 class="modal-title" id="employeeSearchModalLabel">
+                    <i class="fas fa-search me-2"></i>ค้นหาพนักงาน
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="row g-3">
+                    <div class="col-md-8">
+                        <label for="employeeCode" class="form-label fw-bold">🆔 รหัสพนักงาน</label>
+                        <input type="text" class="form-control form-control-lg" id="employeeCode" placeholder="กรอกรหัสพนักงาน" style="border-radius: 10px;">
+                    </div>
+                    <div class="col-md-4 d-flex align-items-end">
+                        <button type="button" class="btn btn-success btn-lg w-100" id="searchEmployeeBtn" style="border-radius: 10px;">
+                            <i class="fas fa-search me-2"></i>ค้นหา
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Loading Spinner -->
+                <div class="text-center mt-4 loading-spinner" id="loadingSpinner">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">กำลังค้นหาข้อมูล...</p>
+                </div>
+
+                <!-- Employee Information Display -->
+                <div class="mt-4" id="employeeInfoSection" style="display: none;">
+                    <div class="card border-success">
+                        <div class="card-header bg-success text-white">
+                            <h6 class="mb-0"><i class="fas fa-user me-2"></i>ข้อมูลพนักงาน</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">รหัสพนักงาน:</label>
+                                    <p class="form-control-plaintext fw-semibold" id="displayEmpCode">-</p>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">ชื่อ-นามสกุล:</label>
+                                    <p class="form-control-plaintext fw-semibold" id="displayFullName">-</p>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">ตำแหน่ง:</label>
+                                    <p class="form-control-plaintext fw-semibold" id="displayPosition">-</p>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">ระดับ:</label>
+                                    <p class="form-control-plaintext fw-semibold" id="displayLevel">-</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Error Message -->
+                <div class="alert alert-danger mt-4" id="errorMessage" style="display: none;">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <span id="errorText">ไม่พบข้อมูลพนักงาน</span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-2"></i>ยกเลิก
+                </button>
+                <button type="button" class="btn btn-primary" id="addEmployeeBtn" disabled>
+                    <i class="fas fa-plus me-2"></i>เพิ่มพนักงาน
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- CSS และ JavaScript -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+
+<style>
+    .form-control:focus {
+        border-color: #0d6efd;
+        box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+    }
+
+    .form-check-input:checked {
+        background-color: #0d6efd;
+        border-color: #0d6efd;
+    }
+
+    .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(13, 110, 253, 0.5) !important;
+        transition: all 0.3s ease;
+    }
+
+    .table th, .table td {
+        vertical-align: middle;
+    }
+
+    .table-bordered > :not(caption) > * > * {
+        border-width: 2px;
+    }
+
+    .card {
+        transition: all 0.3s ease;
+    }
+
+    .form-control:hover {
+        border-color: #86b7fe;
+        transition: all 0.3s ease;
+    }
+
+    .badge {
+        transition: all 0.3s ease;
+    }
+
+        .badge:hover {
+            transform: scale(1.05);
+        }
+
+    /* เอฟเฟกต์สำหรับ radio buttons */
+    .form-check-input {
+        transition: all 0.3s ease;
+    }
+
+        .form-check-input:hover {
+            transform: scale(1.1);
+        }
+
+    /* เส้นตารางที่ชัดเจน */
+    .table-bordered {
+        border: 3px solid #dee2e6;
+    }
+
+    .border-2 {
+        border-width: 2px !important;
+        border-color: #6c757d !important;
+    }
+
+    /* เพิ่ม CSS สำหรับปุ่ม + และ animation */
+    .add-employee-btn {
+        background: linear-gradient(45deg, #28a745, #20c997);
+        border: none;
+        border-radius: 50%;
+        width: 45px;
+        height: 45px;
+        box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+    }
+
+        .add-employee-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(40, 167, 69, 0.5);
+        }
+
+    .employee-row {
+        animation: fadeInDown 0.5s ease-out;
+    }
+    @@keyframes fadeInDown {
+        from
+
+    {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    }
+
+    .loading-spinner {
+        display: none;
+    }
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    // เพิ่ม JavaScript สำหรับจัดการพนักงาน
+    class EmployeeManager {
+        constructor() {
+            this.employees = [];
+            this.currentEmployee = null;
+            this.rowCounter = 1;
+            this.initializeEvents();
+        }
+
+        initializeEvents() {
+            // Search button event
+            document.getElementById('searchEmployeeBtn').addEventListener('click', () => {
+                this.searchEmployee();
+            });
+
+            // Enter key in search input
+            document.getElementById('employeeCode').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    this.searchEmployee();
+                }
+            });
+
+            // Add employee button event
+            document.getElementById('addEmployeeBtn').addEventListener('click', () => {
+                this.addEmployeeToTable();
+            });
+
+            // Reset modal when closed
+            document.getElementById('employeeSearchModal').addEventListener('hidden.bs.modal', () => {
+                this.resetModal();
+            });
+        }
+
+        async searchEmployee() {
+            const employeeCode = document.getElementById('employeeCode').value.trim();
+
+            if (!employeeCode) {
+                this.showError('กรุณากรอกรหัสพนักงาน');
+                return;
+            }
+
+            this.showLoading(true);
+            this.hideEmployeeInfo();
+            this.hideError();
+
+            try {
+                const employee = await this.fetchEmployeeData(employeeCode);
+
+                if (employee) {
+                    this.currentEmployee = employee;
+                    this.displayEmployeeInfo(employee);
+                    document.getElementById('addEmployeeBtn').disabled = false;
+                } else {
+                    this.showError('ไม่พบข้อมูลพนักงานที่มีรหัส: ' + employeeCode);
+                }
+            } catch (error) {
+                console.error('Error searching employee:', error);
+                this.showError('เกิดข้อผิดพลาดในการค้นหาข้อมูล');
+            } finally {
+                this.showLoading(false);
+            }
+        }
+
+        // Real API call to search employee
+        async fetchEmployeeData(employeeCode) {
+            try {
+                const response = await fetch(`/api/employee/search/${employeeCode}`);
+
+                if (!response.ok) {
+                    if (response.status === 404) {
+                        return null;
+                    }
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const result = await response.json();
+
+                if (result.success) {
+                    return {
+                        empCode: result.employee.empCode,
+                        prefix: result.employee.prefix,
+                        name: result.employee.name,
+                        lastname: result.employee.lastname,
+                        position: result.employee.position,
+                        level: result.employee.level,
+                        department: result.employee.department,
+                        company: result.employee.company,
+                        email: result.employee.email,
+                        currentYearHours: result.employee.currentYearHours,
+                        currentYearCost: result.employee.currentYearCost,
+                        thisTimeHours: result.employee.thisTimeHours,
+                        thisTimeCost: result.employee.thisTimeCost,
+                        remainingHours: result.employee.remainingHours,
+                        remainingCost: result.employee.remainingCost
+                    };
+                } else {
+                    return null;
+                }
+            } catch (error) {
+                console.error('Error fetching employee:', error);
+                throw error;
+            }
+        }
+
+        displayEmployeeInfo(employee) {
+            document.getElementById('displayEmpCode').textContent = employee.empCode;
+            document.getElementById('displayFullName').textContent =
+                `${employee.prefix}${employee.name} ${employee.lastname}`;
+            document.getElementById('displayPosition').textContent = employee.position;
+            document.getElementById('displayLevel').textContent = employee.level;
+
+            this.showEmployeeInfo();
+        }
+
+        addEmployeeToTable() {
+            if (!this.currentEmployee) return;
+
+            // Check if employee already exists
+            if (this.employees.some(emp => emp.empCode === this.currentEmployee.empCode)) {
+                this.showError('พนักงานรหัสนี้มีอยู่ในรายการแล้ว');
+                return;
+            }
+
+            // Add to employees array
+            this.employees.push(this.currentEmployee);
+
+            // Add row to table
+            const row = this.createEmployeeRow(this.currentEmployee, this.rowCounter);
+            document.getElementById('employeeTableBody').appendChild(row);
+
+            this.rowCounter++;
+
+            // Close modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('employeeSearchModal'));
+            modal.hide();
+
+            // Show success message
+            this.showSuccessToast('เพิ่มพนักงานเรียบร้อยแล้ว');
+        }
+
+        createEmployeeRow(employee, rowNumber) {
+            const row = document.createElement('tr');
+            row.className = 'table-light employee-row';
+            row.dataset.empCode = employee.empCode;
+
+            // Use actual training data from API
+            const trainingData = {
+                currentYearHours: employee.currentYearHours || 0,
+                currentYearCost: employee.currentYearCost || 0,
+                thisTimeHours: employee.thisTimeHours || 0,
+                thisTimeCost: employee.thisTimeCost || 0
+            };
+
+            const remainingHours = employee.remainingHours || (12 - trainingData.currentYearHours - trainingData.thisTimeHours);
+            const remainingCost = employee.remainingCost || (10000 - trainingData.currentYearCost - trainingData.thisTimeCost);
+
+            row.innerHTML = `
+                <td class="text-center py-3 fw-bold border-2" style="background-color: #f8f9fa;">
+                    <span class="badge bg-primary px-3 py-2">${rowNumber}</span>
+                </td>
+                <td class="text-center py-3 fw-semibold border-2">
+                    <span class="badge bg-light text-dark px-3 py-2">${employee.empCode}</span>
+                </td>
+                <td class="text-center py-3 fw-semibold border-2">
+                    ${employee.prefix}${employee.name} ${employee.lastname}
+                </td>
+                <td class="text-center py-3 fw-medium border-2">
+                    <span class="badge bg-info text-white px-3 py-2">${employee.position}</span>
+                </td>
+                <td class="text-center py-3 fw-bold border-2" style="background-color: #e3f2fd; color: #1976d2; font-size: 1.1rem;">
+                    ${trainingData.currentYearHours}
+                </td>
+                <td class="text-center py-3 fw-bold border-2" style="background-color: #e3f2fd; color: #1976d2; font-size: 1.1rem;">
+                    ${trainingData.currentYearCost.toLocaleString()}
+                </td>
+                <td class="text-center py-3 fw-bold border-2" style="background-color: #f3e5f5; color: #7b1fa2; font-size: 1.1rem;">
+                    ${trainingData.thisTimeHours}
+                </td>
+                <td class="text-center py-3 fw-bold border-2" style="background-color: #f3e5f5; color: #7b1fa2; font-size: 1.1rem;">
+                    ${trainingData.thisTimeCost.toLocaleString()}
+                </td>
+                <td class="text-center py-3 fw-bold border-2" style="background-color: ${remainingHours >= 0 ? '#e8f5e8' : '#ffebee'};">
+                    <span class="badge ${remainingHours >= 0 ? 'bg-success' : 'bg-danger'} text-white px-3 py-2" style="font-size: 1rem;">
+                        ${remainingHours}
+                    </span>
+                </td>
+                <td class="text-center py-3 fw-bold border-2" style="background-color: ${remainingCost >= 0 ? '#e8f5e8' : '#ffebee'};">
+                    <span class="badge ${remainingCost >= 0 ? 'bg-success' : 'bg-danger'} text-white px-3 py-2" style="font-size: 1rem;">
+                        ${remainingCost.toLocaleString()}
+                    </span>
+                </td>
+                <td class="text-center py-3 border-2" style="background-color: #f0f8ff;">
+                    <i class="fas fa-check-circle text-success" style="font-size: 1.5rem;"></i>
+                </td>
+                <td class="text-center py-3 border-2">
+                    <input type="text" class="form-control form-control-sm" placeholder="หมายเหตุ" style="border-radius: 8px;">
+                </td>
+                <td class="text-center py-3 border-2">
+                    <button type="button" class="btn btn-sm btn-danger" onclick="employeeManager.removeEmployee('${employee.empCode}')">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            `;
+
+            return row;
+        }
+
+        removeEmployee(empCode) {
+            if (confirm('ต้องการลบพนักงานนี้จากรายการหรือไม่?')) {
+                // Remove from array
+                this.employees = this.employees.filter(emp => emp.empCode !== empCode);
+
+                // Remove from table
+                const row = document.querySelector(`tr[data-emp-code="${empCode}"]`);
+                if (row) {
+                    row.remove();
+                }
+
+                // Update row numbers
+                this.updateRowNumbers();
+
+                this.showSuccessToast('ลบพนักงานเรียบร้อยแล้ว');
+            }
+        }
+
+        updateRowNumbers() {
+            const rows = document.querySelectorAll('#employeeTableBody tr');
+            rows.forEach((row, index) => {
+                const numberCell = row.querySelector('.badge.bg-primary');
+                if (numberCell) {
+                    numberCell.textContent = index + 1;
+                }
+            });
+            this.rowCounter = rows.length + 1;
+        }
+
+        // UI Helper Methods
+        showLoading(show) {
+            document.getElementById('loadingSpinner').style.display = show ? 'block' : 'none';
+        }
+
+        showEmployeeInfo() {
+            document.getElementById('employeeInfoSection').style.display = 'block';
+        }
+
+        hideEmployeeInfo() {
+            document.getElementById('employeeInfoSection').style.display = 'none';
+            document.getElementById('addEmployeeBtn').disabled = true;
+        }
+
+        showError(message) {
+            document.getElementById('errorText').textContent = message;
+            document.getElementById('errorMessage').style.display = 'block';
+        }
+
+        hideError() {
+            document.getElementById('errorMessage').style.display = 'none';
+        }
+
+        resetModal() {
+            document.getElementById('employeeCode').value = '';
+            this.hideEmployeeInfo();
+            this.hideError();
+            this.showLoading(false);
+            this.currentEmployee = null;
+        }
+
+        showSuccessToast(message) {
+            // Simple success notification
+            const toast = document.createElement('div');
+            toast.className = 'position-fixed top-0 end-0 m-4 alert alert-success alert-dismissible fade show';
+            toast.style.zIndex = '9999';
+            toast.innerHTML = `
+                <i class="fas fa-check-circle me-2"></i>${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            document.body.appendChild(toast);
+
+            setTimeout(() => {
+                if (toast.parentNode) {
+                    toast.parentNode.removeChild(toast);
+                }
+            }, 3000);
+        }
+    }
+
+    // Initialize the employee manager
+    const employeeManager = new EmployeeManager();
+</script>
