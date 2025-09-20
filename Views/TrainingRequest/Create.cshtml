@@ -477,6 +477,7 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     // เพิ่ม JavaScript สำหรับจัดการพนักงาน
+    // เพิ่ม JavaScript สำหรับจัดการพนักงาน - แทนที่โค้ดเดิมใน Create.cshtml
     class EmployeeManager {
         constructor() {
             this.employees = [];
@@ -522,14 +523,23 @@
             this.hideError();
 
             try {
-                const employee = await this.fetchEmployeeData(employeeCode);
+                // เรียก API ที่ถูกต้อง
+                const response = await fetch(`/api/employee/search/${employeeCode}`);
 
-                if (employee) {
-                    this.currentEmployee = employee;
-                    this.displayEmployeeInfo(employee);
-                    document.getElementById('addEmployeeBtn').disabled = false;
-                } else {
+                if (response.ok) {
+                    const result = await response.json();
+
+                    if (result.success && result.employee) {
+                        this.currentEmployee = result.employee;
+                        this.displayEmployeeInfo(result.employee);
+                        document.getElementById('addEmployeeBtn').disabled = false;
+                    } else {
+                        this.showError('ไม่พบข้อมูลพนักงานที่มีรหัส: ' + employeeCode);
+                    }
+                } else if (response.status === 404) {
                     this.showError('ไม่พบข้อมูลพนักงานที่มีรหัส: ' + employeeCode);
+                } else {
+                    this.showError('เกิดข้อผิดพลาดในการค้นหาข้อมูล');
                 }
             } catch (error) {
                 console.error('Error searching employee:', error);
@@ -539,51 +549,15 @@
             }
         }
 
-        // Real API call to search employee
-        async fetchEmployeeData(employeeCode) {
-            try {
-                const response = await fetch(`/api/employee/search/${employeeCode}`);
-
-                if (!response.ok) {
-                    if (response.status === 404) {
-                        return null;
-                    }
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-
-                const result = await response.json();
-
-                if (result.success) {
-                    return {
-                        empCode: result.employee.empCode,
-                        prefix: result.employee.prefix,
-                        name: result.employee.name,
-                        lastname: result.employee.lastname,
-                        position: result.employee.position,
-                        level: result.employee.level,
-                        department: result.employee.department,
-                        company: result.employee.company,
-                        email: result.employee.email,
-                        currentYearHours: result.employee.currentYearHours,
-                        currentYearCost: result.employee.currentYearCost,
-                        thisTimeHours: result.employee.thisTimeHours,
-                        thisTimeCost: result.employee.thisTimeCost,
-                        remainingHours: result.employee.remainingHours,
-                        remainingCost: result.employee.remainingCost
-                    };
-                } else {
-                    return null;
-                }
-            } catch (error) {
-                console.error('Error fetching employee:', error);
-                throw error;
-            }
-        }
-
         displayEmployeeInfo(employee) {
+            // แสดง UserID
             document.getElementById('displayEmpCode').textContent = employee.empCode;
-            document.getElementById('displayFullName').textContent =
-                `${employee.prefix}${employee.name} ${employee.lastname}`;
+
+            // แสดง Prefix + Name + Lastname
+            const fullName = `${employee.prefix}${employee.name} ${employee.lastname}`.trim();
+            document.getElementById('displayFullName').textContent = fullName;
+
+            // แสดง Level และ Position
             document.getElementById('displayPosition').textContent = employee.position;
             document.getElementById('displayLevel').textContent = employee.level;
 
@@ -621,7 +595,7 @@
             row.className = 'table-light employee-row';
             row.dataset.empCode = employee.empCode;
 
-            // Use actual training data from API
+            // ใช้ข้อมูลการอบรมจาก API
             const trainingData = {
                 currentYearHours: employee.currentYearHours || 0,
                 currentYearCost: employee.currentYearCost || 0,
@@ -632,6 +606,9 @@
             const remainingHours = employee.remainingHours || (12 - trainingData.currentYearHours - trainingData.thisTimeHours);
             const remainingCost = employee.remainingCost || (10000 - trainingData.currentYearCost - trainingData.thisTimeCost);
 
+            // สร้าง Full Name
+            const fullName = `${employee.prefix}${employee.name} ${employee.lastname}`.trim();
+
             row.innerHTML = `
                 <td class="text-center py-3 fw-bold border-2" style="background-color: #f8f9fa;">
                     <span class="badge bg-primary px-3 py-2">${rowNumber}</span>
@@ -640,7 +617,7 @@
                     <span class="badge bg-light text-dark px-3 py-2">${employee.empCode}</span>
                 </td>
                 <td class="text-center py-3 fw-semibold border-2">
-                    ${employee.prefix}${employee.name} ${employee.lastname}
+                    ${fullName}
                 </td>
                 <td class="text-center py-3 fw-medium border-2">
                     <span class="badge bg-info text-white px-3 py-2">${employee.position}</span>
