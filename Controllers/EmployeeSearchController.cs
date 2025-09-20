@@ -2,6 +2,7 @@
 using System.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 using System;
+using System.Collections.Generic;
 
 namespace TrainingRequestApp.Controllers
 {
@@ -88,6 +89,80 @@ namespace TrainingRequestApp.Controllers
             {
                 Console.WriteLine($"Error searching employee: {ex.Message}");
                 return StatusCode(500, new { success = false, message = "เกิดข้อผิดพลาดในการค้นหาข้อมูล" });
+            }
+        }
+
+        [HttpGet("departments-positions")]
+        public IActionResult GetDepartmentsAndPositions()
+        {
+            try
+            {
+                string connectionString = _configuration.GetConnectionString("DefaultConnection");
+                var departments = new List<string>();
+                var positions = new List<string>();
+
+                using (SqlConnection connection = new SqlConnection(connectionString))
+                {
+                    connection.Open();
+
+                    // ดึงข้อมูล Department ที่ไม่ซ้ำกัน
+                    string departmentQuery = @"
+                        SELECT DISTINCT Department 
+                        FROM Employees 
+                        WHERE Department IS NOT NULL 
+                        AND LTRIM(RTRIM(Department)) != ''
+                        ORDER BY Department";
+
+                    using (SqlCommand command = new SqlCommand(departmentQuery, connection))
+                    {
+                        using (SqlDataReader reader = command.ExecuteReader())
+                        {
+                            while (reader.Read())
+                            {
+                                string dept = reader["Department"].ToString().Trim();
+                                if (!string.IsNullOrWhiteSpace(dept))
+                                {
+                                    departments.Add(dept);
+                                }
+                            }
+                        }
+                    }
+
+                    // ดึงข้อมูล Position ที่ไม่ซ้ำกัน
+                    string positionQuery = @"
+                        SELECT DISTINCT Position 
+                        FROM Employees 
+                        WHERE Position IS NOT NULL 
+                        AND LTRIM(RTRIM(Position)) != ''
+                        ORDER BY Position";
+
+                    using (SqlCommand command = new SqlCommand(positionQuery, connection))
+                    {
+                        using (SqlDataReader reader = command.ExecuteReader())
+                        {
+                            while (reader.Read())
+                            {
+                                string pos = reader["Position"].ToString().Trim();
+                                if (!string.IsNullOrWhiteSpace(pos))
+                                {
+                                    positions.Add(pos);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                return Ok(new
+                {
+                    success = true,
+                    departments = departments,
+                    positions = positions
+                });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error getting departments and positions: {ex.Message}");
+                return StatusCode(500, new { success = false, message = "เกิดข้อผิดพลาดในการดึงข้อมูล" });
             }
         }
     }
