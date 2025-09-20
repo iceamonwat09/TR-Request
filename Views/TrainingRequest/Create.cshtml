@@ -75,16 +75,30 @@
                                         <input asp-for="CCEmail" class="form-control form-control-lg" type="email" style="border-radius: 10px;" />
                                     </div>
                                     <div class="form-group">
-                                        <label asp-for="Department" class="form-label fw-bold">🏢 ฝ่าย</label>
-                                        <input asp-for="Department" class="form-control form-control-lg" style="border-radius: 10px;" />
+                                        <label class="form-label fw-bold">🏢 ฝ่าย</label>
+                                        <select name="Department" class="form-select form-select-lg" style="border-radius: 10px;" id="departmentSelect">
+                                            <option value="">-- เลือกฝ่าย --</option>
+                                        </select>
                                     </div>
                                     <div class="form-group">
-                                        <label asp-for="EmployeeCode" class="form-label fw-bold">🆔 รหัสพนักงาน</label>
-                                        <input asp-for="EmployeeCode" class="form-control form-control-lg" style="border-radius: 10px;" />
+                                        <label class="form-label fw-bold">🏗️ แผนก</label>
+                                        <select name="Position" class="form-select form-select-lg" style="border-radius: 10px;" id="positionSelect">
+                                            <option value="">-- เลือกแผนก --</option>
+                                        </select>
                                     </div>
-                                    <div class="form-group">
-                                        <label asp-for="TotalCost" class="form-label fw-bold">💰 ยอดรวมค่าใช้จ่ายทั้งหมด</label>
-                                        <input asp-for="TotalCost" class="form-control form-control-lg" type="number" style="border-radius: 10px;" />
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label class="form-label fw-bold">👥 จำนวนผู้เข้าอบรม</label>
+                                                <input type="number" name="ParticipantCount" class="form-control form-control-lg" min="1" style="border-radius: 10px;" />
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label class="form-label fw-bold">⏰ จำนวนชั่วโมงการอบรม</label>
+                                                <input type="number" name="TrainingHours" class="form-control form-control-lg" min="0.5" step="0.5" style="border-radius: 10px;" />
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
 
@@ -115,18 +129,71 @@
                                     </div>
                                 </div>
 
-                                <div class="col-md-6">
-                                    <div class="row">
-                                        <div class="col-md-6">
-                                            <div class="form-group">
-                                                <label asp-for="Instructor" class="form-label fw-bold">👨‍🏫 วิทยากร/สถาบัน</label>
-                                                <input asp-for="Instructor" class="form-control form-control-lg" style="border-radius: 10px;" />
-                                            </div>
+                                <!-- ส่วนงบประมาณแยกประเภท -->
+                                <div class="col-12 mt-4">
+                                    <div class="card border-0 shadow" style="border-radius: 15px;">
+                                        <div class="card-header bg-warning py-3" style="border-radius: 15px 15px 0 0;">
+                                            <h5 class="mb-0 text-dark fw-bold">
+                                                💰 รายละเอียดงบประมาณ
+                                            </h5>
                                         </div>
-                                        <div class="col-md-6">
-                                            <div class="form-group">
-                                                <label asp-for="CostPerPerson" class="form-label fw-bold">💰 ค่าใช้จ่ายต่อคน (บาท)</label>
-                                                <input asp-for="CostPerPerson" class="form-control form-control-lg" type="number" style="border-radius: 10px;" />
+                                        <div class="card-body p-4">
+                                            <div class="row g-3">
+                                                <div class="col-md-6">
+                                                    <div class="form-group">
+                                                        <label class="form-label fw-bold">💵 ค่าลงทะเบียน/วิทยากร (บาท)</label>
+                                                        <input type="number" name="RegistrationCost" class="form-control form-control-lg" style="border-radius: 10px;" step="0.01" min="0" />
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="form-group">
+                                                        <label class="form-label fw-bold">👨‍🏫 ค่าตอบแทนวิทยากร (บาท)</label>
+                                                        <input type="number" name="InstructorCost" class="form-control form-control-lg" style="border-radius: 10px;" step="0.01" min="0" />
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="form-group">
+                                                        <label class="form-label fw-bold">📄 ค่าเอกสาร/อุปกรณ์ (บาท)</label>
+                                                        <input type="number" name="DocumentCost" class="form-control form-control-lg" style="border-radius: 10px;" step="0.01" min="0" />
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="form-group">
+                                                        <label class="form-label fw-bold">🍽️ ค่าอาหาร (บาท)</label>
+                                                        <input type="number" name="FoodCost" class="form-control form-control-lg" style="border-radius: 10px;" step="0.01" min="0" />
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="form-group">
+                                                        <label class="form-label fw-bold">☕ ค่าคอฟฟี่เบรก (บาท)</label>
+                                                        <input type="number" name="CoffeeCost" class="form-control form-control-lg" style="border-radius: 10px;" step="0.01" min="0" />
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="form-group">
+                                                        <label asp-for="CostPerPerson" class="form-label fw-bold">💰 ค่าใช้จ่ายต่อคน (บาท)</label>
+                                                        <input asp-for="CostPerPerson" type="number" class="form-control form-control-lg" style="border-radius: 10px;" step="0.01" min="0" />
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="form-group">
+                                                        <label class="form-label fw-bold">🔧 อื่นๆ (บาท)</label>
+                                                        <input type="number" name="OtherCost" class="form-control form-control-lg" style="border-radius: 10px;" step="0.01" min="0" />
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="form-group">
+                                                        <label class="form-label fw-bold">📝 ระบุรายการอื่นๆ</label>
+                                                        <input type="text" name="OtherCostDescription" class="form-control form-control-lg" placeholder="กรุณาระบุรายการอื่นๆ" style="border-radius: 10px;" />
+                                                    </div>
+                                                </div>
+                                                <div class="col-12">
+                                                    <hr class="my-3">
+                                                    <div class="form-group">
+                                                        <label class="form-label fw-bold text-primary" style="font-size: 1.1rem;">💎 รวมสุทธิ (บาท)</label>
+                                                        <input type="number" name="NetTotal" class="form-control form-control-lg bg-light fw-bold text-primary" style="border-radius: 10px; font-size: 1.2rem;" readonly />
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -140,27 +207,39 @@
                                             <div class="row g-3">
                                                 <div class="col-md-6">
                                                     <div class="form-check p-3" style="background-color: white; border-radius: 10px; border: 1px solid #dee2e6;">
-                                                        <input class="form-check-input" type="radio" name="TrainingObjective" asp-for="TrainingObjective" value="เพิ่มพูนความรู้ตามนโยบาย" id="objective1">
-                                                        <label class="form-check-label" for="objective1">เพื่อเพิ่มพูนความรู้ตามนโยบาย (12 ชม.)</label>
+                                                        <input class="form-check-input" type="radio" name="TrainingObjective" asp-for="TrainingObjective" value="พัฒนาทักษะความชำนาญ" id="objective1">
+                                                        <label class="form-check-label" for="objective1">พัฒนาทักษะความชำนาญ</label>
                                                     </div>
                                                 </div>
                                                 <div class="col-md-6">
                                                     <div class="form-check p-3" style="background-color: white; border-radius: 10px; border: 1px solid #dee2e6;">
-                                                        <input class="form-check-input" type="radio" name="TrainingObjective" asp-for="TrainingObjective" value="บรรลุตามคาดหวัง" id="objective2">
-                                                        <label class="form-check-label" for="objective2">เพื่อให้บรรลุตามความคาดหวัง/Competency (GAP)</label>
+                                                        <input class="form-check-input" type="radio" name="TrainingObjective" asp-for="TrainingObjective" value="เพิ่มประสิทธิภาพ / คุณภาพ" id="objective2">
+                                                        <label class="form-check-label" for="objective2">เพิ่มประสิทธิภาพ / คุณภาพ</label>
                                                     </div>
                                                 </div>
                                                 <div class="col-md-6">
                                                     <div class="form-check p-3" style="background-color: white; border-radius: 10px; border: 1px solid #dee2e6;">
-                                                        <input class="form-check-input" type="radio" name="TrainingObjective" asp-for="TrainingObjective" value="สอดคล้องตามกฎหมาย" id="objective3">
-                                                        <label class="form-check-label" for="objective3">เพื่อความสอดคล้องตามกฎหมาย/ข้อกำหนดลูกค้า</label>
+                                                        <input class="form-check-input" type="radio" name="TrainingObjective" asp-for="TrainingObjective" value="ช่วยแก้ไข / ป้องกันปัญหา" id="objective3">
+                                                        <label class="form-check-label" for="objective3">ช่วยแก้ไข / ป้องกันปัญหา</label>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="form-check p-3" style="background-color: white; border-radius: 10px; border: 1px solid #dee2e6;">
+                                                        <input class="form-check-input" type="radio" name="TrainingObjective" asp-for="TrainingObjective" value="กฎหมาย/ข้อกำหนดลูกค้า" id="objective4">
+                                                        <label class="form-check-label" for="objective4">กฎหมาย/ข้อกำหนดลูกค้า</label>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="form-check p-3" style="background-color: white; border-radius: 10px; border: 1px solid #dee2e6;">
+                                                        <input class="form-check-input" type="radio" name="TrainingObjective" asp-for="TrainingObjective" value="ถ่ายทอดความรู้/ขยายผลสู่ผู้อื่น" id="objective5">
+                                                        <label class="form-check-label" for="objective5">ถ่ายทอดความรู้/ขยายผลสู่ผู้อื่น</label>
                                                     </div>
                                                 </div>
                                                 <div class="col-md-6">
                                                     <div class="p-3" style="background-color: white; border-radius: 10px; border: 1px solid #dee2e6;">
                                                         <div class="form-check">
-                                                            <input class="form-check-input" type="radio" name="TrainingObjective" asp-for="TrainingObjective" value="อื่นๆ" id="objective4">
-                                                            <label class="form-check-label" for="objective4">อื่นๆ (ระบุ)</label>
+                                                            <input class="form-check-input" type="radio" name="TrainingObjective" asp-for="TrainingObjective" value="อื่นๆ" id="objective6">
+                                                            <label class="form-check-label" for="objective6">อื่นๆ (ระบุ)</label>
                                                         </div>
                                                         <input type="text" class="form-control mt-2" asp-for="OtherObjective" placeholder="กรุณาระบุหากเลือก 'อื่นๆ'" style="border-radius: 8px;">
                                                     </div>
@@ -170,7 +249,13 @@
                                     </div>
                                 </div>
 
-                                <!-- ตารางประวัติการอบรม - แก้ไขส่วนนี้ -->
+                                <!-- ผลคาดว่าจะได้รับ - ย้ายมาอยู่ใต้วัตถุประสงค์ -->
+                                <div class="form-group mt-4">
+                                    <label asp-for="ExpectedOutcome" class="form-label fw-bold">🎯 ผลคาดว่าจะได้รับ</label>
+                                    <textarea asp-for="ExpectedOutcome" class="form-control" rows="3" style="border-radius: 10px;"></textarea>
+                                </div>
+
+                                <!-- ตารางประวัติการอบรม -->
                                 <div class="mt-5">
                                     <div class="card border-0 shadow-lg" style="border-radius: 15px;">
                                         <!-- เพิ่มปุ่ม + ใน card-header -->
@@ -271,11 +356,6 @@
                                 <div class="form-group mt-4">
                                     <label asp-for="AttachedFiles" class="form-label fw-bold">📎 ไฟล์แนบ</label>
                                     <input asp-for="AttachedFiles" class="form-control form-control-lg" type="file" style="border-radius: 10px;" />
-                                </div>
-
-                                <div class="form-group">
-                                    <label asp-for="ExpectedOutcome" class="form-label fw-bold">🎯 ผลคาดว่าจะได้รับ</label>
-                                    <textarea asp-for="ExpectedOutcome" class="form-control" rows="3" style="border-radius: 10px;"></textarea>
                                 </div>
 
                                 <!-- ปุ่มบันทึก -->
@@ -454,19 +534,17 @@
     .employee-row {
         animation: fadeInDown 0.5s ease-out;
     }
+
     @@keyframes fadeInDown {
-        from
+        from {
+            opacity: 0;
+            transform: translateY(-20px);
+        }
 
-    {
-        opacity: 0;
-        transform: translateY(-20px);
-    }
-
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
     }
 
     .loading-spinner {
@@ -477,7 +555,6 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     // เพิ่ม JavaScript สำหรับจัดการพนักงาน
-    // เพิ่ม JavaScript สำหรับจัดการพนักงาน - แทนที่โค้ดเดิมใน Create.cshtml
     class EmployeeManager {
         constructor() {
             this.employees = [];
@@ -523,23 +600,14 @@
             this.hideError();
 
             try {
-                // เรียก API ที่ถูกต้อง
-                const response = await fetch(`/api/employee/search/${employeeCode}`);
+                const employee = await this.fetchEmployeeData(employeeCode);
 
-                if (response.ok) {
-                    const result = await response.json();
-
-                    if (result.success && result.employee) {
-                        this.currentEmployee = result.employee;
-                        this.displayEmployeeInfo(result.employee);
-                        document.getElementById('addEmployeeBtn').disabled = false;
-                    } else {
-                        this.showError('ไม่พบข้อมูลพนักงานที่มีรหัส: ' + employeeCode);
-                    }
-                } else if (response.status === 404) {
-                    this.showError('ไม่พบข้อมูลพนักงานที่มีรหัส: ' + employeeCode);
+                if (employee) {
+                    this.currentEmployee = employee;
+                    this.displayEmployeeInfo(employee);
+                    document.getElementById('addEmployeeBtn').disabled = false;
                 } else {
-                    this.showError('เกิดข้อผิดพลาดในการค้นหาข้อมูล');
+                    this.showError('ไม่พบข้อมูลพนักงานที่มีรหัส: ' + employeeCode);
                 }
             } catch (error) {
                 console.error('Error searching employee:', error);
@@ -549,15 +617,51 @@
             }
         }
 
+        // Real API call to search employee
+        async fetchEmployeeData(employeeCode) {
+            try {
+                const response = await fetch(`/api/employee/search/${employeeCode}`);
+
+                if (!response.ok) {
+                    if (response.status === 404) {
+                        return null;
+                    }
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const result = await response.json();
+
+                if (result.success) {
+                    return {
+                        empCode: result.employee.empCode,
+                        prefix: result.employee.prefix,
+                        name: result.employee.name,
+                        lastname: result.employee.lastname,
+                        position: result.employee.position,
+                        level: result.employee.level,
+                        department: result.employee.department,
+                        company: result.employee.company,
+                        email: result.employee.email,
+                        currentYearHours: result.employee.currentYearHours,
+                        currentYearCost: result.employee.currentYearCost,
+                        thisTimeHours: result.employee.thisTimeHours,
+                        thisTimeCost: result.employee.thisTimeCost,
+                        remainingHours: result.employee.remainingHours,
+                        remainingCost: result.employee.remainingCost
+                    };
+                } else {
+                    return null;
+                }
+            } catch (error) {
+                console.error('Error fetching employee:', error);
+                throw error;
+            }
+        }
+
         displayEmployeeInfo(employee) {
-            // แสดง UserID
             document.getElementById('displayEmpCode').textContent = employee.empCode;
-
-            // แสดง Prefix + Name + Lastname
-            const fullName = `${employee.prefix}${employee.name} ${employee.lastname}`.trim();
-            document.getElementById('displayFullName').textContent = fullName;
-
-            // แสดง Level และ Position
+            document.getElementById('displayFullName').textContent =
+                `${employee.prefix}${employee.name} ${employee.lastname}`;
             document.getElementById('displayPosition').textContent = employee.position;
             document.getElementById('displayLevel').textContent = employee.level;
 
@@ -595,7 +699,7 @@
             row.className = 'table-light employee-row';
             row.dataset.empCode = employee.empCode;
 
-            // ใช้ข้อมูลการอบรมจาก API
+            // Use actual training data from API
             const trainingData = {
                 currentYearHours: employee.currentYearHours || 0,
                 currentYearCost: employee.currentYearCost || 0,
@@ -606,9 +710,6 @@
             const remainingHours = employee.remainingHours || (12 - trainingData.currentYearHours - trainingData.thisTimeHours);
             const remainingCost = employee.remainingCost || (10000 - trainingData.currentYearCost - trainingData.thisTimeCost);
 
-            // สร้าง Full Name
-            const fullName = `${employee.prefix}${employee.name} ${employee.lastname}`.trim();
-
             row.innerHTML = `
                 <td class="text-center py-3 fw-bold border-2" style="background-color: #f8f9fa;">
                     <span class="badge bg-primary px-3 py-2">${rowNumber}</span>
@@ -617,10 +718,10 @@
                     <span class="badge bg-light text-dark px-3 py-2">${employee.empCode}</span>
                 </td>
                 <td class="text-center py-3 fw-semibold border-2">
-                    ${fullName}
+                    ${employee.prefix}${employee.name} ${employee.lastname}
                 </td>
                 <td class="text-center py-3 fw-medium border-2">
-                    <span class="badge bg-info text-white px-3 py-2">${employee.position}</span>
+                    <span class="badge bg-info text-white px-3 py-2">${employee.level}</span>
                 </td>
                 <td class="text-center py-3 fw-bold border-2" style="background-color: #e3f2fd; color: #1976d2; font-size: 1.1rem;">
                     ${trainingData.currentYearHours}
@@ -741,4 +842,72 @@
 
     // Initialize the employee manager
     const employeeManager = new EmployeeManager();
+
+    // งบประมาณ: คำนวณรวมสุทธิอัตโนมัติ
+    function calculateNetTotal() {
+        const registrationCost = parseFloat(document.querySelector('input[name="RegistrationCost"]').value) || 0;
+        const instructorCost = parseFloat(document.querySelector('input[name="InstructorCost"]').value) || 0;
+        const documentCost = parseFloat(document.querySelector('input[name="DocumentCost"]').value) || 0;
+        const foodCost = parseFloat(document.querySelector('input[name="FoodCost"]').value) || 0;
+        const coffeeCost = parseFloat(document.querySelector('input[name="CoffeeCost"]').value) || 0;
+        const costPerPerson = parseFloat(document.querySelector('input[name="CostPerPerson"]').value) || 0;
+        const otherCost = parseFloat(document.querySelector('input[name="OtherCost"]').value) || 0;
+
+        const netTotal = registrationCost + instructorCost + documentCost + foodCost + coffeeCost + costPerPerson + otherCost;
+        document.querySelector('input[name="NetTotal"]').value = netTotal.toFixed(2);
+    }
+
+    // โหลดข้อมูล Department และ Position จากตาราง Employees
+    async function loadDepartmentAndPositionData() {
+        try {
+            const response = await fetch('/api/employee/departments-positions');
+            if (response.ok) {
+                const result = await response.json();
+
+                if (result.success) {
+                    // โหลด Department
+                    const departmentSelect = document.getElementById('departmentSelect');
+                    if (result.departments && Array.isArray(result.departments)) {
+                        result.departments.forEach(dept => {
+                            const option = document.createElement('option');
+                            option.value = dept;
+                            option.textContent = dept;
+                            departmentSelect.appendChild(option);
+                        });
+                    }
+
+                    // โหลด Position
+                    const positionSelect = document.getElementById('positionSelect');
+                    if (result.positions && Array.isArray(result.positions)) {
+                        result.positions.forEach(pos => {
+                            const option = document.createElement('option');
+                            option.value = pos;
+                            option.textContent = pos;
+                            positionSelect.appendChild(option);
+                        });
+                    }
+                } else {
+                    console.error('Failed to load department and position data:', result.message);
+                }
+            } else {
+                console.error('HTTP error:', response.status);
+            }
+        } catch (error) {
+            console.error('Error loading department and position data:', error);
+        }
+    }
+
+    // เพิ่ม Event Listeners สำหรับคำนวณงบประมาณ
+    document.addEventListener('DOMContentLoaded', function() {
+        // โหลดข้อมูล Department และ Position
+        loadDepartmentAndPositionData();
+
+        // เพิ่ม Event Listeners สำหรับคำนวณงบประมาณ
+        const budgetInputs = document.querySelectorAll('input[name="RegistrationCost"], input[name="InstructorCost"], input[name="DocumentCost"], input[name="FoodCost"], input[name="CoffeeCost"], input[name="CostPerPerson"], input[name="OtherCost"]');
+
+        budgetInputs.forEach(input => {
+            input.addEventListener('input', calculateNetTotal);
+            input.addEventListener('change', calculateNetTotal);
+        });
+    });
 </script>
