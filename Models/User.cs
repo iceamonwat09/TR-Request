@@ -1,7 +1,9 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
+﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 public class User
 {
+    [Key]
     public int EmployeeId { get; set; }
     public string Account { get; set; }
     public string Email { get; set; }
