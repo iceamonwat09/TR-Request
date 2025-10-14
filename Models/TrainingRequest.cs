@@ -30,6 +30,29 @@ namespace TrainingRequestApp.Models
         [Display(Name = "Status")]
         public string Status { get; set; } = "Pending";
 
+        // ?? เพิ่มฟิลด์งบประมาณแยกรายการ
+        [Display(Name = "ค่าลงทะเบียน/วิทยากร")]
+        public decimal RegistrationCost { get; set; } = 0;
+
+        [Display(Name = "ค่าคอมแมนวิทยากร")]
+        public decimal InstructorFee { get; set; } = 0;
+
+        [Display(Name = "ค่าอุปกรณ์")]
+        public decimal EquipmentCost { get; set; } = 0;
+
+        [Display(Name = "ค่าอาหาร")]
+        public decimal FoodCost { get; set; } = 0;
+
+        [Display(Name = "อื่นๆ")]
+        public decimal OtherCost { get; set; } = 0;
+
+        [Display(Name = "ระบุรายการอื่นๆ")]
+        [StringLength(500)]
+        public string? OtherCostDescription { get; set; }
+
+        [Display(Name = "รวมสุทธิ")]
+        public decimal TotalCost { get; set; } = 0;
+
         // Navigation property for participants
         public virtual ICollection<TrainingParticipant> Participants { get; set; } = new List<TrainingParticipant>();
     }
