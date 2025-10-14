@@ -68,11 +68,11 @@
                                 <div class="col-md-6">
                                     <div class="form-group">
                                         <label asp-for="Factory" class="form-label fw-bold">🏭 โรงงาน</label>
-                                        <input asp-for="Factory" class="form-control form-control-lg" style="border-radius: 10px;" />
+                                        <input asp-for="Factory" id="Factory" class="form-control form-control-lg" style="border-radius: 10px;" />
                                     </div>
                                     <div class="form-group">
                                         <label asp-for="CCEmail" class="form-label fw-bold">📧 CC.Mail</label>
-                                        <input asp-for="CCEmail" class="form-control form-control-lg" type="email" style="border-radius: 10px;" />
+                                        <input asp-for="CCEmail" id="CCEmail" class="form-control form-control-lg" type="email" style="border-radius: 10px;" />
                                     </div>
                                     <div class="form-group">
                                         <label asp-for="Department" class="form-label fw-bold">🏢 ฝ่าย</label>
@@ -107,92 +107,91 @@
                                         <div class="col-md-6">
                                             <div class="form-group">
                                                 <label asp-for="StartDate" class="form-label fw-bold">📅 วันที่เริ่มอบรม</label>
-                                                <input asp-for="StartDate" class="form-control form-control-lg" type="date" style="border-radius: 10px;" />
+                                                <input asp-for="StartDate" id="StartDate" name="StartDate" class="form-control form-control-lg" type="date" style="border-radius: 10px;" />
                                             </div>
                                         </div>
                                         <div class="col-md-6">
                                             <div class="form-group">
                                                 <label asp-for="EndDate" class="form-label fw-bold">📅 วันที่สิ้นสุดการอบรม</label>
-                                                <input asp-for="EndDate" class="form-control form-control-lg" type="date" style="border-radius: 10px;" />
+                                                <input asp-for="EndDate" id="EndDate" name="EndDate" class="form-control form-control-lg" type="date" style="border-radius: 10px;" />
                                             </div>
                                         </div>
                                     </div>
 
                                     <div class="form-group">
                                         <label asp-for="SeminarTitle" class="form-label fw-bold">📖 เรื่องสัมมนา</label>
-                                        <input asp-for="SeminarTitle" class="form-control form-control-lg" style="border-radius: 10px;" />
+                                        <input asp-for="SeminarTitle" id="SeminarTitle" class="form-control form-control-lg" style="border-radius: 10px;" />
                                     </div>
 
                                     <div class="form-group">
                                         <label asp-for="TrainingLocation" class="form-label fw-bold">📍 สถานที่อบรม</label>
-                                        <input asp-for="TrainingLocation" class="form-control form-control-lg" style="border-radius: 10px;" />
+                                        <input asp-for="TrainingLocation" id="TrainingLocation" class="form-control form-control-lg" style="border-radius: 10px;" />
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label asp-for="Instructor" class="form-label fw-bold">👨‍🏫 วิทยากร/สถาบัน</label>
+                                        <input asp-for="Instructor" id="Instructor" class="form-control form-control-lg" style="border-radius: 10px;" />
                                     </div>
                                 </div>
 
-                                <!-- ส่วนงบประมาณแยกประเภท -->
+                                <!-- 💰 รายละเอียดงบประมาณ (แก้ไขให้คำนวณอัตโนมัติ) -->
                                 <div class="col-12 mt-4">
-                                    <div class="card border-0 shadow" style="border-radius: 15px;">
-                                        <div class="card-header bg-warning py-3" style="border-radius: 15px 15px 0 0;">
-                                            <h5 class="mb-0 text-dark fw-bold">
-                                                💰 รายละเอียดงบประมาณ
-                                            </h5>
+                                    <div class="card border-0 shadow-sm" style="border-radius: 12px;">
+                                        <div class="card-header bg-warning text-dark" style="border-radius: 12px 12px 0 0;">
+                                            <h5 class="mb-0 fw-bold">💰 รายละเอียดงบประมาณ</h5>
                                         </div>
                                         <div class="card-body p-4">
                                             <div class="row g-3">
+                                                <!-- ค่าลงทะเบียน/วิทยากร -->
                                                 <div class="col-md-6">
-                                                    <div class="form-group">
-                                                        <label class="form-label fw-bold">💵 ค่าลงทะเบียน/วิทยากร (บาท)</label>
-                                                        <input type="number" name="RegistrationCost" class="form-control form-control-lg" style="border-radius: 10px;" step="0.01" min="0" />
-                                                    </div>
+                                                    <label asp-for="RegistrationCost" class="form-label fw-bold">📋 ค่าลงทะเบียน/วิทยากร (บาท)</label>
+                                                    <input asp-for="RegistrationCost" id="RegistrationCost" class="form-control form-control-lg budget-input" type="number" step="0.01" min="0" value="0" style="border-radius: 10px;" />
                                                 </div>
+
+                                                <!-- ค่าคอมแมนวิทยากร -->
                                                 <div class="col-md-6">
-                                                    <div class="form-group">
-                                                        <label class="form-label fw-bold">👨‍🏫 ค่าตอบแทนวิทยากร (บาท)</label>
-                                                        <input type="number" name="InstructorCost" class="form-control form-control-lg" style="border-radius: 10px;" step="0.01" min="0" />
-                                                    </div>
+                                                    <label asp-for="InstructorFee" class="form-label fw-bold">👨‍🏫 ค่าคอมแมนวิทยากร (บาท)</label>
+                                                    <input asp-for="InstructorFee" id="InstructorFee" class="form-control form-control-lg budget-input" type="number" step="0.01" min="0" value="0" style="border-radius: 10px;" />
                                                 </div>
+
+                                                <!-- ค่าอุปกรณ์ -->
                                                 <div class="col-md-6">
-                                                    <div class="form-group">
-                                                        <label class="form-label fw-bold">📄 ค่าเอกสาร/อุปกรณ์ (บาท)</label>
-                                                        <input type="number" name="DocumentCost" class="form-control form-control-lg" style="border-radius: 10px;" step="0.01" min="0" />
-                                                    </div>
+                                                    <label asp-for="EquipmentCost" class="form-label fw-bold">🛠️ ค่าอุปกรณ์ (บาท)</label>
+                                                    <input asp-for="EquipmentCost" id="EquipmentCost" class="form-control form-control-lg budget-input" type="number" step="0.01" min="0" value="0" style="border-radius: 10px;" />
                                                 </div>
+
+                                                <!-- ค่าอาหาร -->
                                                 <div class="col-md-6">
-                                                    <div class="form-group">
-                                                        <label class="form-label fw-bold">🍽️ ค่าอาหาร (บาท)</label>
-                                                        <input type="number" name="FoodCost" class="form-control form-control-lg" style="border-radius: 10px;" step="0.01" min="0" />
-                                                    </div>
+                                                    <label asp-for="FoodCost" class="form-label fw-bold">🍽️ ค่าอาหาร (บาท)</label>
+                                                    <input asp-for="FoodCost" id="FoodCost" class="form-control form-control-lg budget-input" type="number" step="0.01" min="0" value="0" style="border-radius: 10px;" />
                                                 </div>
+
+                                                <!-- อื่นๆ -->
                                                 <div class="col-md-6">
-                                                    <div class="form-group">
-                                                        <label class="form-label fw-bold">☕ ค่าคอฟฟี่เบรก (บาท)</label>
-                                                        <input type="number" name="CoffeeCost" class="form-control form-control-lg" style="border-radius: 10px;" step="0.01" min="0" />
-                                                    </div>
+                                                    <label asp-for="OtherCost" class="form-label fw-bold">🔧 อื่นๆ (บาท)</label>
+                                                    <input asp-for="OtherCost" id="OtherCost" class="form-control form-control-lg budget-input" type="number" step="0.01" min="0" value="0" style="border-radius: 10px;" />
                                                 </div>
+
+                                                <!-- ระบุรายการอื่นๆ -->
                                                 <div class="col-md-6">
-                                                    <div class="form-group">
-                                                        <label asp-for="CostPerPerson" class="form-label fw-bold">💰 ค่าใช้จ่ายต่อคน (บาท)</label>
-                                                        <input asp-for="CostPerPerson" type="number" class="form-control form-control-lg" style="border-radius: 10px;" step="0.01" min="0" />
-                                                    </div>
+                                                    <label asp-for="OtherCostDescription" class="form-label fw-bold">📝 ระบุรายการอื่นๆ</label>
+                                                    <input asp-for="OtherCostDescription" id="OtherCostDescription" class="form-control form-control-lg" placeholder="กรุณาระบุรายการอื่นๆ" style="border-radius: 10px;" />
                                                 </div>
+
+                                                <!-- ค่าใช้จ่ายต่อคน -->
                                                 <div class="col-md-6">
-                                                    <div class="form-group">
-                                                        <label class="form-label fw-bold">🔧 อื่นๆ (บาท)</label>
-                                                        <input type="number" name="OtherCost" class="form-control form-control-lg" style="border-radius: 10px;" step="0.01" min="0" />
-                                                    </div>
+                                                    <label asp-for="CostPerPerson" class="form-label fw-bold">💰 ค่าใช้จ่ายต่อคน (บาท)</label>
+                                                    <input asp-for="CostPerPerson" id="CostPerPerson" type="number" class="form-control form-control-lg" step="0.01" min="0" value="0" style="border-radius: 10px;" />
                                                 </div>
-                                                <div class="col-md-6">
-                                                    <div class="form-group">
-                                                        <label class="form-label fw-bold">📝 ระบุรายการอื่นๆ</label>
-                                                        <input type="text" name="OtherCostDescription" class="form-control form-control-lg" placeholder="กรุณาระบุรายการอื่นๆ" style="border-radius: 10px;" />
-                                                    </div>
-                                                </div>
+
+                                                <!-- รวมสุทธิ (Read-only, คำนวณอัตโนมัติ) -->
                                                 <div class="col-12">
                                                     <hr class="my-3">
-                                                    <div class="form-group">
-                                                        <label class="form-label fw-bold text-primary" style="font-size: 1.1rem;">💎 รวมสุทธิ (บาท)</label>
-                                                        <input type="number" name="NetTotal" class="form-control form-control-lg bg-light fw-bold text-primary" style="border-radius: 10px; font-size: 1.2rem;" readonly />
+                                                    <div class="alert alert-success d-flex justify-content-between align-items-center" style="border-radius: 10px;">
+                                                        <span class="fw-bold fs-5">💵 รวมสุทธิ (บาท):</span>
+                                                        <span class="fw-bold fs-4 text-success" id="totalCostDisplay">0.00</span>
                                                     </div>
+                                                    <input asp-for="TotalCost" type="hidden" id="totalCostInput" />
                                                 </div>
                                             </div>
                                         </div>
@@ -241,7 +240,7 @@
                                                             <input class="form-check-input" type="radio" name="TrainingObjective" asp-for="TrainingObjective" value="อื่นๆ" id="objective6">
                                                             <label class="form-check-label" for="objective6">อื่นๆ (ระบุ)</label>
                                                         </div>
-                                                        <input type="text" class="form-control mt-2" asp-for="OtherObjective" placeholder="กรุณาระบุหากเลือก 'อื่นๆ'" style="border-radius: 8px;">
+                                                        <input type="text" class="form-control mt-2" asp-for="OtherObjective" id="OtherObjective" placeholder="กรุณาระบุหากเลือก 'อื่นๆ'" style="border-radius: 8px;">
                                                     </div>
                                                 </div>
                                             </div>
@@ -249,16 +248,15 @@
                                     </div>
                                 </div>
 
-                                <!-- ผลคาดว่าจะได้รับ - ย้ายมาอยู่ใต้วัตถุประสงค์ -->
+                                <!-- ผลคาดว่าจะได้รับ -->
                                 <div class="form-group mt-4">
                                     <label asp-for="ExpectedOutcome" class="form-label fw-bold">🎯 ผลคาดว่าจะได้รับ</label>
-                                    <textarea asp-for="ExpectedOutcome" class="form-control" rows="3" style="border-radius: 10px;"></textarea>
+                                    <textarea asp-for="ExpectedOutcome" id="ExpectedOutcome" class="form-control" rows="3" style="border-radius: 10px;"></textarea>
                                 </div>
 
                                 <!-- ตารางประวัติการอบรม -->
                                 <div class="mt-5">
                                     <div class="card border-0 shadow-lg" style="border-radius: 15px;">
-                                        <!-- เพิ่มปุ่ม + ใน card-header -->
                                         <div class="card-header bg-secondary py-3" style="border-radius: 15px 15px 0 0;">
                                             <div class="d-flex justify-content-between align-items-center">
                                                 <h4 class="mb-0 text-white fw-bold">
@@ -272,28 +270,15 @@
 
                                         <div class="card-body p-0">
                                             <div class="table-responsive">
-                                                <!-- เพิ่ม id="employeeTable" -->
                                                 <table class="table table-bordered mb-0" style="font-size: 0.9rem;" id="employeeTable">
                                                     <thead>
                                                         <tr class="table-primary">
-                                                            <th class="text-center py-3 fw-bold border-2" style="min-width: 80px; vertical-align: middle;">
-                                                                ลำดับ
-                                                            </th>
-                                                            <th class="text-center py-3 fw-bold border-2" style="min-width: 100px; vertical-align: middle;">
-                                                                รหัส
-                                                            </th>
-                                                            <th class="text-center py-3 fw-bold border-2" style="min-width: 150px; vertical-align: middle;">
-                                                                ชื่อ - นามสกุล
-                                                            </th>
-                                                            <th class="text-center py-3 fw-bold border-2" style="min-width: 120px; vertical-align: middle;">
-                                                                ตำแหน่ง
-                                                            </th>
-                                                            <th class="text-center py-3 fw-bold border-2" colspan="2" style="background-color: #e3f2fd; min-width: 200px;">
-                                                                ประวัติการอบรม ไม่รวมครั้งนี้
-                                                            </th>
-                                                            <th class="text-center py-3 fw-bold border-2" colspan="2" style="background-color: #f3e5f5; min-width: 200px;">
-                                                                ประวัติการอบรม ในครั้งนี้
-                                                            </th>
+                                                            <th class="text-center py-3 fw-bold border-2" style="min-width: 80px; vertical-align: middle;">ลำดับ</th>
+                                                            <th class="text-center py-3 fw-bold border-2" style="min-width: 100px; vertical-align: middle;">รหัส</th>
+                                                            <th class="text-center py-3 fw-bold border-2" style="min-width: 150px; vertical-align: middle;">ชื่อ - นามสกุล</th>
+                                                            <th class="text-center py-3 fw-bold border-2" style="min-width: 120px; vertical-align: middle;">ตำแหน่ง</th>
+                                                            <th class="text-center py-3 fw-bold border-2" colspan="2" style="background-color: #e3f2fd; min-width: 200px;">ประวัติการอบรม ไม่รวมครั้งนี้</th>
+                                                            <th class="text-center py-3 fw-bold border-2" colspan="2" style="background-color: #f3e5f5; min-width: 200px;">ประวัติการอบรม ในครั้งนี้</th>
                                                             <th class="text-center py-3 fw-bold border-2" style="min-width: 140px; vertical-align: middle;">
                                                                 ชั่วโมงคงเหลือ<br>
                                                                 <small>(โควต้า 12 ชม./ปี)</small>
@@ -306,33 +291,18 @@
                                                                 ตรวจสอบประวัติอบรม<br>
                                                                 <small>ตลอดอายุงาน</small>
                                                             </th>
-                                                            <th class="text-center py-3 fw-bold border-2" style="min-width: 120px; vertical-align: middle;">
-                                                                หมายเหตุ
-                                                            </th>
-                                                            <!-- เพิ่มคอลัมน์ จัดการ -->
-                                                            <th class="text-center py-3 fw-bold border-2" style="min-width: 80px; vertical-align: middle;">
-                                                                จัดการ
-                                                            </th>
+                                                            <th class="text-center py-3 fw-bold border-2" style="min-width: 120px; vertical-align: middle;">หมายเหตุ</th>
+                                                            <th class="text-center py-3 fw-bold border-2" style="min-width: 80px; vertical-align: middle;">จัดการ</th>
                                                         </tr>
                                                         <tr class="table-light">
                                                             <th colspan="4" class="p-3 border-2"></th>
-                                                            <th class="text-center py-2 fw-semibold border-2" style="background-color: #e3f2fd;">
-                                                                ชั่วโมงสะสมปีนี้
-                                                            </th>
-                                                            <th class="text-center py-2 fw-semibold border-2" style="background-color: #e3f2fd;">
-                                                                ยอดเงินสะสมปีนี้
-                                                            </th>
-                                                            <th class="text-center py-2 fw-semibold border-2" style="background-color: #f3e5f5;">
-                                                                ชั่วโมงสะสมครั้งนี้
-                                                            </th>
-                                                            <th class="text-center py-2 fw-semibold border-2" style="background-color: #f3e5f5;">
-                                                                ยอดเงินครั้งนี้
-                                                            </th>
-                                                            <!-- เพิ่ม colspan="5" แทน 4 -->
+                                                            <th class="text-center py-2 fw-semibold border-2" style="background-color: #e3f2fd;">ชั่วโมงสะสมปีนี้</th>
+                                                            <th class="text-center py-2 fw-semibold border-2" style="background-color: #e3f2fd;">ยอดเงินสะสมปีนี้</th>
+                                                            <th class="text-center py-2 fw-semibold border-2" style="background-color: #f3e5f5;">ชั่วโมงสะสมครั้งนี้</th>
+                                                            <th class="text-center py-2 fw-semibold border-2" style="background-color: #f3e5f5;">ยอดเงินครั้งนี้</th>
                                                             <th colspan="5" class="p-3 border-2"></th>
                                                         </tr>
                                                     </thead>
-                                                    <!-- ลบข้อมูล static ออก และใส่ id -->
                                                     <tbody id="employeeTableBody">
                                                         <!-- Dynamic rows will be inserted here -->
                                                     </tbody>
@@ -345,17 +315,17 @@
                                 <!-- ข้อมูลเพิ่มเติม -->
                                 <div class="form-group mt-4">
                                     <label asp-for="URLSource" class="form-label fw-bold">🔗 แหล่งที่มา URL (ห้ามพิมพ์ข้อความ ให้วางลิงก์เท่านั้น)</label>
-                                    <input asp-for="URLSource" class="form-control form-control-lg" type="url" placeholder="https://example.com" onkeypress="return false;" style="border-radius: 10px;" />
+                                    <input asp-for="URLSource" id="URLSource" class="form-control form-control-lg" type="url" placeholder="https://example.com" onkeypress="return false;" style="border-radius: 10px;" />
                                 </div>
 
                                 <div class="form-group">
                                     <label asp-for="AdditionalNotes" class="form-label fw-bold">📝 ระบุข้อมูลเพิ่มเติมให้ OD รับทราบ (ถ้ามี)</label>
-                                    <textarea asp-for="AdditionalNotes" class="form-control" rows="3" style="border-radius: 10px;"></textarea>
+                                    <textarea asp-for="AdditionalNotes" id="AdditionalNotes" class="form-control" rows="3" style="border-radius: 10px;"></textarea>
                                 </div>
 
                                 <div class="form-group mt-4">
                                     <label asp-for="AttachedFiles" class="form-label fw-bold">📎 ไฟล์แนบ</label>
-                                    <input asp-for="AttachedFiles" class="form-control form-control-lg" type="file" style="border-radius: 10px;" />
+                                    <input asp-for="AttachedFiles" id="AttachedFiles" class="form-control form-control-lg" type="file" style="border-radius: 10px;" />
                                 </div>
 
                                 <!-- ปุ่มบันทึก -->
@@ -373,7 +343,7 @@
     </div>
 </div>
 
-<!-- Employee Search Modal - เพิ่มส่วนนี้ -->
+<!-- Employee Search Modal -->
 <div class="modal fade" id="employeeSearchModal" tabindex="-1" aria-labelledby="employeeSearchModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content" style="border-radius: 15px;">
@@ -497,7 +467,6 @@
             transform: scale(1.05);
         }
 
-    /* เอฟเฟกต์สำหรับ radio buttons */
     .form-check-input {
         transition: all 0.3s ease;
     }
@@ -506,7 +475,6 @@
             transform: scale(1.1);
         }
 
-    /* เส้นตารางที่ชัดเจน */
     .table-bordered {
         border: 3px solid #dee2e6;
     }
@@ -516,7 +484,6 @@
         border-color: #6c757d !important;
     }
 
-    /* เพิ่ม CSS สำหรับปุ่ม + และ animation */
     .add-employee-btn {
         background: linear-gradient(45deg, #28a745, #20c997);
         border: none;
@@ -555,10 +522,84 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     // ====================================================================
+    // 💰 คำนวณยอดรวมอัตโนมัติ (แก้ไขให้ทำงานได้ 100%)
+    // ====================================================================
+    function calculateTotalCost() {
+        // ใช้ getElementById โดยตรง
+        const registrationCost = parseFloat(document.getElementById('RegistrationCost')?.value || 0);
+        const instructorFee = parseFloat(document.getElementById('InstructorFee')?.value || 0);
+        const equipmentCost = parseFloat(document.getElementById('EquipmentCost')?.value || 0);
+        const foodCost = parseFloat(document.getElementById('FoodCost')?.value || 0);
+        const otherCost = parseFloat(document.getElementById('OtherCost')?.value || 0);
+
+        const total = registrationCost + instructorFee + equipmentCost + foodCost + otherCost;
+
+        console.log('💰 Calculating Total:', {
+            registrationCost,
+            instructorFee,
+            equipmentCost,
+            foodCost,
+            otherCost,
+            total
+        });
+
+        const displayElement = document.getElementById('totalCostDisplay');
+        const inputElement = document.getElementById('totalCostInput');
+
+        if (displayElement) {
+            displayElement.textContent = total.toLocaleString('th-TH', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+        }
+
+        if (inputElement) {
+            inputElement.value = total.toFixed(2);
+        }
+    }
+
+    // ผูก event listener กับทุก input งบประมาณ
+    function initializeBudgetCalculation() {
+        console.log('🔧 Initializing budget calculation...');
+
+        const budgetInputIds = [
+            'RegistrationCost',
+            'InstructorFee',
+            'EquipmentCost',
+            'FoodCost',
+            'OtherCost'
+        ];
+
+        budgetInputIds.forEach(id => {
+            const input = document.getElementById(id);
+            if (input) {
+                console.log(`✅ Found input: ${id}`);
+                // ผูก event listener หลายแบบเพื่อให้ทำงานทุกกรณี
+                input.addEventListener('input', calculateTotalCost);
+                input.addEventListener('change', calculateTotalCost);
+                input.addEventListener('keyup', calculateTotalCost);
+                input.addEventListener('blur', calculateTotalCost);
+            } else {
+                console.error(`❌ Input not found: ${id}`);
+            }
+        });
+
+        // คำนวณครั้งแรกเมื่อโหลดหน้า
+        calculateTotalCost();
+        console.log('✅ Budget calculation initialized!');
+    }
+
+    // ====================================================================
     // 0. Load Departments and Positions - เมื่อโหลดหน้าเสร็จ
     // ====================================================================
     document.addEventListener('DOMContentLoaded', async function() {
+        console.log('🚀 Page loaded!');
         await loadDepartmentsAndPositions();
+
+        // รอให้ DOM พร้อม แล้วค่อย initialize
+        setTimeout(() => {
+            initializeBudgetCalculation();
+        }, 100);
     });
 
     async function loadDepartmentsAndPositions() {
@@ -569,7 +610,6 @@
                 const result = await response.json();
 
                 if (result.success) {
-                    // เติมข้อมูล Department
                     const departmentSelect = document.getElementById('departmentSelect');
                     if (departmentSelect && result.departments) {
                         result.departments.forEach(dept => {
@@ -580,7 +620,6 @@
                         });
                     }
 
-                    // เติมข้อมูล Position
                     const positionSelect = document.getElementById('positionSelect');
                     if (positionSelect && result.positions) {
                         result.positions.forEach(pos => {
@@ -899,24 +938,16 @@
     // ====================================================================
     // 2. Form Submission Handler
     // ====================================================================
-      document.querySelector('form').addEventListener('submit', async function(e) {
+    document.querySelector('form').addEventListener('submit', async function(e) {
         e.preventDefault();
 
         console.log('🔵 Form submitted!');
 
-        // ตรวจสอบข้อมูลพื้นฐาน
         const company = document.querySelector('input[name="Company"]:checked')?.value;
         const trainingType = document.querySelector('input[name="TrainingType"]:checked')?.value;
-        const startDateInput = document.querySelector('input[asp-for="StartDate"]') || document.querySelector('input[name="StartDate"]');
-        const endDateInput = document.querySelector('input[asp-for="EndDate"]') || document.querySelector('input[name="EndDate"]');
-        const startDate = startDateInput?.value || '';
-        const endDate = endDateInput?.value || '';
+        const startDate = document.getElementById('StartDate')?.value || '';
+        const endDate = document.getElementById('EndDate')?.value || '';
         const trainingObjective = document.querySelector('input[name="TrainingObjective"]:checked')?.value;
-
-        console.log('Company:', company);
-        console.log('TrainingType:', trainingType);
-        console.log('StartDate:', startDate);
-        console.log('EndDate:', endDate);
 
         // Validation
         if (!company) {
@@ -943,32 +974,35 @@
 
         formData.append('Company', company);
         formData.append('TrainingType', trainingType);
-        formData.append('Factory', document.querySelector('input[asp-for="Factory"]')?.value || '');
-        formData.append('CCEmail', document.querySelector('input[asp-for="CCEmail"]')?.value || '');
-        formData.append('Department', document.querySelector('select#departmentSelect')?.value || '');
+        formData.append('Factory', document.getElementById('Factory')?.value || '');
+        formData.append('CCEmail', document.getElementById('CCEmail')?.value || '');
+        formData.append('Department', document.getElementById('departmentSelect')?.value || '');
         formData.append('StartDate', startDate);
         formData.append('EndDate', endDate);
-        formData.append('SeminarTitle', document.querySelector('input[asp-for="SeminarTitle"]')?.value || '');
-        formData.append('TrainingLocation', document.querySelector('input[asp-for="TrainingLocation"]')?.value || '');
+        formData.append('SeminarTitle', document.getElementById('SeminarTitle')?.value || '');
+        formData.append('TrainingLocation', document.getElementById('TrainingLocation')?.value || '');
+        formData.append('Instructor', document.getElementById('Instructor')?.value || '');
 
-        // คำนวณ TotalCost จากฟิลด์ต่างๆ
-        const registrationCost = parseFloat(document.querySelector('input[name="RegistrationCost"]')?.value || 0);
-        const instructorCost = parseFloat(document.querySelector('input[name="InstructorCost"]')?.value || 0);
-        const documentCost = parseFloat(document.querySelector('input[name="DocumentCost"]')?.value || 0);
-        const foodCost = parseFloat(document.querySelector('input[name="FoodCost"]')?.value || 0);
-        const coffeeCost = parseFloat(document.querySelector('input[name="CoffeeCost"]')?.value || 0);
-        const otherCost = parseFloat(document.querySelector('input[name="OtherCost"]')?.value || 0);
-        const totalCost = registrationCost + instructorCost + documentCost + foodCost + coffeeCost + otherCost;
-
+        // ดึงค่า TotalCost ที่คำนวณไว้แล้ว
+        const totalCost = parseFloat(document.getElementById('totalCostInput')?.value || 0);
         formData.append('TotalCost', totalCost);
-        formData.append('CostPerPerson', document.querySelector('input[asp-for="CostPerPerson"]')?.value || '0');
-        formData.append('TrainingObjective', trainingObjective);
-        formData.append('OtherObjective', document.querySelector('input[asp-for="OtherObjective"]')?.value || '');
-        formData.append('URLSource', document.querySelector('input[asp-for="URLSource"]')?.value || '');
-        formData.append('AdditionalNotes', document.querySelector('textarea[asp-for="AdditionalNotes"]')?.value || '');
-        formData.append('ExpectedOutcome', document.querySelector('textarea[asp-for="ExpectedOutcome"]')?.value || '');
+        formData.append('CostPerPerson', document.getElementById('CostPerPerson')?.value || '0');
 
-        console.log('TotalCost calculated:', totalCost);
+        // เพิ่มข้อมูลงบประมาณแยกรายการ
+        formData.append('RegistrationCost', document.getElementById('RegistrationCost')?.value || '0');
+        formData.append('InstructorFee', document.getElementById('InstructorFee')?.value || '0');
+        formData.append('EquipmentCost', document.getElementById('EquipmentCost')?.value || '0');
+        formData.append('FoodCost', document.getElementById('FoodCost')?.value || '0');
+        formData.append('OtherCost', document.getElementById('OtherCost')?.value || '0');
+        formData.append('OtherCostDescription', document.getElementById('OtherCostDescription')?.value || '');
+
+        formData.append('TrainingObjective', trainingObjective);
+        formData.append('OtherObjective', document.getElementById('OtherObjective')?.value || '');
+        formData.append('URLSource', document.getElementById('URLSource')?.value || '');
+        formData.append('AdditionalNotes', document.getElementById('AdditionalNotes')?.value || '');
+        formData.append('ExpectedOutcome', document.getElementById('ExpectedOutcome')?.value || '');
+
+        console.log('TotalCost:', totalCost);
 
         // เพิ่มรายชื่อพนักงาน
         const employeesData = employeeManager.getEmployeesData();
@@ -976,7 +1010,7 @@
         console.log('Employees:', employeesData.length);
 
         // เพิ่มไฟล์แนบ
-        const fileInput = document.querySelector('input[asp-for="AttachedFiles"]');
+        const fileInput = document.getElementById('AttachedFiles');
         if (fileInput && fileInput.files.length > 0) {
             formData.append('AttachedFiles', fileInput.files[0]);
             console.log('File attached:', fileInput.files[0].name);
