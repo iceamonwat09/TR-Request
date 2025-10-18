@@ -646,6 +646,7 @@
     // ====================================================================
     // 1. Employee Manager Class
     // ====================================================================
+    // ✨ อัปเดต EmployeeManager class
     class EmployeeManager {
         constructor() {
             this.employees = [];
@@ -678,7 +679,12 @@
             const employeeCode = document.getElementById('employeeCode').value.trim();
 
             if (!employeeCode) {
-                this.showError('กรุณากรอกรหัสพนักงาน');
+                this.showError('❌ กรุณากรอกรหัสพนักงาน');
+                return;
+            }
+
+            if (employeeCode.length !== 7) {
+                this.showError('❌ รหัสพนักงานต้องเป็น 7 หลัก');
                 return;
             }
 
@@ -694,30 +700,55 @@
                     this.displayEmployeeInfo(employee);
                     document.getElementById('addEmployeeBtn').disabled = false;
                 } else {
-                    this.showError('ไม่พบข้อมูลพนักงานที่มีรหัส: ' + employeeCode);
+                    this.showError('❌ ไม่พบข้อมูลพนักงานที่มีรหัส: ' + employeeCode);
                 }
             } catch (error) {
                 console.error('Error searching employee:', error);
-                this.showError('เกิดข้อผิดพลาดในการค้นหาข้อมูล');
+                this.showError('❌ เกิดข้อผิดพลาดในการค้นหาข้อมูล');
             } finally {
                 this.showLoading(false);
             }
         }
 
+        // ✅ เรียก GET /api/employee/search/{employeeCode} (ตรงกับเดิม)
         async fetchEmployeeData(employeeCode) {
             try {
+                console.log('🔍 Searching for employee:', employeeCode);
+
+                // ✅ เรียกแบบ GET (ตรงกับ JavaScript เดิม)
                 const response = await fetch(`/api/employee/search/${employeeCode}`);
 
+                console.log('📡 Response status:', response.status);
+
                 if (!response.ok) {
-                    if (response.status === 404) {
-                        return null;
+                    console.error('❌ Response not OK:', response.status);
+
+                    try {
+                        const errorData = await response.json();
+                        console.error('❌ Error data:', errorData);
+                    } catch {
+                        console.error('❌ Could not parse error as JSON');
                     }
-                    throw new Error(`HTTP error! status: ${response.status}`);
+
+                    return null;
                 }
 
                 const result = await response.json();
+                console.log('✅ API Response:', result);
+                console.log('📊 API Response (JSON):', JSON.stringify(result, null, 2));
 
-                if (result.success) {
+                // ✅ ตรวจสอบ structure ของ result
+                console.log('🔍 result.success:', result.success);
+                console.log('🔍 result.employee:', result.employee);
+                console.log('🔍 Has employee?', !!result.employee);
+
+                // ✅ API ใหม่ return { success: true, employee: {...}, warningMessage: ... }
+                if (result.success && result.employee) {
+                    // ✅ แสดงคำเตือนถ้ามี
+                    if (result.warningMessage) {
+                        this.showWarning(result.warningMessage);
+                    }
+
                     return {
                         empCode: result.employee.empCode,
                         prefix: result.employee.prefix,
@@ -732,14 +763,18 @@
                         currentYearCost: result.employee.currentYearCost || 0,
                         thisTimeHours: result.employee.thisTimeHours || 0,
                         thisTimeCost: result.employee.thisTimeCost || 0,
-                        remainingHours: result.employee.remainingHours || 0,
-                        remainingCost: result.employee.remainingCost || 0
+                        remainingHours: result.employee.remainingHours ?? 0,
+                        remainingCost: result.employee.remainingCost ?? 0,
+                        pendingRequestCount: result.employee.pendingRequestCount || 0,
+                        pendingHours: result.employee.pendingHours || 0,
+                        pendingCost: result.employee.pendingCost || 0
                     };
                 } else {
+                    console.error('❌ API returned success=false or no employee data');
                     return null;
                 }
             } catch (error) {
-                console.error('Error fetching employee:', error);
+                console.error('❌ Error fetching employee:', error);
                 throw error;
             }
         }
@@ -758,7 +793,7 @@
             if (!this.currentEmployee) return;
 
             if (this.employees.some(emp => emp.empCode === this.currentEmployee.empCode)) {
-                this.showError('พนักงานรหัสนี้มีอยู่ในรายการแล้ว');
+                this.showError('❌ พนักงานรหัสนี้มีในรายการแล้ว');
                 return;
             }
 
@@ -772,7 +807,7 @@
             const modal = bootstrap.Modal.getInstance(document.getElementById('employeeSearchModal'));
             modal.hide();
 
-            this.showSuccessToast('เพิ่มพนักงานเรียบร้อยแล้ว');
+            this.showSuccessToast('✅ เพิ่มพนักงานเรียบร้อยแล้ว');
         }
 
         createEmployeeRow(employee, rowNumber) {
@@ -787,8 +822,13 @@
                 thisTimeCost: employee.thisTimeCost || 0
             };
 
-            const remainingHours = employee.remainingHours || (12 - trainingData.currentYearHours - trainingData.thisTimeHours);
-            const remainingCost = employee.remainingCost || (10000 - trainingData.currentYearCost - trainingData.thisTimeCost);
+            const remainingHours = employee.remainingHours ?? 0;
+            const remainingCost = employee.remainingCost ?? 0;
+
+            const hoursColorClass = remainingHours >= 0 ? '#e8f5e8' : '#ffebee';
+            const hoursTextClass = remainingHours >= 0 ? 'bg-success' : 'bg-danger';
+            const costColorClass = remainingCost >= 0 ? '#e8f5e8' : '#ffebee';
+            const costTextClass = remainingCost >= 0 ? 'bg-success' : 'bg-danger';
 
             row.innerHTML = `
                 <td class="text-center py-3 fw-bold border-2" style="background-color: #f8f9fa;">
@@ -815,13 +855,13 @@
                 <td class="text-center py-3 fw-bold border-2" style="background-color: #f3e5f5; color: #7b1fa2; font-size: 1.1rem;">
                     ${trainingData.thisTimeCost.toLocaleString()}
                 </td>
-                <td class="text-center py-3 fw-bold border-2" style="background-color: ${remainingHours >= 0 ? '#e8f5e8' : '#ffebee'};">
-                    <span class="badge ${remainingHours >= 0 ? 'bg-success' : 'bg-danger'} text-white px-3 py-2" style="font-size: 1rem;">
+                <td class="text-center py-3 fw-bold border-2" style="background-color: ${hoursColorClass};">
+                    <span class="badge ${hoursTextClass} text-white px-3 py-2" style="font-size: 1rem;">
                         ${remainingHours}
                     </span>
                 </td>
-                <td class="text-center py-3 fw-bold border-2" style="background-color: ${remainingCost >= 0 ? '#e8f5e8' : '#ffebee'};">
-                    <span class="badge ${remainingCost >= 0 ? 'bg-success' : 'bg-danger'} text-white px-3 py-2" style="font-size: 1rem;">
+                <td class="text-center py-3 fw-bold border-2" style="background-color: ${costColorClass};">
+                    <span class="badge ${costTextClass} text-white px-3 py-2" style="font-size: 1rem;">
                         ${remainingCost.toLocaleString()}
                     </span>
                 </td>
@@ -829,7 +869,7 @@
                     <i class="fas fa-check-circle text-success" style="font-size: 1.5rem;"></i>
                 </td>
                 <td class="text-center py-3 border-2">
-                    <input type="text" class="form-control form-control-sm employee-notes" data-empcode="${employee.empCode}" placeholder="หมายเหตุ" style="border-radius: 8px;">
+                    <input type="text" class="form-control form-control-sm" placeholder="หมายเหตุ" style="border-radius: 8px;">
                 </td>
                 <td class="text-center py-3 border-2">
                     <button type="button" class="btn btn-sm btn-danger" onclick="employeeManager.removeEmployee('${employee.empCode}')">
@@ -842,7 +882,7 @@
         }
 
         removeEmployee(empCode) {
-            if (confirm('ต้องการลบพนักงานนี้จากรายการหรือไม่?')) {
+            if (confirm('❓ ต้องการลบพนักงานนี้จากรายการหรือไม่?')) {
                 this.employees = this.employees.filter(emp => emp.empCode !== empCode);
 
                 const row = document.querySelector(`tr[data-emp-code="${empCode}"]`);
@@ -851,7 +891,7 @@
                 }
 
                 this.updateRowNumbers();
-                this.showSuccessToast('ลบพนักงานเรียบร้อยแล้ว');
+                this.showSuccessToast('✅ ลบพนักงานเรียบร้อยแล้ว');
             }
         }
 
@@ -864,6 +904,15 @@
                 }
             });
             this.rowCounter = rows.length + 1;
+        }
+
+        showWarning(message) {
+            const warningDiv = document.createElement('div');
+            warningDiv.className = 'alert alert-warning mt-3';
+            warningDiv.innerHTML = `<i class="fas fa-exclamation-triangle me-2"></i>${message}`;
+
+            const infoSection = document.getElementById('employeeInfoSection');
+            infoSection.appendChild(warningDiv);
         }
 
         showLoading(show) {
@@ -912,27 +961,9 @@
                 }
             }, 3000);
         }
-
-        getEmployeesData() {
-            return this.employees.map(emp => {
-                const notesInput = document.querySelector(`input.employee-notes[data-empcode="${emp.empCode}"]`);
-                const notes = notesInput ? notesInput.value : '';
-
-                return {
-                    empCode: emp.empCode,
-                    fullName: `${emp.prefix}${emp.name} ${emp.lastname}`,
-                    position: emp.position,
-                    currentYearHours: emp.currentYearHours || 0,
-                    currentYearCost: emp.currentYearCost || 0,
-                    thisTimeHours: emp.thisTimeHours || 0,
-                    thisTimeCost: emp.thisTimeCost || 0,
-                    notes: notes
-                };
-            });
-        }
     }
 
-    // Initialize Employee Manager
+    // Initialize
     const employeeManager = new EmployeeManager();
 
     // ====================================================================
