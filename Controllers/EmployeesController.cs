@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -19,54 +19,133 @@ namespace TrainingRequestApp.Controllers
             _employeeService = employeeService;
         }
 
-        [HttpPost("search")]
-        public async Task<ActionResult<EmployeeDto>> SearchEmployee([FromBody] EmployeeSearchRequest request)
+        /// <summary>
+        /// ค้นหาพนักงานพร้อมข้อมูลโควต้า
+        /// </summary>
+        // ✅ แก้ไข: ใช้ GET + Path Parameter (ตรงกับ JavaScript เดิม)
+        [HttpGet("search/{employeeCode}")]
+        public async Task<ActionResult> SearchEmployee(string employeeCode)
         {
-            if (string.IsNullOrWhiteSpace(request.UserId))
+            try
             {
-                return BadRequest("UserId is required");
+                // ✅ Validation: ตรวจสอบ employeeCode
+                if (string.IsNullOrWhiteSpace(employeeCode))
+                {
+                    return BadRequest(new
+                    {
+                        success = false,
+                        message = "❌ กรุณากรอกรหัสพนักงาน"
+                    });
+                }
+
+                // ✅ Validation: ตรวจสอบความยาว
+                if (employeeCode.Length != 7)
+                {
+                    return BadRequest(new
+                    {
+                        success = false,
+                        message = "❌ รหัสพนักงานต้องเป็น 7 หลัก"
+                    });
+                }
+
+                // เรียก Service เพื่อคำนวณโควต้า
+                var employeeWithQuota = await _employeeService.GetEmployeeWithQuotaAsync(employeeCode);
+
+                if (employeeWithQuota == null)
+                {
+                    return NotFound(new
+                    {
+                        success = false,
+                        message = $"❌ ไม่พบข้อมูลพนักงานรหัส: {employeeCode}"
+                    });
+                }
+
+                // ✅ สร้างข้อความเตือน (ถ้ามีคำขอรออนุมัติ)
+                string? warningMessage = null;
+                if (employeeWithQuota.PendingRequestCount > 0)
+                {
+                    warningMessage = $"⚠️ พนักงานคนนี้มีคำขอรออนุมัติอยู่ {employeeWithQuota.PendingRequestCount} รายการ " +
+                                   $"({employeeWithQuota.PendingHours} ชม., {employeeWithQuota.PendingCost:N0} บาท)";
+                }
+
+                // ส่งข้อมูลกลับ
+                return Ok(new
+                {
+                    success = true,
+                    employee = new
+                    {
+                        empCode = employeeWithQuota.UserID,
+                        prefix = employeeWithQuota.Prefix,
+                        name = employeeWithQuota.Name,
+                        lastname = employeeWithQuota.Lastname,
+                        position = employeeWithQuota.Position,
+                        level = employeeWithQuota.Level,
+                        department = employeeWithQuota.Department,
+                        company = employeeWithQuota.Company,
+                        email = employeeWithQuota.Email,
+
+                        // ✅ ข้อมูลโควต้า
+                        currentYearHours = employeeWithQuota.CurrentYearHours,
+                        currentYearCost = employeeWithQuota.CurrentYearCost,
+                        thisTimeHours = 0,  // จะกรอกในฟอร์มหลัก
+                        thisTimeCost = 0,   // จะกรอกในฟอร์มหลัก
+                        remainingHours = employeeWithQuota.RemainingHours,
+                        remainingCost = employeeWithQuota.RemainingCost,
+
+                        // ✅ ข้อมูลคำขอที่รออนุมัติ
+                        pendingRequestCount = employeeWithQuota.PendingRequestCount,
+                        pendingHours = employeeWithQuota.PendingHours,
+                        pendingCost = employeeWithQuota.PendingCost
+                    },
+                    warningMessage = warningMessage
+                });
             }
-
-            var employee = await _employeeService.GetEmployeeByUserIdAsync(request.UserId);
-
-            if (employee == null)
+            catch (Exception ex)
             {
-                return NotFound();
+                // Log error (ถ้ามี logging system)
+                Console.WriteLine($"❌ Error in SearchEmployee: {ex.Message}");
+
+                return StatusCode(500, new
+                {
+                    success = false,
+                    message = "❌ เกิดข้อผิดพลาดในการค้นหาข้อมูล กรุณาลองใหม่อีกครั้ง"
+                });
             }
-
-            var employeeDto = new EmployeeDto
-            {
-                UserID = employee.UserID,
-                Prefix = employee.Prefix,
-                Name = employee.Name,
-                Lastname = employee.Lastname,
-                Level = employee.Level,
-                Department = employee.Department,
-                Position = employee.Position,
-                Email = employee.Email
-            };
-
-            return Ok(employeeDto);
         }
 
+        /// <summary>
+        /// ดึงรายชื่อพนักงานทั้งหมด (สำหรับ autocomplete หรือ dropdown)
+        /// </summary>
         [HttpGet]
         public async Task<ActionResult<List<EmployeeDto>>> GetAllEmployees()
         {
-            var employees = await _employeeService.GetAllEmployeesAsync();
-
-            var employeeDtos = employees.Select(emp => new EmployeeDto
+            try
             {
-                UserID = emp.UserID,
-                Prefix = emp.Prefix,
-                Name = emp.Name,
-                Lastname = emp.Lastname,
-                Level = emp.Level,
-                Department = emp.Department,
-                Position = emp.Position,
-                Email = emp.Email
-            }).ToList();
+                var employees = await _employeeService.GetAllEmployeesAsync();
 
-            return Ok(employeeDtos);
+                var employeeDtos = employees.Select(emp => new EmployeeDto
+                {
+                    UserID = emp.UserID,
+                    Prefix = emp.Prefix,
+                    Name = emp.Name,
+                    Lastname = emp.Lastname,
+                    Level = emp.Level,
+                    Department = emp.Department,
+                    Position = emp.Position,
+                    Email = emp.Email
+                }).ToList();
+
+                return Ok(employeeDtos);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Error in GetAllEmployees: {ex.Message}");
+                return StatusCode(500, new
+                {
+                    success = false,
+                    message = "❌ เกิดข้อผิดพลาดในการดึงข้อมูล"
+                });
+            }
         }
     }
 
