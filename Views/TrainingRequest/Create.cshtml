@@ -1,5 +1,4 @@
 @model TrainingRequestApp.Models.TrainingRequest
-
 <div class="container-fluid py-4" style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); min-height: 100vh;">
     <div class="container">
         <div class="row justify-content-center">
@@ -86,20 +85,6 @@
                                             <option value="">-- เลือกแผนก --</option>
                                         </select>
                                     </div>
-                                    <div class="row">
-                                        <div class="col-md-6">
-                                            <div class="form-group">
-                                                <label class="form-label fw-bold">👥 จำนวนผู้เข้าอบรม</label>
-                                                <input type="number" name="ParticipantCount" class="form-control form-control-lg" min="1" style="border-radius: 10px;" />
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="form-group">
-                                                <label class="form-label fw-bold">⏰ จำนวนชั่วโมงการอบรม</label>
-                                                <input type="number" name="TrainingHours" id="TrainingHours" class="form-control form-control-lg" min="0.5" step="0.5" value="0" style="border-radius: 10px;" />
-                                            </div>
-                                        </div>
-                                    </div>
                                 </div>
 
                                 <div class="col-md-6">
@@ -134,42 +119,84 @@
                                     </div>
                                 </div>
 
-                                <!-- 💰 รายละเอียดงบประมาณ (แก้ไขให้คำนวณอัตโนมัติ) -->
-                                <div class="col-12 mt-4">
+                                <!-- 💰 รายละเอียดงบประมาณ (Public) - 2 ช่อง -->
+                                <div class="col-12 mt-4" id="budgetPublicCard" style="display: none;">
                                     <div class="card border-0 shadow-sm" style="border-radius: 12px;">
-                                        <div class="card-header bg-warning text-dark" style="border-radius: 12px 12px 0 0;">
-                                            <h5 class="mb-0 fw-bold">💰 รายละเอียดงบประมาณ</h5>
+                                        <div class="card-header bg-info text-white" style="border-radius: 12px 12px 0 0;">
+                                            <h5 class="mb-0 fw-bold">💰 รายละเอียดงบประมาณ (Public)</h5>
                                         </div>
                                         <div class="card-body p-4">
                                             <div class="row g-3">
+                                                <!-- ค่าใช้จ่ายต่อคน -->
+                                                <div class="col-md-6">
+                                                    <label class="form-label fw-bold">💰 ค่าใช้จ่ายต่อคน (บาท)</label>
+                                                    <input type="number" id="CostPerPerson" name="CostPerPerson" class="form-control form-control-lg budget-input-public" step="0.01" min="0" value="0" style="border-radius: 10px;" />
+                                                </div>
+
+                                                <!-- จำนวนชั่วโมงการอบรม -->
+                                                <div class="col-md-6">
+                                                    <label class="form-label fw-bold">⏰ จำนวนชั่วโมงการอบรม</label>
+                                                    <input type="number" name="TrainingHours" id="TrainingHours" class="form-control form-control-lg budget-input-public" min="0.5" step="0.5" value="0" style="border-radius: 10px;" />
+                                                </div>
+
+                                                <!-- รวมสุทธิ -->
+                                                <div class="col-12">
+                                                    <hr class="my-3">
+                                                    <div class="alert alert-success d-flex justify-content-between align-items-center" style="border-radius: 10px;">
+                                                        <span class="fw-bold fs-5">💵 รวมสุทธิ (บาท):</span>
+                                                        <span class="fw-bold fs-4 text-success" id="totalCostDisplayPublic">0.00</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 💰 รายละเอียดงบประมาณ (In House) - 7 ช่อง -->
+                                <div class="col-12 mt-4" id="budgetInHouseCard" style="display: none;">
+                                    <div class="card border-0 shadow-sm" style="border-radius: 12px;">
+                                        <div class="card-header bg-warning text-dark" style="border-radius: 12px 12px 0 0;">
+                                            <h5 class="mb-0 fw-bold">💰 รายละเอียดงบประมาณ (In House)</h5>
+                                        </div>
+                                        <div class="card-body p-4">
+                                            <div class="row g-3">
+
+
                                                 <!-- ค่าลงทะเบียน/วิทยากร -->
                                                 <div class="col-md-6">
                                                     <label asp-for="RegistrationCost" class="form-label fw-bold">📋 ค่าลงทะเบียน/วิทยากร (บาท)</label>
                                                     <input asp-for="RegistrationCost" name="RegistrationCost" id="RegistrationCost" class="form-control form-control-lg budget-input" type="number" step="0.01" min="0" value="0" style="border-radius: 10px;" />
                                                 </div>
 
+
+                                                <!-- ค่าวิทยากร -->
+                                                <div class="col-md-6">
+                                                    <label asp-for="InstructorFee" class="form-label fw-bold">👨‍🏫 ค่าวิทยากร (บาท)</label>
+                                                    <input asp-for="InstructorFee" name="InstructorFee" id="InstructorFee" class="form-control form-control-lg budget-input-inhouse" type="number" step="0.01" min="0" value="0" style="border-radius: 10px;" />
+                                                </div>
+
                                                 <!-- ค่าคอมแมนวิทยากร -->
                                                 <div class="col-md-6">
-                                                    <label asp-for="InstructorFee" class="form-label fw-bold">👨‍🏫 ค่าคอมแมนวิทยากร (บาท)</label>
-                                                    <input asp-for="InstructorFee" name="InstructorFee" id="InstructorFee" class="form-control form-control-lg budget-input" type="number" step="0.01" min="0" value="0" style="border-radius: 10px;" />
+                                                    <label class="form-label fw-bold">💼 ค่าคอมแมนวิทยากร (บาท)</label>
+                                                    <input name="InstructorCommission" id="InstructorCommission" class="form-control form-control-lg budget-input-inhouse" type="number" step="0.01" min="0" value="0" style="border-radius: 10px;" />
                                                 </div>
 
                                                 <!-- ค่าอุปกรณ์ -->
                                                 <div class="col-md-6">
                                                     <label asp-for="EquipmentCost" class="form-label fw-bold">🛠️ ค่าอุปกรณ์ (บาท)</label>
-                                                    <input asp-for="EquipmentCost" name="EquipmentCost" id="EquipmentCost" class="form-control form-control-lg budget-input" type="number" step="0.01" min="0" value="0" style="border-radius: 10px;" />
+                                                    <input asp-for="EquipmentCost" name="EquipmentCost" id="EquipmentCost" class="form-control form-control-lg budget-input-inhouse" type="number" step="0.01" min="0" value="0" style="border-radius: 10px;" />
                                                 </div>
 
                                                 <!-- ค่าอาหาร -->
                                                 <div class="col-md-6">
                                                     <label asp-for="FoodCost" class="form-label fw-bold">🍽️ ค่าอาหาร (บาท)</label>
-                                                    <input asp-for="FoodCost" name="FoodCost" id="FoodCost" class="form-control form-control-lg budget-input" type="number" step="0.01" min="0" value="0" style="border-radius: 10px;" />
+                                                    <input asp-for="FoodCost" name="FoodCost" id="FoodCost" class="form-control form-control-lg budget-input-inhouse" type="number" step="0.01" min="0" value="0" style="border-radius: 10px;" />
                                                 </div>
 
                                                 <!-- อื่นๆ -->
                                                 <div class="col-md-6">
                                                     <label asp-for="OtherCost" class="form-label fw-bold">🔧 อื่นๆ (บาท)</label>
-                                                    <input asp-for="OtherCost" name="OtherCost" id="OtherCost" class="form-control form-control-lg budget-input" type="number" step="0.01" min="0" value="0" style="border-radius: 10px;" />
+                                                    <input asp-for="OtherCost" name="OtherCost" id="OtherCost" class="form-control form-control-lg budget-input-inhouse" type="number" step="0.01" min="0" value="0" style="border-radius: 10px;" />
                                                 </div>
 
                                                 <!-- ระบุรายการอื่นๆ -->
@@ -178,12 +205,13 @@
                                                     <input asp-for="OtherCostDescription" name="OtherCostDescription" class="form-control form-control-lg" placeholder="กรุณาระบุรายการอื่นๆ" style="border-radius: 10px;" />
                                                 </div>
 
-                                                <!-- ค่าใช้จ่ายต่อคน -->
+                                                <!-- จำนวนผู้เข้าอบรม -->
                                                 <div class="col-md-6">
-                                                    <label asp-for="CostPerPerson" class="form-label fw-bold">💰 ค่าใช้จ่ายต่อคน (บาท)</label>
-                                                    <input asp-for="CostPerPerson" name="CostPerPerson" id="CostPerPerson" type="number" class="form-control form-control-lg" step="0.01" min="0" value="0" style="border-radius: 10px;" />
+                                                    <label class="form-label fw-bold">👥 จำนวนผู้เข้าอบรม</label>
+                                                    <input type="number" name="ParticipantCount" id="ParticipantCount" class="form-control form-control-lg" min="1" value="0" style="border-radius: 10px;" />
                                                 </div>
 
+                                                <!-- รวมสุทธิ -->
                                                 <!-- รวมสุทธิ (Read-only, คำนวณอัตโนมัติ) -->
                                                 <div class="col-12">
                                                     <hr class="my-3">
@@ -197,6 +225,310 @@
                                         </div>
                                     </div>
                                 </div>
+
+                                <script>
+                                    // ============================================================
+                                    // 🎯 TRAINING REQUEST FORM - FINAL CORRECT VERSION
+                                    // ============================================================
+                                    document.addEventListener('DOMContentLoaded', function() {
+                                        console.log('✅ Training Request Form Script Loaded - Final Correct Version');
+
+                                        // ============================================================
+                                        // 📅 STEP 3: จัดการวันที่อัจฉริยะ (Smart Date Handling)
+                                        // ============================================================
+
+                                        const startDateInput = document.getElementById('StartDate');
+                                        const endDateInput = document.getElementById('EndDate');
+
+                                        function addWorkingDays(date, days) {
+                                            let currentDate = new Date(date);
+                                            let addedDays = 0;
+
+                                            while (addedDays < days) {
+                                                currentDate.setDate(currentDate.getDate() + 1);
+                                                if (currentDate.getDay() !== 0) {
+                                                    addedDays++;
+                                                }
+                                            }
+
+                                            return currentDate;
+                                        }
+
+                                        function setMinStartDate() {
+                                            if (!startDateInput) return;
+
+                                            const today = new Date();
+                                            const minDate = addWorkingDays(today, 3);
+                                            const minDateStr = minDate.toISOString().split('T')[0];
+                                            startDateInput.setAttribute('min', minDateStr);
+
+                                            console.log('📅 Min Start Date:', minDateStr);
+                                        }
+
+                                        if (startDateInput) {
+                                            startDateInput.addEventListener('change', function() {
+                                                const startDate = this.value;
+
+                                                if (startDate) {
+                                                    if (endDateInput) {
+                                                        endDateInput.value = startDate;
+                                                        endDateInput.setAttribute('min', startDate);
+                                                    }
+
+                                                    console.log('📅 Start Date Selected:', startDate);
+                                                }
+                                            });
+                                        }
+
+                                        if (endDateInput) {
+                                            endDateInput.addEventListener('change', function() {
+                                                const startDate = startDateInput ? startDateInput.value : '';
+                                                const endDate = this.value;
+
+                                                if (startDate && endDate && endDate < startDate) {
+                                                    alert('⚠️ วันที่สิ้นสุดการอบรมต้องไม่น้อยกว่าวันที่เริ่มอบรม');
+                                                    this.value = startDate;
+                                                }
+                                            });
+                                        }
+
+                                        setMinStartDate();
+
+                                        // ============================================================
+                                        // 🔢 STEP 2: Auto-clear ค่า 0 เมื่อ Focus
+                                        // ============================================================
+
+                                        const autoClearInputs = document.querySelectorAll('.budget-input-public, .budget-input-inhouse');
+
+                                        autoClearInputs.forEach(input => {
+                                            input.addEventListener('focus', function() {
+                                                if (this.value === '0' || this.value === '0.00') {
+                                                    this.value = '';
+                                                }
+                                            });
+
+                                            input.addEventListener('blur', function() {
+                                                if (this.value.trim() === '') {
+                                                    this.value = '0';
+                                                }
+                                            });
+                                        });
+
+                                        console.log('✅ Auto-clear setup for', autoClearInputs.length, 'inputs');
+
+                                        // ============================================================
+                                        // 💰 คำนวณงบประมาณอัตโนมัติ (Public) - คำนวณจาก ค่าใช้จ่ายต่อคน
+                                        // ============================================================
+
+                                        const costPerPersonPublic = document.getElementById('CostPerPerson_Public');
+                                        const totalCostDisplayPublic = document.getElementById('totalCostDisplayPublic');
+
+                                        function calculateTotalBudgetPublic() {
+                                            let total = 0;
+
+                                            if (costPerPersonPublic) {
+                                                total = parseFloat(costPerPersonPublic.value) || 0;
+                                            }
+
+                                            if (totalCostDisplayPublic) {
+                                                totalCostDisplayPublic.textContent = total.toLocaleString('th-TH', {
+                                                    minimumFractionDigits: 2,
+                                                    maximumFractionDigits: 2
+                                                });
+                                            }
+
+                                            console.log('💰 Total Budget (Public):', total.toFixed(2));
+
+                                            return total;
+                                        }
+
+                                        if (costPerPersonPublic) {
+                                            costPerPersonPublic.addEventListener('input', calculateTotalBudgetPublic);
+                                            costPerPersonPublic.addEventListener('change', calculateTotalBudgetPublic);
+                                        }
+
+                                        // ============================================================
+                                        // 💰 คำนวณงบประมาณอัตโนมัติ (In House) - 6 ช่อง
+                                        // ============================================================
+
+                                        const budgetInputsInHouse = document.querySelectorAll('.budget-input-inhouse');
+                                        const totalCostDisplayInHouse = document.getElementById('totalCostDisplayInHouse');
+
+                                        function calculateTotalBudgetInHouse() {
+                                            let total = 0;
+
+                                            // คำนวณจาก: วิทยากร + คอมแมน + อุปกรณ์ + อาหาร + อื่นๆ
+                                            budgetInputsInHouse.forEach(input => {
+                                                const value = parseFloat(input.value) || 0;
+                                                total += value;
+                                            });
+
+                                            if (totalCostDisplayInHouse) {
+                                                totalCostDisplayInHouse.textContent = total.toLocaleString('th-TH', {
+                                                    minimumFractionDigits: 2,
+                                                    maximumFractionDigits: 2
+                                                });
+                                            }
+
+                                            console.log('💰 Total Budget (In House):', total.toFixed(2));
+
+                                            return total;
+                                        }
+
+                                        budgetInputsInHouse.forEach(input => {
+                                            input.addEventListener('input', calculateTotalBudgetInHouse);
+                                            input.addEventListener('change', calculateTotalBudgetInHouse);
+                                        });
+
+                                        // ============================================================
+                                        // 🎯 STEP 4: แสดง/ซ่อนกรอบงบประมาณตามประเภทการอบรม
+                                        // ============================================================
+
+                                        const budgetPublicCard = document.getElementById('budgetPublicCard');
+                                        const budgetInHouseCard = document.getElementById('budgetInHouseCard');
+                                        const trainingTypeRadios = document.querySelectorAll('input[name="TrainingType"]');
+
+                                        function toggleBudgetCards() {
+                                            const selectedType = document.querySelector('input[name="TrainingType"]:checked');
+                                            const participantCountField = document.getElementById('ParticipantCount');
+
+                                            if (!selectedType) {
+                                                if (budgetPublicCard) budgetPublicCard.style.display = 'none';
+                                                if (budgetInHouseCard) budgetInHouseCard.style.display = 'none';
+                                                console.log('🔄 No training type selected - hiding all budget cards');
+                                                return;
+                                            }
+
+                                            const typeValue = selectedType.value;
+
+                                            if (typeValue === 'Public') {
+                                                if (budgetPublicCard) budgetPublicCard.style.display = 'block';
+                                                if (budgetInHouseCard) budgetInHouseCard.style.display = 'none';
+
+                                                // ✅ แก้ปัญหา: ปิด validation สำหรับ ParticipantCount เมื่อเลือก Public
+                                                if (participantCountField) {
+                                                    participantCountField.removeAttribute('required');
+                                                    participantCountField.removeAttribute('min');
+                                                    participantCountField.value = '0';
+                                                }
+
+                                                console.log('✅ Showing Public budget card (2 fields)');
+                                                calculateTotalBudgetPublic();
+                                            } else if (typeValue === 'In House') {
+                                                if (budgetPublicCard) budgetPublicCard.style.display = 'none';
+                                                if (budgetInHouseCard) budgetInHouseCard.style.display = 'block';
+
+                                                // ✅ แก้ปัญหา: เปิด validation สำหรับ ParticipantCount เมื่อเลือก In House
+                                                if (participantCountField) {
+                                                    participantCountField.setAttribute('min', '1');
+                                                    if (participantCountField.value === '0' || !participantCountField.value) {
+                                                        participantCountField.value = '1';
+                                                    }
+                                                }
+
+                                                console.log('✅ Showing In House budget card (7 fields)');
+                                                calculateTotalBudgetInHouse();
+                                            }
+                                        }
+
+                                        trainingTypeRadios.forEach(radio => {
+                                            radio.addEventListener('change', toggleBudgetCards);
+                                        });
+
+                                        toggleBudgetCards();
+
+                                        // ============================================================
+                                        // 📋 Form Validation และ Submit
+                                        // ============================================================
+
+                                        const form = document.getElementById('trainingRequestForm');
+
+                                        if (form) {
+                                            form.addEventListener('submit', function(e) {
+                                                console.log('📝 Form Submit Started');
+
+                                                const errors = [];
+
+                                                const companyRadio = document.querySelector('input[name="Company"]:checked');
+                                                if (!companyRadio) {
+                                                    errors.push('กรุณาเลือกบริษัท');
+                                                }
+
+                                                const trainingTypeRadio = document.querySelector('input[name="TrainingType"]:checked');
+                                                if (!trainingTypeRadio) {
+                                                    errors.push('กรุณาเลือกประเภทการอบรม');
+                                                }
+
+                                                const startDate = startDateInput ? startDateInput.value : '';
+                                                const endDate = endDateInput ? endDateInput.value : '';
+
+                                                if (!startDate) {
+                                                    errors.push('กรุณาเลือกวันที่เริ่มอบรม');
+                                                }
+
+                                                if (!endDate) {
+                                                    errors.push('กรุณาเลือกวันที่สิ้นสุดการอบรม');
+                                                }
+
+                                                if (startDate && endDate && endDate < startDate) {
+                                                    errors.push('วันที่สิ้นสุดต้องไม่น้อยกว่าวันที่เริ่ม');
+                                                }
+
+                                                const seminarTitle = document.getElementById('SeminarTitle');
+                                                if (seminarTitle && !seminarTitle.value.trim()) {
+                                                    errors.push('กรุณากรอกเรื่องสัมมนา');
+                                                }
+
+                                                const trainingLocation = document.getElementById('TrainingLocation');
+                                                if (trainingLocation && !trainingLocation.value.trim()) {
+                                                    errors.push('กรุณากรอกสถานที่อบรม');
+                                                }
+
+                                                if (errors.length > 0) {
+                                                    e.preventDefault();
+                                                    alert('⚠️ กรุณาแก้ไขข้อผิดพลาด:\n\n' + errors.join('\n'));
+                                                    console.error('❌ Form validation failed:', errors);
+                                                    return false;
+                                                }
+
+                                                const selectedType = document.querySelector('input[name="TrainingType"]:checked');
+                                                if (selectedType && selectedType.value === 'Public') {
+                                                    calculateTotalBudgetPublic();
+                                                } else if (selectedType && selectedType.value === 'In House') {
+                                                    calculateTotalBudgetInHouse();
+                                                }
+
+                                                console.log('✅ Form validation passed');
+                                                console.log('📤 Submitting form...');
+
+                                                return true;
+                                            });
+                                        }
+
+                                        // ============================================================
+                                        // ✅ สรุปการโหลด
+                                        // ============================================================
+
+                                        console.log('===========================================');
+                                        console.log('✅ FINAL CORRECT VERSION LOADED');
+                                        console.log('===========================================');
+                                        console.log('🔵 Public: 2 fields (ค่าต่อคน + ชั่วโมง)');
+                                        console.log('🟡 In House: 7 fields');
+                                        console.log('   1. ค่าวิทยากร');
+                                        console.log('   2. ค่าคอมแมนวิทยากร ✅');
+                                        console.log('   3. ค่าอุปกรณ์');
+                                        console.log('   4. ค่าอาหาร');
+                                        console.log('   5. อื่นๆ');
+                                        console.log('   6. ระบุรายการอื่นๆ');
+                                        console.log('   7. จำนวนผู้เข้าอบรม ✅');
+                                        console.log('===========================================');
+                                        console.log('✅ ฝ่าย/แผนก: Dropdown (รอข้อมูลจาก Backend)');
+                                        console.log('✅ Auto-clear Zero - Ready');
+                                        console.log('✅ Smart Date Handling - Ready');
+                                        console.log('✅ Show/Hide Budget Cards - Ready');
+                                        console.log('===========================================');
+                                    });
+                                </script>
 
                                 <!-- วัตถุประสงค์การอบรม -->
                                 <div class="form-group mt-4">
@@ -521,72 +853,247 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
+
     // ====================================================================
-    // 💰 คำนวณยอดรวมอัตโนมัติ (แก้ไขให้ทำงานได้ 100%)
+    // 🔄 Reset ค่าช่องที่ไม่ได้เลือกเป็น 0 และ Disable (แก้ไขแล้ว)
     // ====================================================================
-    function calculateTotalCost() {
-        // ใช้ getElementById โดยตรง
-        const registrationCost = parseFloat(document.getElementById('RegistrationCost')?.value || 0);
-        const instructorFee = parseFloat(document.getElementById('InstructorFee')?.value || 0);
-        const equipmentCost = parseFloat(document.getElementById('EquipmentCost')?.value || 0);
-        const foodCost = parseFloat(document.getElementById('FoodCost')?.value || 0);
-        const otherCost = parseFloat(document.getElementById('OtherCost')?.value || 0);
+    function resetUnusedFields() {
+        const trainingType = document.querySelector('input[name="TrainingType"]:checked')?.value;
 
-        const total = registrationCost + instructorFee + equipmentCost + foodCost + otherCost;
+        console.log(`🔄 Training Type Changed: ${trainingType}`);
 
-        console.log('💰 Calculating Total:', {
-            registrationCost,
-            instructorFee,
-            equipmentCost,
-            foodCost,
-            otherCost,
-            total
-        });
-
-        const displayElement = document.getElementById('totalCostDisplay');
-        const inputElement = document.getElementById('totalCostInput');
-
-        if (displayElement) {
-            displayElement.textContent = total.toLocaleString('th-TH', {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2
+        if (trainingType === 'Public') {
+            // Enable Public fields
+            const publicFields = ['CostPerPerson', 'TrainingHours'];
+            publicFields.forEach(id => {
+                const input = document.getElementById(id);
+                if (input) {
+                    input.disabled = false;
+                    console.log(`✅ Enabled: ${id}`);
+                }
             });
+
+            // Disable In House fields
+            const inHouseFields = [
+                'RegistrationCost',
+                'InstructorFee',
+                'InstructorCommission',
+                'EquipmentCost',
+                'FoodCost',
+                'OtherCost'
+            ];
+
+            inHouseFields.forEach(id => {
+                const input = document.getElementById(id);
+                if (input) {
+                    input.value = '0';
+                    input.disabled = true;
+                    console.log(`✅ Reset & Disabled: ${id}`);
+                }
+            });
+
+            console.log('✅ Public enabled, In House disabled');
+
+        } else if (trainingType === 'In House') {
+            // Enable In House fields
+            const inHouseFields = [
+                'RegistrationCost',
+                'InstructorFee',
+                'InstructorCommission',
+                'EquipmentCost',
+                'FoodCost',
+                'OtherCost'
+            ];
+
+            inHouseFields.forEach(id => {
+                const input = document.getElementById(id);
+                if (input) {
+                    input.disabled = false;
+                    console.log(`✅ Enabled: ${id}`);
+                }
+            });
+
+            // Disable Public fields
+            const publicFields = ['CostPerPerson', 'TrainingHours'];
+
+            publicFields.forEach(id => {
+                const input = document.getElementById(id);
+                if (input) {
+                    input.value = '0';
+                    input.disabled = true; // ⭐ สำคัญ! แก้ปัญหา validation
+                    console.log(`✅ Reset & Disabled: ${id}`);
+                }
+            });
+
+            console.log('✅ In House enabled, Public disabled');
         }
 
-        if (inputElement) {
-            inputElement.value = total.toFixed(2);
+        calculateTotalCost();
+    }
+
+    // ====================================================================
+    // 💰 คำนวณยอดรวมอัตโนมัติ (Version ปรับปรุง)
+    // ====================================================================
+    function calculateTotalCost() {
+        try {
+            // ดึงค่าจาก In House Fields
+            const registrationCost = parseFloat(document.getElementById('RegistrationCost')?.value || 0);
+            const instructorFee = parseFloat(document.getElementById('InstructorFee')?.value || 0);
+            const instructorCommission = parseFloat(document.getElementById('InstructorCommission')?.value || 0);
+            const equipmentCost = parseFloat(document.getElementById('EquipmentCost')?.value || 0);
+            const foodCost = parseFloat(document.getElementById('FoodCost')?.value || 0);
+            const otherCost = parseFloat(document.getElementById('OtherCost')?.value || 0);
+
+            // ดึงค่าจาก Public Fields
+            const costPerPerson = parseFloat(document.getElementById('CostPerPerson')?.value || 0);
+            const trainingHours = parseFloat(document.getElementById('TrainingHours')?.value || 0);
+
+            // คำนวณยอดรวมแต่ละส่วน
+            const inHouseTotal = registrationCost + instructorFee + instructorCommission +
+                                equipmentCost + foodCost + otherCost;
+            const publicTotal = costPerPerson * trainingHours;
+            const total = inHouseTotal + publicTotal;
+
+            // Log ข้อมูลเพื่อ Debug
+            console.log('💰 Calculating Total:', {
+                inHouse: {
+                    registrationCost,
+                    instructorFee,
+                    instructorCommission,
+                    equipmentCost,
+                    foodCost,
+                    otherCost,
+                    subtotal: inHouseTotal
+                },
+                public: {
+                    costPerPerson,
+                    trainingHours,
+                    subtotal: publicTotal
+                },
+                grandTotal: total
+            });
+
+            // อัปเดตช่องแสดงผลทั้งหมด
+            const displayConfigs = [
+                { id: 'totalCostDisplay', label: 'In House Display' },
+                { id: 'totalCostDisplayPublic', label: 'Public Display' }
+            ];
+
+            displayConfigs.forEach(config => {
+                const element = document.getElementById(config.id);
+                if (element) {
+                    element.textContent = total.toLocaleString('th-TH', {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2
+                    });
+                }
+            });
+
+            // อัปเดต Hidden Input สำหรับส่งไป Backend
+            const inputElement = document.getElementById('totalCostInput');
+            if (inputElement) {
+                inputElement.value = total.toFixed(2);
+            }
+
+            return total;
+
+        } catch (error) {
+            console.error('❌ Error calculating total cost:', error);
+            return 0;
         }
     }
 
-    // ผูก event listener กับทุก input งบประมาณ
+    // ====================================================================
+    // 🔧 ผูก Event Listeners กับทุก Input
+    // ====================================================================
     function initializeBudgetCalculation() {
         console.log('🔧 Initializing budget calculation...');
 
+        // ====================================================================
+        // 🔄 Auto-clear ค่า 0 เมื่อ Focus และคืนค่า 0 เมื่อ Blur
+        // ====================================================================
+        const autoClearInputs = document.querySelectorAll('.budget-input, .budget-input-public, .budget-input-inhouse');
+
+        autoClearInputs.forEach(input => {
+            // Clear ค่า 0 เมื่อ Focus
+            input.addEventListener('focus', function() {
+                if (this.value === '0' || this.value === '0.00') {
+                    this.value = '';
+                }
+            });
+
+            // คืนค่า 0 เมื่อ Blur และไม่มีค่า
+            input.addEventListener('blur', function() {
+                if (this.value.trim() === '') {
+                    this.value = '0';
+                }
+            });
+        });
+
+        console.log(`✅ Auto-clear setup for ${autoClearInputs.length} inputs`);
+
+        // ====================================================================
+        // รายการ Input ทั้งหมด (In House + Public)
+        // ====================================================================
         const budgetInputIds = [
+            // In House Fields
             'RegistrationCost',
             'InstructorFee',
+            'InstructorCommission',
             'EquipmentCost',
             'FoodCost',
-            'OtherCost'
+            'OtherCost',
+            // Public Fields
+            'CostPerPerson',
+            'TrainingHours'
         ];
+
+        let foundCount = 0;
+        let notFoundInputs = [];
 
         budgetInputIds.forEach(id => {
             const input = document.getElementById(id);
             if (input) {
-                console.log(`✅ Found input: ${id}`);
-                // ผูก event listener หลายแบบเพื่อให้ทำงานทุกกรณี
-                input.addEventListener('input', calculateTotalCost);
-                input.addEventListener('change', calculateTotalCost);
-                input.addEventListener('keyup', calculateTotalCost);
-                input.addEventListener('blur', calculateTotalCost);
+                foundCount++;
+                console.log(`✅ Found & Bound: ${id}`);
+                // ผูก Event Listeners หลายแบบ
+                ['input', 'change', 'keyup', 'blur'].forEach(eventType => {
+                    input.addEventListener(eventType, calculateTotalCost);
+                });
             } else {
-                console.error(`❌ Input not found: ${id}`);
+                notFoundInputs.push(id);
+                console.warn(`⚠️ Input not found: ${id}`);
             }
         });
 
+        // ⭐ ผูก Event Listener กับ Training Type Radio Buttons
+        const trainingTypeRadios = document.querySelectorAll('input[name="TrainingType"]');
+        trainingTypeRadios.forEach(radio => {
+            radio.addEventListener('change', resetUnusedFields);
+            console.log(`✅ Bound Training Type: ${radio.value}`);
+        });
+
+        // สรุปผลการผูก
+        console.log(`📊 Summary: ${foundCount}/${budgetInputIds.length} inputs bound`);
+        console.log(`📻 Training Type radios: ${trainingTypeRadios.length} bound`);
+
+        if (notFoundInputs.length > 0) {
+            console.warn(`⚠️ Missing inputs: ${notFoundInputs.join(', ')}`);
+        }
+
         // คำนวณครั้งแรกเมื่อโหลดหน้า
         calculateTotalCost();
-        console.log('✅ Budget calculation initialized!');
+
+        console.log('✅ Budget calculation initialized successfully!');
+    }
+
+    // ====================================================================
+    // 🚀 เรียกใช้งานเมื่อ DOM พร้อม
+    // ====================================================================
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initializeBudgetCalculation);
+    } else {
+        initializeBudgetCalculation();
     }
 
     // ====================================================================
@@ -1095,8 +1602,56 @@ getEmployeesData() {  // ✅ ถูก - อยู่ใน class
                 isSubmitting = false;
                 return false;
             }
-            
-            console.log('✅ Validation passed');
+               // ====================================================================
+    // Validation ตาม TrainingType
+    // ====================================================================
+
+    const trainingTypeValue = trainingType.value;
+
+    if (trainingTypeValue === 'Public') {
+        // ตรวจสอบฟิลด์สำหรับ Public
+        const costPerPerson = document.getElementById('CostPerPerson');
+        const trainingHours = document.getElementById('TrainingHours');
+
+        if (!costPerPerson || !costPerPerson.value || parseFloat(costPerPerson.value) <= 0) {
+            alert('❌ กรุณากรอกค่าใช้จ่ายต่อคนสำหรับ Public Training');
+            isSubmitting = false;
+            costPerPerson?.focus();
+            return false;
+        }
+
+        if (!trainingHours || !trainingHours.value || parseFloat(trainingHours.value) <= 0) {
+            alert('❌ กรุณากรอกจำนวนชั่วโมงการอบรมสำหรับ Public Training');
+            isSubmitting = false;
+            trainingHours?.focus();
+            return false;
+        }
+
+        console.log('✅ Public Training validation passed');
+
+    } else if (trainingTypeValue === 'In House') {
+        // ตรวจสอบฟิลด์สำหรับ In House
+        // ⚠️ ปรับตาม field ที่คุณมีจริง
+
+        // const costPerHour = document.getElementById('CostPerHour');
+        // const numberOfDays = document.getElementById('NumberOfDays');
+
+        // if (!costPerHour || !costPerHour.value || parseFloat(costPerHour.value) <= 0) {
+        //     alert('❌ กรุณากรอกค่าใช้จ่ายต่อชั่วโมงสำหรับ In House Training');
+        //     isSubmitting = false;
+        //     costPerHour?.focus();
+        //     return false;
+        // }
+
+        // if (!numberOfDays || !numberOfDays.value || parseFloat(numberOfDays.value) <= 0) {
+        //     alert('❌ กรุณากรอกจำนวนวันการอบรมสำหรับ In House Training');
+        //     isSubmitting = false;
+        //     numberOfDays?.focus();
+        //     return false;
+        // }
+
+        console.log('✅ In House Training No required fields validation');
+    }
             
             // ====================================================================
             // ดึงข้อมูลพนักงาน
