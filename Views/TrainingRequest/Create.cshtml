@@ -651,7 +651,7 @@
                                 </div>
 
                                 <div class="form-group">
-                                    <label asp-for="AdditionalNotes" class="form-label fw-bold">📝 ระบุข้อมูลเพิ่มเติมให้ OD รับทราบ (ถ้ามี)</label>
+                                    <label asp-for="AdditionalNotes" class="form-label fw-bold">📝 ระบุข้อมูลเพิ่มเติมให้ HR รับทราบ (ถ้ามี)</label>
                                     <textarea asp-for="AdditionalNotes" name="AdditionalNotes" id="AdditionalNotes" class="form-control" rows="3" style="border-radius: 10px;"></textarea>
                                 </div>
 
@@ -951,7 +951,7 @@
             // คำนวณยอดรวมแต่ละส่วน
             const inHouseTotal = registrationCost + instructorFee + instructorCommission +
                                 equipmentCost + foodCost + otherCost;
-            const publicTotal = costPerPerson * trainingHours;
+            const publicTotal = costPerPerson ;
             const total = inHouseTotal + publicTotal;
 
             // Log ข้อมูลเพื่อ Debug
@@ -967,7 +967,7 @@
                 },
                 public: {
                     costPerPerson,
-                    trainingHours,
+                    
                     subtotal: publicTotal
                 },
                 grandTotal: total
