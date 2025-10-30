@@ -19,6 +19,44 @@ namespace TrainingRequestApp.Controllers
             _employeeService = employeeService;
         }
 
+
+        // Controllers/EmployeesController.cs
+
+        // ✅ เพิ่ม 2 methods นี้
+        [HttpGet("emails")]
+        public async Task<ActionResult<List<EmailDto>>> GetAllEmails()
+        {
+            var emails = await _employeeService.GetAllEmailsAsync();
+            return Ok(emails);
+        }
+
+        [HttpGet("emails/search")]
+        public async Task<ActionResult<List<EmailDto>>> SearchEmails([FromQuery] string q)
+        {
+            var emails = await _employeeService.SearchEmailsAsync(q);
+            return Ok(emails);
+        }
+        // Controllers/EmployeesController.cs - เพิ่ม endpoints เหล่านี้
+
+        [HttpGet("departments")]
+        public async Task<ActionResult<List<string>>> GetAllDepartments()
+        {
+            var departments = await _employeeService.GetAllDepartmentsAsync();
+            return Ok(departments);
+        }
+
+        [HttpGet("positions")]
+        public async Task<ActionResult<List<string>>> GetPositionsByDepartment([FromQuery] string department)
+        {
+            if (string.IsNullOrWhiteSpace(department))
+            {
+                return BadRequest("Department is required");
+            }
+
+            var positions = await _employeeService.GetPositionsByDepartmentAsync(department);
+            return Ok(positions);
+        }
+
         /// <summary>
         /// ค้นหาพนักงานพร้อมข้อมูลโควต้า
         /// </summary>
@@ -165,4 +203,5 @@ namespace TrainingRequestApp.Controllers
         public string? Position { get; set; }
         public string? Email { get; set; }
     }
+
 }

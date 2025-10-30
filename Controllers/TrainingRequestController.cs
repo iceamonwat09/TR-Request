@@ -167,20 +167,20 @@ namespace TrainingRequestApp.Controllers
         {
             string query = @"
                 INSERT INTO [HRDSYSTEM].[dbo].[TrainingRequests] (
-                    [DocNo], [Company], [TrainingType], [Factory], [CCEmail], [Department],
+                    [DocNo], [Company], [TrainingType], [Factory], [CCEmail], [Department],[Position],
                     [StartDate], [EndDate], [SeminarTitle], [TrainingLocation], [Instructor],
                     [RegistrationCost], [InstructorFee], [EquipmentCost], [FoodCost], [OtherCost], [OtherCostDescription],
-                    [TotalCost], [CostPerPerson], [TrainingObjective], [OtherObjective],
+                    [TotalCost], [CostPerPerson],[PerPersonTrainingHours], [TrainingObjective], [OtherObjective],
                     [URLSource], [AdditionalNotes], [ExpectedOutcome], 
-                    [Status], [CreatedDate], [CreatedBy], [IsActive]
+                    [Status], [CreatedDate], [CreatedBy], [IsActive],[TotalPeople]
                 )
                 VALUES (
-                    @DocNo, @Company, @TrainingType, @Factory, @CCEmail, @Department,
+                    @DocNo, @Company, @TrainingType, @Factory, @CCEmail, @Department,@Position,
                     @StartDate, @EndDate, @SeminarTitle, @TrainingLocation, @Instructor,
                     @RegistrationCost, @InstructorFee, @EquipmentCost, @FoodCost, @OtherCost, @OtherCostDescription,
-                    @TotalCost, @CostPerPerson, @TrainingObjective, @OtherObjective,
+                    @TotalCost, @CostPerPerson,@PerPersonTrainingHours, @TrainingObjective, @OtherObjective,
                     @URLSource, @AdditionalNotes, @ExpectedOutcome,
-                    'Pending', GETDATE(), 'System', 1
+                    'Pending', GETDATE(), 'System', 1,@TotalPeople
                 );
                 SELECT CAST(SCOPE_IDENTITY() AS INT);";
 
@@ -192,6 +192,7 @@ namespace TrainingRequestApp.Controllers
                 cmd.Parameters.AddWithValue("@Factory", formData.Factory ?? (object)DBNull.Value);
                 cmd.Parameters.AddWithValue("@CCEmail", formData.CCEmail ?? (object)DBNull.Value);
                 cmd.Parameters.AddWithValue("@Department", formData.Department ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@Position", formData.Position ?? (object)DBNull.Value);
                 cmd.Parameters.AddWithValue("@StartDate", formData.StartDate ?? (object)DBNull.Value);
                 cmd.Parameters.AddWithValue("@EndDate", formData.EndDate ?? (object)DBNull.Value);
                 cmd.Parameters.AddWithValue("@SeminarTitle", formData.SeminarTitle ?? (object)DBNull.Value);
@@ -208,12 +209,13 @@ namespace TrainingRequestApp.Controllers
 
                 cmd.Parameters.AddWithValue("@TotalCost", formData.TotalCost ?? (object)DBNull.Value);
                 cmd.Parameters.AddWithValue("@CostPerPerson", formData.CostPerPerson ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@PerPersonTrainingHours", formData.TrainingHours ?? (object)DBNull.Value);
                 cmd.Parameters.AddWithValue("@TrainingObjective", formData.TrainingObjective ?? (object)DBNull.Value);
                 cmd.Parameters.AddWithValue("@OtherObjective", formData.OtherObjective ?? (object)DBNull.Value);
                 cmd.Parameters.AddWithValue("@URLSource", formData.URLSource ?? (object)DBNull.Value);
                 cmd.Parameters.AddWithValue("@AdditionalNotes", formData.AdditionalNotes ?? (object)DBNull.Value);
                 cmd.Parameters.AddWithValue("@ExpectedOutcome", formData.ExpectedOutcome ?? (object)DBNull.Value);
-
+                cmd.Parameters.AddWithValue("@TotalPeople", formData.ParticipantCount ?? (object)DBNull.Value);
                 var result = await cmd.ExecuteScalarAsync();
                 return Convert.ToInt32(result);
             }
@@ -431,6 +433,7 @@ namespace TrainingRequestApp.Controllers
         public string? Factory { get; set; }
         public string? CCEmail { get; set; }
         public string? Department { get; set; }
+        public string? Position { get; set; }
         public DateTime? StartDate { get; set; }
         public DateTime? EndDate { get; set; }
         public string? SeminarTitle { get; set; }
@@ -447,6 +450,7 @@ namespace TrainingRequestApp.Controllers
 
         public decimal? TotalCost { get; set; }
         public decimal? CostPerPerson { get; set; }
+        public int? TrainingHours { get; set; }
         public string? TrainingObjective { get; set; }
         public string? OtherObjective { get; set; }
         public string? URLSource { get; set; }
@@ -454,6 +458,8 @@ namespace TrainingRequestApp.Controllers
         public string? ExpectedOutcome { get; set; }
         public string? EmployeesJson { get; set; }
         public IFormFile? AttachedFiles { get; set; }
+        public string? ParticipantCount { get; set; }
+        
     }
 
     public class EmployeeData

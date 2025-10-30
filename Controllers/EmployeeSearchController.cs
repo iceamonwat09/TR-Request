@@ -204,7 +204,7 @@ namespace TrainingRequestApp.Controllers
                     string positionQuery = @"
                         SELECT DISTINCT Position 
                         FROM Employees 
-                        WHERE Position IS NOT NULL 
+                        WHERE  Position IS NOT NULL 
                         AND LTRIM(RTRIM(Position)) != ''
                         ORDER BY Position";
 
