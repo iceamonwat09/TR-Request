@@ -53,6 +53,10 @@ namespace TrainingRequestApp.Models
         [Display(Name = "รวมสุทธิ")]
         public decimal TotalCost { get; set; } = 0;
 
+        // ? เพิ่มบรรทัดนี้
+        [Display(Name = "CC Email")]
+        [StringLength(1000)]
+        public string? CCEmail { get; set; }
         // Navigation property for participants
         public virtual ICollection<TrainingParticipant> Participants { get; set; } = new List<TrainingParticipant>();
     }
