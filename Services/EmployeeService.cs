@@ -15,6 +15,13 @@ namespace TrainingRequestApp.Services
         Task<Employee?> GetEmployeeByUserIdAsync(string userId);
         Task<List<Employee>> GetAllEmployeesAsync();
         Task<EmployeeQuotaDto?> GetEmployeeWithQuotaAsync(string userId);
+        Task<List<string>> GetAllDepartmentsAsync();
+        Task<List<string>> GetPositionsByDepartmentAsync(string department);
+
+
+           // ✅ เพิ่ม method ใหม่
+    Task<List<EmailDto>> GetAllEmailsAsync();
+    Task<List<EmailDto>> SearchEmailsAsync(string searchTerm);
     }
 
     public class EmployeeQuotaDto
@@ -48,6 +55,28 @@ namespace TrainingRequestApp.Services
             _configuration = configuration;
         }
 
+        public async Task<List<string>> GetAllDepartmentsAsync()
+        {
+            return await _context.Employees
+                .Where(e => !string.IsNullOrWhiteSpace(e.Department))
+                .Select(e => e.Department!)
+                .Distinct()
+                .OrderBy(d => d)
+                .ToListAsync();
+        }
+
+        public async Task<List<string>> GetPositionsByDepartmentAsync(string department)
+        {
+            if (string.IsNullOrWhiteSpace(department))
+                return new List<string>();
+
+            return await _context.Employees
+                .Where(e => e.Department == department && !string.IsNullOrWhiteSpace(e.Position))
+                .Select(e => e.Position!)
+                .Distinct()
+                .OrderBy(p => p)
+                .ToListAsync();
+        }
         public async Task<Employee?> GetEmployeeByUserIdAsync(string userId)
         {
             if (string.IsNullOrWhiteSpace(userId))
@@ -204,5 +233,57 @@ namespace TrainingRequestApp.Services
 
             return result;
         }
+
+        public async Task<List<EmailDto>> GetAllEmailsAsync()
+        {
+            return await _context.Employees
+                .Where(e => !string.IsNullOrWhiteSpace(e.Email))
+                .Select(e => new EmailDto
+                {
+                    Email = e.Email!,
+                    Name = $"{e.Prefix} {e.Name} {e.Lastname}".Trim(),
+                    Department = e.Department ?? ""
+                })
+                .Distinct()
+                .OrderBy(e => e.Email)
+                .ToListAsync();
+        }
+
+        // ✅ ค้นหาอีเมลตามคำค้นหา
+        public async Task<List<EmailDto>> SearchEmailsAsync(string searchTerm)
+        {
+            if (string.IsNullOrWhiteSpace(searchTerm))
+                return await GetAllEmailsAsync();
+
+            searchTerm = searchTerm.ToLower();
+
+            return await _context.Employees
+                .Where(e => !string.IsNullOrWhiteSpace(e.Email) &&
+                           (e.Email.ToLower().Contains(searchTerm) ||
+                            e.Name!.ToLower().Contains(searchTerm) ||
+                            e.Lastname!.ToLower().Contains(searchTerm)))
+                .Select(e => new EmailDto
+                {
+                    Email = e.Email!,
+                    Name = $"{e.Prefix} {e.Name} {e.Lastname}".Trim(),
+                    Department = e.Department ?? ""
+                })
+                .Distinct()
+                .OrderBy(e => e.Email)
+                .Take(20) // จำกัดแค่ 20 รายการ
+                .ToListAsync();
+        }
     }
+
+    // ✅ สร้าง DTO สำหรับส่งข้อมูล
+    public class EmailDto
+    {
+        public string Email { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
+        public string Department { get; set; } = string.Empty;
+    }
+
+
 }
+
+
