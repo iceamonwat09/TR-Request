@@ -171,8 +171,9 @@ namespace TrainingRequestApp.Controllers
                     [StartDate], [EndDate], [SeminarTitle], [TrainingLocation], [Instructor],
                     [RegistrationCost], [InstructorFee], [EquipmentCost], [FoodCost], [OtherCost], [OtherCostDescription],
                     [TotalCost], [CostPerPerson],[PerPersonTrainingHours], [TrainingObjective], [OtherObjective],
-                    [URLSource], [AdditionalNotes], [ExpectedOutcome], 
-                    [Status], [CreatedDate], [CreatedBy], [IsActive],[TotalPeople]
+                    [URLSource], [AdditionalNotes], [ExpectedOutcome],
+                    [Status], [CreatedDate], [CreatedBy], [IsActive],[TotalPeople],
+                    [SectionManagerId], [DepartmentManagerId], [ManagingDirectorId]
                 )
                 VALUES (
                     @DocNo, @Company, @TrainingType, @Factory, @CCEmail, @Department,@Position,
@@ -180,7 +181,8 @@ namespace TrainingRequestApp.Controllers
                     @RegistrationCost, @InstructorFee, @EquipmentCost, @FoodCost, @OtherCost, @OtherCostDescription,
                     @TotalCost, @CostPerPerson,@PerPersonTrainingHours, @TrainingObjective, @OtherObjective,
                     @URLSource, @AdditionalNotes, @ExpectedOutcome,
-                    'Pending', GETDATE(), 'System', 1,@TotalPeople
+                    'Pending', GETDATE(), 'System', 1,@TotalPeople,
+                    @SectionManagerId, @DepartmentManagerId, @ManagingDirectorId
                 );
                 SELECT CAST(SCOPE_IDENTITY() AS INT);";
 
@@ -216,6 +218,12 @@ namespace TrainingRequestApp.Controllers
                 cmd.Parameters.AddWithValue("@AdditionalNotes", formData.AdditionalNotes ?? (object)DBNull.Value);
                 cmd.Parameters.AddWithValue("@ExpectedOutcome", formData.ExpectedOutcome ?? (object)DBNull.Value);
                 cmd.Parameters.AddWithValue("@TotalPeople", formData.ParticipantCount ?? (object)DBNull.Value);
+
+                // ผู้อนุมัติ 3 ระดับ
+                cmd.Parameters.AddWithValue("@SectionManagerId", formData.SectionManagerId ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@DepartmentManagerId", formData.DepartmentManagerId ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@ManagingDirectorId", formData.ManagingDirectorId ?? (object)DBNull.Value);
+
                 var result = await cmd.ExecuteScalarAsync();
                 return Convert.ToInt32(result);
             }
@@ -459,7 +467,12 @@ namespace TrainingRequestApp.Controllers
         public string? EmployeesJson { get; set; }
         public IFormFile? AttachedFiles { get; set; }
         public string? ParticipantCount { get; set; }
-        
+
+        // ผู้อนุมัติ 3 ระดับ
+        public string? SectionManagerId { get; set; }
+        public string? DepartmentManagerId { get; set; }
+        public string? ManagingDirectorId { get; set; }
+
     }
 
     public class EmployeeData

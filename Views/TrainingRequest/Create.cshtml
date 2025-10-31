@@ -674,6 +674,43 @@
                                     <input asp-for="AttachedFiles" id="AttachedFiles" class="form-control form-control-lg" type="file" style="border-radius: 10px;" />
                                 </div>
 
+                                <!-- ผู้อนุมัติ 3 ระดับ -->
+                                <hr class="my-4">
+                                <h5 class="fw-bold mb-3">👥 ผู้อนุมัติ</h5>
+
+                                <div class="form-group mt-3">
+                                    <label class="form-label fw-bold">
+                                        👤 Section Manager
+                                        <small class="text-muted">(กรองจาก ฝ่าย + ตำแหน่งที่เลือก)</small>
+                                    </label>
+                                    <select id="sectionManagerSelect" class="form-select form-select-lg" style="width: 100%; border-radius: 10px;">
+                                        <option value="">-- เลือก Section Manager --</option>
+                                    </select>
+                                    <input type="hidden" id="sectionManagerIdHidden" name="SectionManagerId" value="" />
+                                </div>
+
+                                <div class="form-group mt-3">
+                                    <label class="form-label fw-bold">
+                                        👤 Department Manager
+                                        <small class="text-muted">(กรองจาก ฝ่าย + ตำแหน่งที่เลือก)</small>
+                                    </label>
+                                    <select id="departmentManagerSelect" class="form-select form-select-lg" style="width: 100%; border-radius: 10px;">
+                                        <option value="">-- เลือก Department Manager --</option>
+                                    </select>
+                                    <input type="hidden" id="departmentManagerIdHidden" name="DepartmentManagerId" value="" />
+                                </div>
+
+                                <div class="form-group mt-3">
+                                    <label class="form-label fw-bold">
+                                        👤 Managing Director
+                                        <small class="text-muted">(Director / AMD / DMD / MD / CEO)</small>
+                                    </label>
+                                    <select id="managingDirectorSelect" class="form-select form-select-lg" style="width: 100%; border-radius: 10px;">
+                                        <option value="">-- เลือก Managing Director --</option>
+                                    </select>
+                                    <input type="hidden" id="managingDirectorIdHidden" name="ManagingDirectorId" value="" />
+                                </div>
+
                                 <!-- ปุ่มบันทึก -->
                                 <div class="text-center mt-5">
                                     <button type="submit" class="btn btn-primary btn-lg text-white px-5 py-3 fw-bold" style="border-radius: 25px; box-shadow: 0 4px 15px rgba(13, 110, 253, 0.3);">
@@ -1672,7 +1709,132 @@ getEmployeesData() {  // ✅ ถูก - อยู่ใน class
 
         console.log('✅ CCEmail Select2 initialized');
     });
-  
+
+    // ====================================================================
+    // Approvers Select2 Initialization
+    // ====================================================================
+    $(document).ready(function() {
+        console.log('🔧 Initializing Approvers Select2...');
+
+        // 1️⃣ Section Manager Select2
+        $('#sectionManagerSelect').select2({
+            theme: 'bootstrap-5',
+            placeholder: 'พิมพ์ชื่อเพื่อค้นหา Section Manager...',
+            allowClear: true,
+            width: '100%',
+            ajax: {
+                url: '/api/employees/approvers/section-manager',
+                dataType: 'json',
+                delay: 300,
+                data: function (params) {
+                    const department = $('#departmentSelect').val();
+                    const position = $('#positionSelect').val();
+                    return {
+                        q: params.term || '',
+                        department: department || '',
+                        position: position || ''
+                    };
+                },
+                processResults: function (data) {
+                    console.log('📋 Section Managers found:', data.length);
+                    return {
+                        results: data.map(function(item) {
+                            return {
+                                id: item.id,
+                                text: item.name + ' (' + (item.department || '') + ' - ' + (item.level || '') + ')'
+                            };
+                        })
+                    };
+                },
+                cache: false
+            },
+            minimumInputLength: 0
+        });
+
+        $('#sectionManagerSelect').on('change', function() {
+            $('#sectionManagerIdHidden').val($(this).val());
+            console.log('✅ Section Manager selected:', $(this).val());
+        });
+
+        // 2️⃣ Department Manager Select2
+        $('#departmentManagerSelect').select2({
+            theme: 'bootstrap-5',
+            placeholder: 'พิมพ์ชื่อเพื่อค้นหา Department Manager...',
+            allowClear: true,
+            width: '100%',
+            ajax: {
+                url: '/api/employees/approvers/department-manager',
+                dataType: 'json',
+                delay: 300,
+                data: function (params) {
+                    const department = $('#departmentSelect').val();
+                    const position = $('#positionSelect').val();
+                    return {
+                        q: params.term || '',
+                        department: department || '',
+                        position: position || ''
+                    };
+                },
+                processResults: function (data) {
+                    console.log('📋 Department Managers found:', data.length);
+                    return {
+                        results: data.map(function(item) {
+                            return {
+                                id: item.id,
+                                text: item.name + ' (' + (item.department || '') + ' - ' + (item.level || '') + ')'
+                            };
+                        })
+                    };
+                },
+                cache: false
+            },
+            minimumInputLength: 0
+        });
+
+        $('#departmentManagerSelect').on('change', function() {
+            $('#departmentManagerIdHidden').val($(this).val());
+            console.log('✅ Department Manager selected:', $(this).val());
+        });
+
+        // 3️⃣ Managing Director Select2
+        $('#managingDirectorSelect').select2({
+            theme: 'bootstrap-5',
+            placeholder: 'พิมพ์ชื่อเพื่อค้นหา Managing Director...',
+            allowClear: true,
+            width: '100%',
+            ajax: {
+                url: '/api/employees/approvers/managing-director',
+                dataType: 'json',
+                delay: 300,
+                data: function (params) {
+                    return {
+                        q: params.term || ''
+                    };
+                },
+                processResults: function (data) {
+                    console.log('📋 Managing Directors found:', data.length);
+                    return {
+                        results: data.map(function(item) {
+                            return {
+                                id: item.id,
+                                text: item.name + ' (' + (item.level || '') + ')'
+                            };
+                        })
+                    };
+                },
+                cache: false
+            },
+            minimumInputLength: 0
+        });
+
+        $('#managingDirectorSelect').on('change', function() {
+            $('#managingDirectorIdHidden').val($(this).val());
+            console.log('✅ Managing Director selected:', $(this).val());
+        });
+
+        console.log('✅ Approvers Select2 initialized');
+    });
+
 
     // ✅ Format แสดงผลในรายการ Dropdown
     function formatEmailOption(option) {
@@ -1729,10 +1891,17 @@ getEmployeesData() {  // ✅ ถูก - อยู่ใน class
         }
     }
 
-    // ✅ Event: เมื่อเลือก Department ให้โหลด Position
+    // ✅ Event: เมื่อเลือก Department ให้โหลด Position และ reset ผู้อนุมัติ
     document.getElementById('departmentSelect').addEventListener('change', async function() {
         const department = this.value;
         const positionSelect = document.getElementById('positionSelect');
+
+        // ✅ Reset Section Manager และ Department Manager
+        $('#sectionManagerSelect').val(null).trigger('change');
+        $('#departmentManagerSelect').val(null).trigger('change');
+        $('#sectionManagerIdHidden').val('');
+        $('#departmentManagerIdHidden').val('');
+        console.log('🔄 Reset Section Manager และ Department Manager');
 
         // ถ้าไม่เลือกฝ่าย ให้ disable Position dropdown
         if (!department) {
@@ -1783,6 +1952,16 @@ getEmployeesData() {  // ✅ ถูก - อยู่ใน class
             positionSelect.disabled = true;
             alert('⚠️ ไม่สามารถโหลดข้อมูลตำแหน่งได้ กรุณาลองใหม่อีกครั้ง');
         }
+    });
+
+    // ✅ Event: เมื่อเลือก Position ให้ reset ผู้อนุมัติ
+    document.getElementById('positionSelect').addEventListener('change', function() {
+        // ✅ Reset Section Manager และ Department Manager
+        $('#sectionManagerSelect').val(null).trigger('change');
+        $('#departmentManagerSelect').val(null).trigger('change');
+        $('#sectionManagerIdHidden').val('');
+        $('#departmentManagerIdHidden').val('');
+        console.log('🔄 Reset Section Manager และ Department Manager (Position changed)');
     });
 // ====================================================================
 // Step 2: Form Submit Handler (ป้องกันการทำงานซ้ำ)

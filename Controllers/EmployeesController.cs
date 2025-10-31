@@ -185,6 +185,129 @@ namespace TrainingRequestApp.Controllers
                 });
             }
         }
+
+        /// <summary>
+        /// ค้นหา Section Manager โดยกรองจาก Department + Position + Level = "Section Mgr."
+        /// </summary>
+        [HttpGet("approvers/section-manager")]
+        public async Task<ActionResult<List<ApproverDto>>> SearchSectionManagers(
+            [FromQuery] string? department,
+            [FromQuery] string? position,
+            [FromQuery] string? q)
+        {
+            try
+            {
+                var employees = await _employeeService.GetAllEmployeesAsync();
+
+                var filtered = employees.Where(emp =>
+                    !string.IsNullOrEmpty(emp.Level) &&
+                    emp.Level.Equals("Section Mgr.", StringComparison.OrdinalIgnoreCase) &&
+                    (string.IsNullOrEmpty(department) || (emp.Department?.Equals(department, StringComparison.OrdinalIgnoreCase) ?? false)) &&
+                    (string.IsNullOrEmpty(position) || (emp.Position?.Equals(position, StringComparison.OrdinalIgnoreCase) ?? false)) &&
+                    (string.IsNullOrEmpty(q) ||
+                        (emp.Name?.Contains(q, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                        (emp.Lastname?.Contains(q, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                        (emp.UserID?.Contains(q, StringComparison.OrdinalIgnoreCase) ?? false))
+                );
+
+                var approvers = filtered.Select(emp => new ApproverDto
+                {
+                    Id = emp.UserID ?? "",
+                    Name = $"{emp.Prefix} {emp.Name} {emp.Lastname}".Trim(),
+                    Department = emp.Department,
+                    Position = emp.Position,
+                    Level = emp.Level
+                }).ToList();
+
+                return Ok(approvers);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Error in SearchSectionManagers: {ex.Message}");
+                return StatusCode(500, new { success = false, message = "❌ เกิดข้อผิดพลาด" });
+            }
+        }
+
+        /// <summary>
+        /// ค้นหา Department Manager โดยกรองจาก Department + Position + Level = "Department Mgr."
+        /// </summary>
+        [HttpGet("approvers/department-manager")]
+        public async Task<ActionResult<List<ApproverDto>>> SearchDepartmentManagers(
+            [FromQuery] string? department,
+            [FromQuery] string? position,
+            [FromQuery] string? q)
+        {
+            try
+            {
+                var employees = await _employeeService.GetAllEmployeesAsync();
+
+                var filtered = employees.Where(emp =>
+                    !string.IsNullOrEmpty(emp.Level) &&
+                    emp.Level.Equals("Department Mgr.", StringComparison.OrdinalIgnoreCase) &&
+                    (string.IsNullOrEmpty(department) || (emp.Department?.Equals(department, StringComparison.OrdinalIgnoreCase) ?? false)) &&
+                    (string.IsNullOrEmpty(position) || (emp.Position?.Equals(position, StringComparison.OrdinalIgnoreCase) ?? false)) &&
+                    (string.IsNullOrEmpty(q) ||
+                        (emp.Name?.Contains(q, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                        (emp.Lastname?.Contains(q, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                        (emp.UserID?.Contains(q, StringComparison.OrdinalIgnoreCase) ?? false))
+                );
+
+                var approvers = filtered.Select(emp => new ApproverDto
+                {
+                    Id = emp.UserID ?? "",
+                    Name = $"{emp.Prefix} {emp.Name} {emp.Lastname}".Trim(),
+                    Department = emp.Department,
+                    Position = emp.Position,
+                    Level = emp.Level
+                }).ToList();
+
+                return Ok(approvers);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Error in SearchDepartmentManagers: {ex.Message}");
+                return StatusCode(500, new { success = false, message = "❌ เกิดข้อผิดพลาด" });
+            }
+        }
+
+        /// <summary>
+        /// ค้นหา Managing Director โดยกรองจาก Level = "Director" OR "AMD" OR "DMD" OR "MD" OR "CEO"
+        /// </summary>
+        [HttpGet("approvers/managing-director")]
+        public async Task<ActionResult<List<ApproverDto>>> SearchManagingDirectors([FromQuery] string? q)
+        {
+            try
+            {
+                var employees = await _employeeService.GetAllEmployeesAsync();
+
+                var validLevels = new[] { "Director", "AMD", "DMD", "MD", "CEO" };
+
+                var filtered = employees.Where(emp =>
+                    !string.IsNullOrEmpty(emp.Level) &&
+                    validLevels.Contains(emp.Level, StringComparer.OrdinalIgnoreCase) &&
+                    (string.IsNullOrEmpty(q) ||
+                        (emp.Name?.Contains(q, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                        (emp.Lastname?.Contains(q, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                        (emp.UserID?.Contains(q, StringComparison.OrdinalIgnoreCase) ?? false))
+                );
+
+                var approvers = filtered.Select(emp => new ApproverDto
+                {
+                    Id = emp.UserID ?? "",
+                    Name = $"{emp.Prefix} {emp.Name} {emp.Lastname}".Trim(),
+                    Department = emp.Department,
+                    Position = emp.Position,
+                    Level = emp.Level
+                }).ToList();
+
+                return Ok(approvers);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Error in SearchManagingDirectors: {ex.Message}");
+                return StatusCode(500, new { success = false, message = "❌ เกิดข้อผิดพลาด" });
+            }
+        }
     }
 
     public class EmployeeSearchRequest
@@ -202,6 +325,15 @@ namespace TrainingRequestApp.Controllers
         public string? Department { get; set; }
         public string? Position { get; set; }
         public string? Email { get; set; }
+    }
+
+    public class ApproverDto
+    {
+        public string Id { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
+        public string? Department { get; set; }
+        public string? Position { get; set; }
+        public string? Level { get; set; }
     }
 
 }
