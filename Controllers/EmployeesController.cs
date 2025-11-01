@@ -200,31 +200,34 @@ namespace TrainingRequestApp.Controllers
         {
             try
             {
-                // ✅ Query เฉพาะ columns ที่จำเป็น เพื่อหลีกเลี่ยง column ที่ไม่มี
+                // ✅ ใช้ ToUpper() แทน StringComparison เพราะ EF Core ไม่รองรับ
                 var query = _context.Employees
                     .Where(e => !string.IsNullOrEmpty(e.Level) &&
-                                e.Level.Equals("Section Mgr.", StringComparison.OrdinalIgnoreCase));
+                                e.Level.ToUpper() == "SECTION MGR.");
 
                 // Filter by department
                 if (!string.IsNullOrEmpty(department))
                 {
+                    var deptUpper = department.ToUpper();
                     query = query.Where(e => e.Department != null &&
-                                           e.Department.Equals(department, StringComparison.OrdinalIgnoreCase));
+                                           e.Department.ToUpper() == deptUpper);
                 }
 
                 // Filter by position
                 if (!string.IsNullOrEmpty(position))
                 {
+                    var posUpper = position.ToUpper();
                     query = query.Where(e => e.Position != null &&
-                                           e.Position.Equals(position, StringComparison.OrdinalIgnoreCase));
+                                           e.Position.ToUpper() == posUpper);
                 }
 
                 // Filter by search term
                 if (!string.IsNullOrEmpty(q))
                 {
-                    query = query.Where(e => (e.Name != null && e.Name.Contains(q, StringComparison.OrdinalIgnoreCase)) ||
-                                           (e.Lastname != null && e.Lastname.Contains(q, StringComparison.OrdinalIgnoreCase)) ||
-                                           (e.UserID != null && e.UserID.Contains(q, StringComparison.OrdinalIgnoreCase)));
+                    var searchUpper = q.ToUpper();
+                    query = query.Where(e => (e.Name != null && e.Name.ToUpper().Contains(searchUpper)) ||
+                                           (e.Lastname != null && e.Lastname.ToUpper().Contains(searchUpper)) ||
+                                           (e.UserID != null && e.UserID.ToUpper().Contains(searchUpper)));
                 }
 
                 var approvers = await query
@@ -259,31 +262,34 @@ namespace TrainingRequestApp.Controllers
         {
             try
             {
-                // ✅ Query เฉพาะ columns ที่จำเป็น เพื่อหลีกเลี่ยง column ที่ไม่มี
+                // ✅ ใช้ ToUpper() แทน StringComparison เพราะ EF Core ไม่รองรับ
                 var query = _context.Employees
                     .Where(e => !string.IsNullOrEmpty(e.Level) &&
-                                e.Level.Equals("Department Mgr.", StringComparison.OrdinalIgnoreCase));
+                                e.Level.ToUpper() == "DEPARTMENT MGR.");
 
                 // Filter by department
                 if (!string.IsNullOrEmpty(department))
                 {
+                    var deptUpper = department.ToUpper();
                     query = query.Where(e => e.Department != null &&
-                                           e.Department.Equals(department, StringComparison.OrdinalIgnoreCase));
+                                           e.Department.ToUpper() == deptUpper);
                 }
 
                 // Filter by position
                 if (!string.IsNullOrEmpty(position))
                 {
+                    var posUpper = position.ToUpper();
                     query = query.Where(e => e.Position != null &&
-                                           e.Position.Equals(position, StringComparison.OrdinalIgnoreCase));
+                                           e.Position.ToUpper() == posUpper);
                 }
 
                 // Filter by search term
                 if (!string.IsNullOrEmpty(q))
                 {
-                    query = query.Where(e => (e.Name != null && e.Name.Contains(q, StringComparison.OrdinalIgnoreCase)) ||
-                                           (e.Lastname != null && e.Lastname.Contains(q, StringComparison.OrdinalIgnoreCase)) ||
-                                           (e.UserID != null && e.UserID.Contains(q, StringComparison.OrdinalIgnoreCase)));
+                    var searchUpper = q.ToUpper();
+                    query = query.Where(e => (e.Name != null && e.Name.ToUpper().Contains(searchUpper)) ||
+                                           (e.Lastname != null && e.Lastname.ToUpper().Contains(searchUpper)) ||
+                                           (e.UserID != null && e.UserID.ToUpper().Contains(searchUpper)));
                 }
 
                 var approvers = await query
@@ -315,19 +321,20 @@ namespace TrainingRequestApp.Controllers
         {
             try
             {
-                var validLevels = new[] { "Director", "AMD", "DMD", "MD", "CEO" };
+                var validLevels = new[] { "DIRECTOR", "AMD", "DMD", "MD", "CEO" };
 
-                // ✅ Query เฉพาะ columns ที่จำเป็น เพื่อหลีกเลี่ยง column ที่ไม่มี
+                // ✅ ใช้ ToUpper() แทน StringComparison เพราะ EF Core ไม่รองรับ
                 var query = _context.Employees
                     .Where(e => !string.IsNullOrEmpty(e.Level) &&
-                                validLevels.Contains(e.Level));
+                                validLevels.Contains(e.Level.ToUpper()));
 
                 // Filter by search term
                 if (!string.IsNullOrEmpty(q))
                 {
-                    query = query.Where(e => (e.Name != null && e.Name.Contains(q, StringComparison.OrdinalIgnoreCase)) ||
-                                           (e.Lastname != null && e.Lastname.Contains(q, StringComparison.OrdinalIgnoreCase)) ||
-                                           (e.UserID != null && e.UserID.Contains(q, StringComparison.OrdinalIgnoreCase)));
+                    var searchUpper = q.ToUpper();
+                    query = query.Where(e => (e.Name != null && e.Name.ToUpper().Contains(searchUpper)) ||
+                                           (e.Lastname != null && e.Lastname.ToUpper().Contains(searchUpper)) ||
+                                           (e.UserID != null && e.UserID.ToUpper().Contains(searchUpper)));
                 }
 
                 var approvers = await query
