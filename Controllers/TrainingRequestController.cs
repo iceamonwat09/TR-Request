@@ -590,6 +590,100 @@ namespace TrainingRequestApp.Controllers
                 return Json(new { success = false, message = "ไม่สามารถลบผู้เข้าร่วมได้" });
             }
         }
+
+
+        // Controllers/TrainingRequestController.cs - เพิ่ม Action สำหรับดึงข้อมูล
+
+        [HttpGet]
+        public async Task<IActionResult> GetMonthlyRequests(
+            DateTime? startDate = null,
+            DateTime? endDate = null,
+            string? docNo = null,
+            string? company = null,
+            string? status = null)
+        {
+            try
+            {
+                string connectionString = _configuration.GetConnectionString("DefaultConnection");
+                var requests = new List<dynamic>();
+
+                using (SqlConnection conn = new SqlConnection(connectionString))
+                {
+                    await conn.OpenAsync();
+
+                    // ตั้งค่าเริ่มต้นเป็นเดือนปัจจุบัน
+                    DateTime filterStart = startDate ?? new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
+                    DateTime filterEnd = endDate ?? filterStart.AddMonths(1).AddDays(-1);
+
+                    string query = @"
+                SELECT 
+                    tr.Id,
+                    tr.DocNo,
+                    tr.Company,
+                    tr.StartDate,
+                    tr.SeminarTitle,
+                    tr.CreatedBy,
+                    tr.Status,
+                    tr.CreatedDate,
+                    (SELECT COUNT(*) FROM TrainingRequestEmployees WHERE TrainingRequestId = tr.Id) AS ParticipantCount
+                FROM TrainingRequests tr
+                WHERE CAST(tr.CreatedDate AS DATE) BETWEEN @StartDate AND @EndDate";
+
+                    // เพิ่มเงื่อนไขการกรอง
+                    if (!string.IsNullOrEmpty(docNo))
+                        query += " AND tr.DocNo LIKE @DocNo";
+
+                    if (!string.IsNullOrEmpty(company))
+                        query += " AND tr.Company LIKE @Company";
+
+                    if (!string.IsNullOrEmpty(status))
+                        query += " AND tr.Status = @Status";
+
+                    query += " ORDER BY tr.DocNo DESC";
+
+                    using (SqlCommand cmd = new SqlCommand(query, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@StartDate", filterStart);
+                        cmd.Parameters.AddWithValue("@EndDate", filterEnd);
+
+                        if (!string.IsNullOrEmpty(docNo))
+                            cmd.Parameters.AddWithValue("@DocNo", "%" + docNo + "%");
+
+                        if (!string.IsNullOrEmpty(company))
+                            cmd.Parameters.AddWithValue("@Company", "%" + company + "%");
+
+                        if (!string.IsNullOrEmpty(status))
+                            cmd.Parameters.AddWithValue("@Status", status);
+
+                        using (SqlDataReader reader = await cmd.ExecuteReaderAsync())
+                        {
+                            while (await reader.ReadAsync())
+                            {
+                                requests.Add(new
+                                {
+                                    id = reader.GetInt32(0),
+                                    docNo = reader.IsDBNull(1) ? "" : reader.GetString(1),
+                                    company = reader.IsDBNull(2) ? "" : reader.GetString(2),
+                                    startDate = reader.IsDBNull(3) ? (DateTime?)null : reader.GetDateTime(3),
+                                    seminarTitle = reader.IsDBNull(4) ? "" : reader.GetString(4),
+                                    createdBy = reader.IsDBNull(5) ? "" : reader.GetString(5),
+                                    status = reader.IsDBNull(6) ? "" : reader.GetString(6),
+                                    createdDate = reader.GetDateTime(7),
+                                    participantCount = reader.GetInt32(8)
+                                });
+                            }
+                        }
+                    }
+                }
+
+                return Json(new { success = true, data = requests, count = requests.Count });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
     }
 
 
