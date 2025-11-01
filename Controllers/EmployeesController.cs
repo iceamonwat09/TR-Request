@@ -193,52 +193,41 @@ namespace TrainingRequestApp.Controllers
         /// ค้นหา Section Manager โดยกรองจาก Department + Position + Level = "Section Mgr."
         /// </summary>
         [HttpGet("approvers/section-manager")]
-        public async Task<ActionResult<List<ApproverDto>>> SearchSectionManagers(
+        public async Task<ActionResult<List<ApproverResultDto>>> SearchSectionManagers(
             [FromQuery] string? department,
             [FromQuery] string? position,
             [FromQuery] string? q)
         {
             try
             {
-                // ✅ ใช้ ToUpper() แทน StringComparison เพราะ EF Core ไม่รองรับ
-                var query = _context.Employees
+                // ถ้าไม่มี search term ให้ return empty
+                if (string.IsNullOrWhiteSpace(q))
+                    q = "";
+
+                var searchLower = q.ToLower();
+
+                var approvers = await _context.Employees
                     .Where(e => !string.IsNullOrEmpty(e.Level) &&
-                                e.Level.ToUpper() == "SECTION MGR.");
-
-                // Filter by department
-                if (!string.IsNullOrEmpty(department))
-                {
-                    var deptUpper = department.ToUpper();
-                    query = query.Where(e => e.Department != null &&
-                                           e.Department.ToUpper() == deptUpper);
-                }
-
-                // Filter by position
-                if (!string.IsNullOrEmpty(position))
-                {
-                    var posUpper = position.ToUpper();
-                    query = query.Where(e => e.Position != null &&
-                                           e.Position.ToUpper() == posUpper);
-                }
-
-                // Filter by search term
-                if (!string.IsNullOrEmpty(q))
-                {
-                    var searchUpper = q.ToUpper();
-                    query = query.Where(e => (e.Name != null && e.Name.ToUpper().Contains(searchUpper)) ||
-                                           (e.Lastname != null && e.Lastname.ToUpper().Contains(searchUpper)) ||
-                                           (e.UserID != null && e.UserID.ToUpper().Contains(searchUpper)));
-                }
-
-                var approvers = await query
-                    .Select(e => new ApproverDto
+                                e.Level.ToUpper() == "SECTION MGR." &&
+                                // Filter by department
+                                (string.IsNullOrEmpty(department) || (e.Department != null && e.Department.ToUpper() == department.ToUpper())) &&
+                                // Filter by position
+                                (string.IsNullOrEmpty(position) || (e.Position != null && e.Position.ToUpper() == position.ToUpper())) &&
+                                // Search filter
+                                (string.IsNullOrEmpty(q) ||
+                                 (e.Name != null && e.Name.ToLower().Contains(searchLower)) ||
+                                 (e.Lastname != null && e.Lastname.ToLower().Contains(searchLower)) ||
+                                 (e.UserID != null && e.UserID.ToLower().Contains(searchLower))))
+                    .Select(e => new ApproverResultDto
                     {
                         Id = e.UserID ?? "",
                         Name = (e.Prefix + " " + e.Name + " " + e.Lastname).Trim(),
-                        Department = e.Department,
-                        Position = e.Position,
-                        Level = e.Level
+                        Department = e.Department ?? "",
+                        Position = e.Position ?? "",
+                        Level = e.Level ?? ""
                     })
+                    .Distinct()
+                    .OrderBy(e => e.Name)
                     .Take(20)
                     .ToListAsync();
 
@@ -255,52 +244,41 @@ namespace TrainingRequestApp.Controllers
         /// ค้นหา Department Manager โดยกรองจาก Department + Position + Level = "Department Mgr."
         /// </summary>
         [HttpGet("approvers/department-manager")]
-        public async Task<ActionResult<List<ApproverDto>>> SearchDepartmentManagers(
+        public async Task<ActionResult<List<ApproverResultDto>>> SearchDepartmentManagers(
             [FromQuery] string? department,
             [FromQuery] string? position,
             [FromQuery] string? q)
         {
             try
             {
-                // ✅ ใช้ ToUpper() แทน StringComparison เพราะ EF Core ไม่รองรับ
-                var query = _context.Employees
+                // ถ้าไม่มี search term ให้ return empty
+                if (string.IsNullOrWhiteSpace(q))
+                    q = "";
+
+                var searchLower = q.ToLower();
+
+                var approvers = await _context.Employees
                     .Where(e => !string.IsNullOrEmpty(e.Level) &&
-                                e.Level.ToUpper() == "DEPARTMENT MGR.");
-
-                // Filter by department
-                if (!string.IsNullOrEmpty(department))
-                {
-                    var deptUpper = department.ToUpper();
-                    query = query.Where(e => e.Department != null &&
-                                           e.Department.ToUpper() == deptUpper);
-                }
-
-                // Filter by position
-                if (!string.IsNullOrEmpty(position))
-                {
-                    var posUpper = position.ToUpper();
-                    query = query.Where(e => e.Position != null &&
-                                           e.Position.ToUpper() == posUpper);
-                }
-
-                // Filter by search term
-                if (!string.IsNullOrEmpty(q))
-                {
-                    var searchUpper = q.ToUpper();
-                    query = query.Where(e => (e.Name != null && e.Name.ToUpper().Contains(searchUpper)) ||
-                                           (e.Lastname != null && e.Lastname.ToUpper().Contains(searchUpper)) ||
-                                           (e.UserID != null && e.UserID.ToUpper().Contains(searchUpper)));
-                }
-
-                var approvers = await query
-                    .Select(e => new ApproverDto
+                                e.Level.ToUpper() == "DEPARTMENT MGR." &&
+                                // Filter by department
+                                (string.IsNullOrEmpty(department) || (e.Department != null && e.Department.ToUpper() == department.ToUpper())) &&
+                                // Filter by position
+                                (string.IsNullOrEmpty(position) || (e.Position != null && e.Position.ToUpper() == position.ToUpper())) &&
+                                // Search filter
+                                (string.IsNullOrEmpty(q) ||
+                                 (e.Name != null && e.Name.ToLower().Contains(searchLower)) ||
+                                 (e.Lastname != null && e.Lastname.ToLower().Contains(searchLower)) ||
+                                 (e.UserID != null && e.UserID.ToLower().Contains(searchLower))))
+                    .Select(e => new ApproverResultDto
                     {
                         Id = e.UserID ?? "",
                         Name = (e.Prefix + " " + e.Name + " " + e.Lastname).Trim(),
-                        Department = e.Department,
-                        Position = e.Position,
-                        Level = e.Level
+                        Department = e.Department ?? "",
+                        Position = e.Position ?? "",
+                        Level = e.Level ?? ""
                     })
+                    .Distinct()
+                    .OrderBy(e => e.Name)
                     .Take(20)
                     .ToListAsync();
 
@@ -317,35 +295,35 @@ namespace TrainingRequestApp.Controllers
         /// ค้นหา Managing Director โดยกรองจาก Level = "Director" OR "AMD" OR "DMD" OR "MD" OR "CEO"
         /// </summary>
         [HttpGet("approvers/managing-director")]
-        public async Task<ActionResult<List<ApproverDto>>> SearchManagingDirectors([FromQuery] string? q)
+        public async Task<ActionResult<List<ApproverResultDto>>> SearchManagingDirectors([FromQuery] string? q)
         {
             try
             {
+                // ถ้าไม่มี search term ให้ return empty
+                if (string.IsNullOrWhiteSpace(q))
+                    q = "";
+
+                var searchLower = q.ToLower();
                 var validLevels = new[] { "DIRECTOR", "AMD", "DMD", "MD", "CEO" };
 
-                // ✅ ใช้ ToUpper() แทน StringComparison เพราะ EF Core ไม่รองรับ
-                var query = _context.Employees
+                var approvers = await _context.Employees
                     .Where(e => !string.IsNullOrEmpty(e.Level) &&
-                                validLevels.Contains(e.Level.ToUpper()));
-
-                // Filter by search term
-                if (!string.IsNullOrEmpty(q))
-                {
-                    var searchUpper = q.ToUpper();
-                    query = query.Where(e => (e.Name != null && e.Name.ToUpper().Contains(searchUpper)) ||
-                                           (e.Lastname != null && e.Lastname.ToUpper().Contains(searchUpper)) ||
-                                           (e.UserID != null && e.UserID.ToUpper().Contains(searchUpper)));
-                }
-
-                var approvers = await query
-                    .Select(e => new ApproverDto
+                                validLevels.Contains(e.Level.ToUpper()) &&
+                                // Search filter
+                                (string.IsNullOrEmpty(q) ||
+                                 (e.Name != null && e.Name.ToLower().Contains(searchLower)) ||
+                                 (e.Lastname != null && e.Lastname.ToLower().Contains(searchLower)) ||
+                                 (e.UserID != null && e.UserID.ToLower().Contains(searchLower))))
+                    .Select(e => new ApproverResultDto
                     {
                         Id = e.UserID ?? "",
                         Name = (e.Prefix + " " + e.Name + " " + e.Lastname).Trim(),
-                        Department = e.Department,
-                        Position = e.Position,
-                        Level = e.Level
+                        Department = e.Department ?? "",
+                        Position = e.Position ?? "",
+                        Level = e.Level ?? ""
                     })
+                    .Distinct()
+                    .OrderBy(e => e.Name)
                     .Take(20)
                     .ToListAsync();
 
@@ -383,6 +361,15 @@ namespace TrainingRequestApp.Controllers
         public string? Department { get; set; }
         public string? Position { get; set; }
         public string? Level { get; set; }
+    }
+
+    public class ApproverResultDto
+    {
+        public string Id { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
+        public string Department { get; set; } = string.Empty;
+        public string Position { get; set; } = string.Empty;
+        public string Level { get; set; } = string.Empty;
     }
 
 }

@@ -1711,7 +1711,7 @@ getEmployeesData() {  // ✅ ถูก - อยู่ใน class
     });
 
     // ====================================================================
-    // Approvers Select2 Initialization
+    // Approvers Select2 Initialization (เหมือน CCEmail แต่เลือกได้แค่ 1 คน)
     // ====================================================================
     $(document).ready(function() {
         console.log('🔧 Initializing Approvers Select2...');
@@ -1721,6 +1721,7 @@ getEmployeesData() {  // ✅ ถูก - อยู่ใน class
             theme: 'bootstrap-5',
             placeholder: 'พิมพ์ชื่อเพื่อค้นหา Section Manager...',
             allowClear: true,
+            multiple: false, // เลือกได้แค่ 1 คน
             width: '100%',
             ajax: {
                 url: '/api/employees/approvers/section-manager',
@@ -1729,6 +1730,7 @@ getEmployeesData() {  // ✅ ถูก - อยู่ใน class
                 data: function (params) {
                     const department = $('#departmentSelect').val();
                     const position = $('#positionSelect').val();
+                    console.log('🔍 Searching Section Manager:', params.term);
                     return {
                         q: params.term || '',
                         department: department || '',
@@ -1741,7 +1743,7 @@ getEmployeesData() {  // ✅ ถูก - อยู่ใน class
                         results: data.map(function(item) {
                             return {
                                 id: item.id,
-                                text: item.name + ' (' + (item.department || '') + ' - ' + (item.level || '') + ')'
+                                text: item.name + ' (' + item.department + ' - ' + item.level + ')'
                             };
                         })
                     };
@@ -1752,8 +1754,9 @@ getEmployeesData() {  // ✅ ถูก - อยู่ใน class
         });
 
         $('#sectionManagerSelect').on('change', function() {
-            $('#sectionManagerIdHidden').val($(this).val());
-            console.log('✅ Section Manager selected:', $(this).val());
+            const selectedValue = $(this).val();
+            $('#sectionManagerIdHidden').val(selectedValue || '');
+            console.log('✅ Section Manager selected:', selectedValue);
         });
 
         // 2️⃣ Department Manager Select2
@@ -1761,6 +1764,7 @@ getEmployeesData() {  // ✅ ถูก - อยู่ใน class
             theme: 'bootstrap-5',
             placeholder: 'พิมพ์ชื่อเพื่อค้นหา Department Manager...',
             allowClear: true,
+            multiple: false, // เลือกได้แค่ 1 คน
             width: '100%',
             ajax: {
                 url: '/api/employees/approvers/department-manager',
@@ -1769,6 +1773,7 @@ getEmployeesData() {  // ✅ ถูก - อยู่ใน class
                 data: function (params) {
                     const department = $('#departmentSelect').val();
                     const position = $('#positionSelect').val();
+                    console.log('🔍 Searching Department Manager:', params.term);
                     return {
                         q: params.term || '',
                         department: department || '',
@@ -1781,7 +1786,7 @@ getEmployeesData() {  // ✅ ถูก - อยู่ใน class
                         results: data.map(function(item) {
                             return {
                                 id: item.id,
-                                text: item.name + ' (' + (item.department || '') + ' - ' + (item.level || '') + ')'
+                                text: item.name + ' (' + item.department + ' - ' + item.level + ')'
                             };
                         })
                     };
@@ -1792,8 +1797,9 @@ getEmployeesData() {  // ✅ ถูก - อยู่ใน class
         });
 
         $('#departmentManagerSelect').on('change', function() {
-            $('#departmentManagerIdHidden').val($(this).val());
-            console.log('✅ Department Manager selected:', $(this).val());
+            const selectedValue = $(this).val();
+            $('#departmentManagerIdHidden').val(selectedValue || '');
+            console.log('✅ Department Manager selected:', selectedValue);
         });
 
         // 3️⃣ Managing Director Select2
@@ -1801,12 +1807,14 @@ getEmployeesData() {  // ✅ ถูก - อยู่ใน class
             theme: 'bootstrap-5',
             placeholder: 'พิมพ์ชื่อเพื่อค้นหา Managing Director...',
             allowClear: true,
+            multiple: false, // เลือกได้แค่ 1 คน
             width: '100%',
             ajax: {
                 url: '/api/employees/approvers/managing-director',
                 dataType: 'json',
                 delay: 300,
                 data: function (params) {
+                    console.log('🔍 Searching Managing Director:', params.term);
                     return {
                         q: params.term || ''
                     };
@@ -1817,7 +1825,7 @@ getEmployeesData() {  // ✅ ถูก - อยู่ใน class
                         results: data.map(function(item) {
                             return {
                                 id: item.id,
-                                text: item.name + ' (' + (item.level || '') + ')'
+                                text: item.name + ' (' + item.level + ')'
                             };
                         })
                     };
@@ -1828,8 +1836,9 @@ getEmployeesData() {  // ✅ ถูก - อยู่ใน class
         });
 
         $('#managingDirectorSelect').on('change', function() {
-            $('#managingDirectorIdHidden').val($(this).val());
-            console.log('✅ Managing Director selected:', $(this).val());
+            const selectedValue = $(this).val();
+            $('#managingDirectorIdHidden').val(selectedValue || '');
+            console.log('✅ Managing Director selected:', selectedValue);
         });
 
         console.log('✅ Approvers Select2 initialized');
