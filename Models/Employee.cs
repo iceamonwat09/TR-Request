@@ -67,15 +67,15 @@ namespace TrainingRequestApp.Models
         [StringLength(50)]
         public string? Prefix { get; set; }
 
-        [Column("[JD Name]")]
+        [Column("JD Name")]
         [StringLength(200)]
         public string? JDName { get; set; }
 
-        [Column("[Level]")]
+        [Column("Level")]
         [StringLength(200)]
         public string? Level { get; set; }
 
-        [Column("[Start Date]")]
+        [Column("Start Date")]
         [DataType(DataType.Date)]
         public DateTime? StartDate { get; set; }
 
