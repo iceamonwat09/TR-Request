@@ -22,5 +22,20 @@ namespace TrainingRequestApp.Controllers
 
             return View();
         }
+        // Controllers/HomeController.cs - เพิ่ม Action ใหม่
+
+        [HttpGet]
+        public IActionResult MonthlyRequests()
+        {
+            if (string.IsNullOrEmpty(HttpContext.Session.GetString("UserEmail")))
+            {
+                return RedirectToAction("Index", "Login");
+            }
+
+            ViewBag.UserEmail = HttpContext.Session.GetString("UserEmail");
+            ViewBag.UserRole = HttpContext.Session.GetString("UserRole");
+
+            return View();
+        }
     }
 }
