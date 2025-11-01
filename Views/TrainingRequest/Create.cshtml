@@ -1256,7 +1256,135 @@
                 console.error('❌ Error loading departments and positions:', error);
             }
         }
+       $(document).ready(function() {
+        console.log('🔧 Initializing Approvers Select2...');
 
+        // 1️⃣ Section Manager
+        $('#sectionManagerSelect').select2({
+            theme: 'bootstrap-5',
+            placeholder: 'พิมพ์ชื่อเพื่อค้นหา Section Manager...',
+            allowClear: true,
+            width: '100%',
+            ajax: {
+                url: '/api/employees/approvers/section-manager',
+                dataType: 'json',
+                delay: 300,
+                data: function(params) {
+                    const dept = $('#departmentSelect').val();
+                    const pos = $('#positionSelect').val();
+                    console.log('🔍 Section Manager Search:', params.term, 'Dept:', dept, 'Pos:', pos);
+                    return {
+                        q: params.term || '',
+                        department: dept || '',
+                        position: pos || ''
+                    };
+                },
+                processResults: function(data) {
+                    console.log('📋 Section Managers found:', data.length);
+                    return {
+                        results: data.map(item => ({
+                            id: item.id,
+                            text: `${item.name} (${item.email})`
+                        }))
+                    };
+                },
+                cache: false
+            },
+            minimumInputLength: 0
+        }).on('change', function() {
+            const selectedValue = $(this).val();
+            $('#sectionManagerIdHidden').val(selectedValue);
+            console.log('✅ Section Manager selected:', selectedValue);
+        });
+
+        // 2️⃣ Department Manager - แก้ไข selector
+        $('#departmentManagerSelect').select2({
+            theme: 'bootstrap-5',
+            placeholder: 'พิมพ์ชื่อเพื่อค้นหา Department Manager...',
+            allowClear: true,
+            width: '100%',
+            ajax: {
+                url: '/api/employees/approvers/dept-manager',
+                dataType: 'json',
+                delay: 300,
+                data: function(params) {
+                    const dept = $('#departmentSelect').val();
+                    const pos = $('#positionSelect').val();
+                    console.log('🔍 Dept Manager Search:', params.term, 'Dept:', dept, 'Pos:', pos);
+                    return {
+                        q: params.term || '',
+                        department: dept || '',
+                        position: pos || ''
+                    };
+                },
+                processResults: function(data) {
+                    console.log('📋 Dept Managers found:', data.length);
+                    return {
+                        results: data.map(item => ({
+                            id: item.id,
+                            text: `${item.name} (${item.email})`
+                        }))
+                    };
+                },
+                cache: false
+            },
+            minimumInputLength: 0
+        }).on('change', function() {
+            const selectedValue = $(this).val();
+            $('#departmentManagerIdHidden').val(selectedValue);
+            console.log('✅ Dept Manager selected:', selectedValue);
+        });
+
+        // 3️⃣ Managing Director - แก้ไข selector
+        $('#managingDirectorSelect').select2({
+            theme: 'bootstrap-5',
+            placeholder: 'พิมพ์ชื่อเพื่อค้นหา Managing Director...',
+            allowClear: true,
+            width: '100%',
+            ajax: {
+                url: '/api/employees/approvers/director',
+                dataType: 'json',
+                delay: 300,
+                data: function(params) {
+                    console.log('🔍 Director Search:', params.term);
+                    return { q: params.term || '' };
+                },
+                processResults: function(data) {
+                    console.log('📋 Directors found:', data.length);
+                    return {
+                        results: data.map(item => ({
+                            id: item.id,
+                            text: `${item.name} - ${item.level} (${item.email})`
+                        }))
+                    };
+                },
+                cache: false
+            },
+            minimumInputLength: 0
+        }).on('change', function() {
+            const selectedValue = $(this).val();
+            $('#managingDirectorIdHidden').val(selectedValue);
+            console.log('✅ Director selected:', selectedValue);
+        });
+
+        // 4️⃣ Reset เมื่อเปลี่ยน Department/Position
+        $('#departmentSelect, #positionSelect').on('change', function() {
+            console.log('🔄 Department/Position changed - Resetting approvers');
+
+            // Clear Section Manager
+            $('#sectionManagerSelect').val(null).trigger('change');
+            $('#sectionManagerIdHidden').val('');
+
+            // Clear Department Manager
+            $('#departmentManagerSelect').val(null).trigger('change');
+            $('#departmentManagerIdHidden').val('');
+
+            console.log('✅ Approvers reset completed');
+        });
+
+        console.log('✅ All Approvers Select2 initialized');
+    });
+  
         // ====================================================================
         // 1. Employee Manager Class
         // ====================================================================
