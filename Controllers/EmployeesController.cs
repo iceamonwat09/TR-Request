@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using TrainingRequestApp.Models;
 using TrainingRequestApp.Services;
 
@@ -13,10 +14,12 @@ namespace TrainingRequestApp.Controllers
     public class EmployeesController : ControllerBase
     {
         private readonly IEmployeeService _employeeService;
+        private readonly ApplicationDbContext _context;
 
-        public EmployeesController(IEmployeeService employeeService)
+        public EmployeesController(IEmployeeService employeeService, ApplicationDbContext context)
         {
             _employeeService = employeeService;
+            _context = context;
         }
 
 
@@ -197,34 +200,51 @@ namespace TrainingRequestApp.Controllers
         {
             try
             {
-                var employees = await _employeeService.GetAllEmployeesAsync();
+                // ✅ Query เฉพาะ columns ที่จำเป็น เพื่อหลีกเลี่ยง column ที่ไม่มี
+                var query = _context.Employees
+                    .Where(e => !string.IsNullOrEmpty(e.Level) &&
+                                e.Level.Equals("Section Mgr.", StringComparison.OrdinalIgnoreCase));
 
-                var filtered = employees.Where(emp =>
-                    !string.IsNullOrEmpty(emp.Level) &&
-                    emp.Level.Equals("Section Mgr.", StringComparison.OrdinalIgnoreCase) &&
-                    (string.IsNullOrEmpty(department) || (emp.Department?.Equals(department, StringComparison.OrdinalIgnoreCase) ?? false)) &&
-                    (string.IsNullOrEmpty(position) || (emp.Position?.Equals(position, StringComparison.OrdinalIgnoreCase) ?? false)) &&
-                    (string.IsNullOrEmpty(q) ||
-                        (emp.Name?.Contains(q, StringComparison.OrdinalIgnoreCase) ?? false) ||
-                        (emp.Lastname?.Contains(q, StringComparison.OrdinalIgnoreCase) ?? false) ||
-                        (emp.UserID?.Contains(q, StringComparison.OrdinalIgnoreCase) ?? false))
-                );
-
-                var approvers = filtered.Select(emp => new ApproverDto
+                // Filter by department
+                if (!string.IsNullOrEmpty(department))
                 {
-                    Id = emp.UserID ?? "",
-                    Name = $"{emp.Prefix} {emp.Name} {emp.Lastname}".Trim(),
-                    Department = emp.Department,
-                    Position = emp.Position,
-                    Level = emp.Level
-                }).ToList();
+                    query = query.Where(e => e.Department != null &&
+                                           e.Department.Equals(department, StringComparison.OrdinalIgnoreCase));
+                }
+
+                // Filter by position
+                if (!string.IsNullOrEmpty(position))
+                {
+                    query = query.Where(e => e.Position != null &&
+                                           e.Position.Equals(position, StringComparison.OrdinalIgnoreCase));
+                }
+
+                // Filter by search term
+                if (!string.IsNullOrEmpty(q))
+                {
+                    query = query.Where(e => (e.Name != null && e.Name.Contains(q, StringComparison.OrdinalIgnoreCase)) ||
+                                           (e.Lastname != null && e.Lastname.Contains(q, StringComparison.OrdinalIgnoreCase)) ||
+                                           (e.UserID != null && e.UserID.Contains(q, StringComparison.OrdinalIgnoreCase)));
+                }
+
+                var approvers = await query
+                    .Select(e => new ApproverDto
+                    {
+                        Id = e.UserID ?? "",
+                        Name = (e.Prefix + " " + e.Name + " " + e.Lastname).Trim(),
+                        Department = e.Department,
+                        Position = e.Position,
+                        Level = e.Level
+                    })
+                    .Take(20)
+                    .ToListAsync();
 
                 return Ok(approvers);
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"❌ Error in SearchSectionManagers: {ex.Message}");
-                return StatusCode(500, new { success = false, message = "❌ เกิดข้อผิดพลาด" });
+                return StatusCode(500, new { success = false, message = "❌ เกิดข้อผิดพลาด: " + ex.Message });
             }
         }
 
@@ -239,34 +259,51 @@ namespace TrainingRequestApp.Controllers
         {
             try
             {
-                var employees = await _employeeService.GetAllEmployeesAsync();
+                // ✅ Query เฉพาะ columns ที่จำเป็น เพื่อหลีกเลี่ยง column ที่ไม่มี
+                var query = _context.Employees
+                    .Where(e => !string.IsNullOrEmpty(e.Level) &&
+                                e.Level.Equals("Department Mgr.", StringComparison.OrdinalIgnoreCase));
 
-                var filtered = employees.Where(emp =>
-                    !string.IsNullOrEmpty(emp.Level) &&
-                    emp.Level.Equals("Department Mgr.", StringComparison.OrdinalIgnoreCase) &&
-                    (string.IsNullOrEmpty(department) || (emp.Department?.Equals(department, StringComparison.OrdinalIgnoreCase) ?? false)) &&
-                    (string.IsNullOrEmpty(position) || (emp.Position?.Equals(position, StringComparison.OrdinalIgnoreCase) ?? false)) &&
-                    (string.IsNullOrEmpty(q) ||
-                        (emp.Name?.Contains(q, StringComparison.OrdinalIgnoreCase) ?? false) ||
-                        (emp.Lastname?.Contains(q, StringComparison.OrdinalIgnoreCase) ?? false) ||
-                        (emp.UserID?.Contains(q, StringComparison.OrdinalIgnoreCase) ?? false))
-                );
-
-                var approvers = filtered.Select(emp => new ApproverDto
+                // Filter by department
+                if (!string.IsNullOrEmpty(department))
                 {
-                    Id = emp.UserID ?? "",
-                    Name = $"{emp.Prefix} {emp.Name} {emp.Lastname}".Trim(),
-                    Department = emp.Department,
-                    Position = emp.Position,
-                    Level = emp.Level
-                }).ToList();
+                    query = query.Where(e => e.Department != null &&
+                                           e.Department.Equals(department, StringComparison.OrdinalIgnoreCase));
+                }
+
+                // Filter by position
+                if (!string.IsNullOrEmpty(position))
+                {
+                    query = query.Where(e => e.Position != null &&
+                                           e.Position.Equals(position, StringComparison.OrdinalIgnoreCase));
+                }
+
+                // Filter by search term
+                if (!string.IsNullOrEmpty(q))
+                {
+                    query = query.Where(e => (e.Name != null && e.Name.Contains(q, StringComparison.OrdinalIgnoreCase)) ||
+                                           (e.Lastname != null && e.Lastname.Contains(q, StringComparison.OrdinalIgnoreCase)) ||
+                                           (e.UserID != null && e.UserID.Contains(q, StringComparison.OrdinalIgnoreCase)));
+                }
+
+                var approvers = await query
+                    .Select(e => new ApproverDto
+                    {
+                        Id = e.UserID ?? "",
+                        Name = (e.Prefix + " " + e.Name + " " + e.Lastname).Trim(),
+                        Department = e.Department,
+                        Position = e.Position,
+                        Level = e.Level
+                    })
+                    .Take(20)
+                    .ToListAsync();
 
                 return Ok(approvers);
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"❌ Error in SearchDepartmentManagers: {ex.Message}");
-                return StatusCode(500, new { success = false, message = "❌ เกิดข้อผิดพลาด" });
+                return StatusCode(500, new { success = false, message = "❌ เกิดข้อผิดพลาด: " + ex.Message });
             }
         }
 
@@ -278,34 +315,39 @@ namespace TrainingRequestApp.Controllers
         {
             try
             {
-                var employees = await _employeeService.GetAllEmployeesAsync();
-
                 var validLevels = new[] { "Director", "AMD", "DMD", "MD", "CEO" };
 
-                var filtered = employees.Where(emp =>
-                    !string.IsNullOrEmpty(emp.Level) &&
-                    validLevels.Contains(emp.Level, StringComparer.OrdinalIgnoreCase) &&
-                    (string.IsNullOrEmpty(q) ||
-                        (emp.Name?.Contains(q, StringComparison.OrdinalIgnoreCase) ?? false) ||
-                        (emp.Lastname?.Contains(q, StringComparison.OrdinalIgnoreCase) ?? false) ||
-                        (emp.UserID?.Contains(q, StringComparison.OrdinalIgnoreCase) ?? false))
-                );
+                // ✅ Query เฉพาะ columns ที่จำเป็น เพื่อหลีกเลี่ยง column ที่ไม่มี
+                var query = _context.Employees
+                    .Where(e => !string.IsNullOrEmpty(e.Level) &&
+                                validLevels.Contains(e.Level));
 
-                var approvers = filtered.Select(emp => new ApproverDto
+                // Filter by search term
+                if (!string.IsNullOrEmpty(q))
                 {
-                    Id = emp.UserID ?? "",
-                    Name = $"{emp.Prefix} {emp.Name} {emp.Lastname}".Trim(),
-                    Department = emp.Department,
-                    Position = emp.Position,
-                    Level = emp.Level
-                }).ToList();
+                    query = query.Where(e => (e.Name != null && e.Name.Contains(q, StringComparison.OrdinalIgnoreCase)) ||
+                                           (e.Lastname != null && e.Lastname.Contains(q, StringComparison.OrdinalIgnoreCase)) ||
+                                           (e.UserID != null && e.UserID.Contains(q, StringComparison.OrdinalIgnoreCase)));
+                }
+
+                var approvers = await query
+                    .Select(e => new ApproverDto
+                    {
+                        Id = e.UserID ?? "",
+                        Name = (e.Prefix + " " + e.Name + " " + e.Lastname).Trim(),
+                        Department = e.Department,
+                        Position = e.Position,
+                        Level = e.Level
+                    })
+                    .Take(20)
+                    .ToListAsync();
 
                 return Ok(approvers);
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"❌ Error in SearchManagingDirectors: {ex.Message}");
-                return StatusCode(500, new { success = false, message = "❌ เกิดข้อผิดพลาด" });
+                return StatusCode(500, new { success = false, message = "❌ เกิดข้อผิดพลาด: " + ex.Message });
             }
         }
     }
