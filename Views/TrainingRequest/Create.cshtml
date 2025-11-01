@@ -1767,339 +1767,341 @@
         console.log('✅ EmployeeManager initialized');
 
 
-            // ===============================================
-        // 🔹 Cascade Dropdown: Department → Position
-        // ===============================================
+      // ===============================================
+    // 🔹 Cascade Dropdown: Department → Position
+    // ===============================================
 
-        // ✅ โหลด Departments เมื่อเปิดหน้า
-        document.addEventListener('DOMContentLoaded', async function() {
-            await loadDepartments();
+    // ✅ โหลด Departments เมื่อเปิดหน้า
+    document.addEventListener('DOMContentLoaded', async function() {
+        await loadDepartments();
+    });
+
+    // ===============================================
+    // Multi-Select Email
+    // ===============================================
+    $(document).ready(function() {
+        console.log('🔧 Initializing CCEmail Select2...');
+
+        // เช็คว่ามี element
+        if ($('#ccEmailSelect').length === 0) {
+            console.error('❌ #ccEmailSelect not found!');
+            return;
+        }
+
+        // Initialize Select2
+        $('#ccEmailSelect').select2({
+            theme: 'bootstrap-5',
+            placeholder: 'พิมพ์ชื่อหรืออีเมล...',
+            allowClear: true,
+            multiple: true,
+            width: '100%',
+            ajax: {
+                url: '/api/employees/emails/search',
+                dataType: 'json',
+                delay: 300,
+                data: function (params) {
+                    console.log('🔍 Searching:', params.term);
+                    return { q: params.term || '' };
+                },
+                processResults: function (data) {
+                    console.log('📧 Found:', data.length, 'emails');
+                    return {
+                        results: data.map(function(item) {
+                            return {
+                                id: item.email,
+                                text: item.email + ' (' + item.name + ')'
+                            };
+                        })
+                    };
+                },
+                cache: true
+            },
+            minimumInputLength: 0
         });
-           // ===============================================
-        // Multi-Select Email
-        // ===============================================
-        $(document).ready(function() {
-            console.log('🔧 Initializing CCEmail Select2...');
 
-            // เช็คว่ามี element
-            if ($('#ccEmailSelect').length === 0) {
-                console.error('❌ #ccEmailSelect not found!');
+        // ✅ เมื่อเลือก - ส่งเป็น string คั่นด้วย ;
+        $('#ccEmailSelect').on('change', function() {
+            const emails = $(this).val() || [];
+            const container = $('#ccEmailHiddenInputs');
+            container.empty();
+
+            if (emails.length > 0) {
+                // รวมเป็น string คั่นด้วย ;
+                const emailString = emails.join(';');
+                container.append('<input type="hidden" name="CCEmail" value="' + emailString + '" />');
+                console.log('✅ CCEmail:', emailString);
+                console.log('✅ Count:', emails.length, 'emails');
+            } else {
+                console.log('⚠️ No emails selected');
+            }
+        });
+
+        console.log('✅ CCEmail Select2 initialized');
+    });
+
+    // ====================================================================
+    // Approvers Select2 Initialization (เหมือน CCEmail แต่เลือกได้แค่ 1 คน)
+    // ====================================================================
+    $(document).ready(function() {
+        console.log('🔧 Initializing Approvers Select2...');
+
+        // 1️⃣ Section Manager Select2
+        $('#sectionManagerSelect').select2({
+            theme: 'bootstrap-5',
+            placeholder: 'พิมพ์ชื่อเพื่อค้นหา Section Manager...',
+            allowClear: true,
+            multiple: false, // เลือกได้แค่ 1 คน
+            width: '100%',
+            ajax: {
+                url: '/api/employees/approvers/section-manager',
+                dataType: 'json',
+                delay: 300,
+                data: function (params) {
+                    const department = $('#departmentSelect').val();
+                    const position = $('#positionSelect').val();
+                    console.log('🔍 Searching Section Manager:', params.term);
+                    return {
+                        q: params.term || '',
+                        department: department || '',
+                        position: position || ''
+                    };
+                },
+                processResults: function (data) {
+                    console.log('📋 Section Managers found:', data.length);
+                    return {
+                        results: data.map(function(item) {
+                            return {
+                                id: item.email,
+                                text: item.email + ' (' + item.name + ' - ' + item.level + ')'
+                            };
+                        })
+                    };
+                },
+                cache: false
+            },
+            minimumInputLength: 0
+        });
+
+        $('#sectionManagerSelect').on('change', function() {
+            const selectedValue = $(this).val();
+            $('#sectionManagerIdHidden').val(selectedValue || '');
+            console.log('✅ Section Manager selected:', selectedValue);
+        });
+
+        // 2️⃣ Department Manager Select2 - ✅ แก้ URL
+        $('#departmentManagerSelect').select2({
+            theme: 'bootstrap-5',
+            placeholder: 'พิมพ์ชื่อเพื่อค้นหา Department Manager...',
+            allowClear: true,
+            multiple: false, // เลือกได้แค่ 1 คน
+            width: '100%',
+            ajax: {
+                url: '/api/employees/approvers/dept-manager', // ✅ แก้จาก department-manager
+                dataType: 'json',
+                delay: 300,
+                data: function (params) {
+                    const department = $('#departmentSelect').val();
+                    const position = $('#positionSelect').val();
+                    console.log('🔍 Searching Department Manager:', params.term);
+                    return {
+                        q: params.term || '',
+                        department: department || '',
+                        position: position || ''
+                    };
+                },
+                processResults: function (data) {
+                    console.log('📋 Department Managers found:', data.length);
+                    return {
+                        results: data.map(function(item) {
+                            return {
+                                id: item.email,
+                                text: item.email + ' (' + item.name + ' - ' + item.level + ')'
+                            };
+                        })
+                    };
+                },
+                cache: false
+            },
+            minimumInputLength: 0
+        });
+
+        $('#departmentManagerSelect').on('change', function() {
+            const selectedValue = $(this).val();
+            $('#departmentManagerIdHidden').val(selectedValue || '');
+            console.log('✅ Department Manager selected:', selectedValue);
+        });
+
+        // 3️⃣ Managing Director Select2 - ✅ แก้ URL
+        $('#managingDirectorSelect').select2({
+            theme: 'bootstrap-5',
+            placeholder: 'พิมพ์ชื่อเพื่อค้นหา Managing Director...',
+            allowClear: true,
+            multiple: false, // เลือกได้แค่ 1 คน
+            width: '100%',
+            ajax: {
+                url: '/api/employees/approvers/director', // ✅ แก้จาก managing-director
+                dataType: 'json',
+                delay: 300,
+                data: function (params) {
+                    console.log('🔍 Searching Managing Director:', params.term);
+                    return {
+                        q: params.term || ''
+                    };
+                },
+                processResults: function (data) {
+                    console.log('📋 Managing Directors found:', data.length);
+                    return {
+                        results: data.map(function(item) {
+                            return {
+                                id: item.email,
+                                text: item.email + ' (' + item.name + ' - ' + item.level + ')'
+                            };
+                        })
+                    };
+                },
+                cache: false
+            },
+            minimumInputLength: 0
+        });
+
+        $('#managingDirectorSelect').on('change', function() {
+            const selectedValue = $(this).val();
+            $('#managingDirectorIdHidden').val(selectedValue || '');
+            console.log('✅ Managing Director selected:', selectedValue);
+        });
+
+        console.log('✅ Approvers Select2 initialized');
+    });
+
+
+    // ✅ Format แสดงผลในรายการ Dropdown
+    function formatEmailOption(option) {
+        if (!option.id) {
+            return option.text;
+        }
+
+        var $option = $(
+            '<div>' +
+                '<strong>' + option.text + '</strong>' +
+                '<br><small class="text-muted">' +
+                    (option.name || '') +
+                    (option.department ? ' (' + option.department + ')' : '') +
+                '</small>' +
+            '</div>'
+        );
+
+        return $option;
+    }
+
+    // ✅ Format แสดงผลเมื่อเลือกแล้ว (แสดงแค่อีเมล)
+    function formatEmailSelection(option) {
+        return option.text || option.id;
+    }
+
+
+    // ✅ ฟังก์ชันดึงข้อมูล Department
+    async function loadDepartments() {
+        try {
+            const response = await fetch('/api/employees/departments');
+            if (!response.ok) {
+                throw new Error('Failed to load departments');
+            }
+
+            const departments = await response.json();
+            const departmentSelect = document.getElementById('departmentSelect');
+
+            // เคลียร์ options เดิม (เก็บเฉพาะ option แรก)
+            departmentSelect.innerHTML = '<option value="">-- เลือกฝ่าย --</option>';
+
+            // เพิ่ม options จาก API
+            departments.forEach(dept => {
+                const option = document.createElement('option');
+                option.value = dept;
+                option.textContent = dept;
+                departmentSelect.appendChild(option);
+            });
+
+            console.log('✅ โหลด Departments สำเร็จ:', departments.length, 'รายการ');
+
+        } catch (error) {
+            console.error('❌ Error loading departments:', error);
+            alert('⚠️ ไม่สามารถโหลดข้อมูลฝ่ายได้ กรุณาลองใหม่อีกครั้ง');
+        }
+    }
+
+    // ✅ Event: เมื่อเลือก Department ให้โหลด Position และ reset ผู้อนุมัติ
+    document.getElementById('departmentSelect').addEventListener('change', async function() {
+        const department = this.value;
+        const positionSelect = document.getElementById('positionSelect');
+
+        // ✅ Reset Section Manager และ Department Manager
+        $('#sectionManagerSelect').val(null).trigger('change');
+        $('#departmentManagerSelect').val(null).trigger('change');
+        $('#sectionManagerIdHidden').val('');
+        $('#departmentManagerIdHidden').val('');
+        console.log('🔄 Reset Section Manager และ Department Manager');
+
+        // ถ้าไม่เลือกฝ่าย ให้ disable Position dropdown
+        if (!department) {
+            positionSelect.disabled = true;
+            positionSelect.innerHTML = '<option value="">-- เลือกฝ่ายก่อน --</option>';
+            return;
+        }
+
+        try {
+            // แสดง Loading
+            positionSelect.innerHTML = '<option value="">กำลังโหลด...</option>';
+            positionSelect.disabled = true;
+
+            // โหลด Positions ตาม Department ที่เลือก
+            const response = await fetch(`/api/employees/positions?department=${encodeURIComponent(department)}`);
+
+            if (!response.ok) {
+                throw new Error('Failed to load positions');
+            }
+
+            const positions = await response.json();
+
+            // เคลียร์และเพิ่ม options ใหม่
+            positionSelect.innerHTML = '<option value="">-- เลือกตำแหน่ง --</option>';
+
+            if (positions.length === 0) {
+                positionSelect.innerHTML = '<option value="">-- ไม่มีตำแหน่งในฝ่ายนี้ --</option>';
+                positionSelect.disabled = true;
+                console.warn('⚠️ ไม่พบตำแหน่งในฝ่าย:', department);
                 return;
             }
 
-            // Initialize Select2
-            $('#ccEmailSelect').select2({
-                theme: 'bootstrap-5',
-                placeholder: 'พิมพ์ชื่อหรืออีเมล...',
-                allowClear: true,
-                multiple: true,
-                width: '100%',
-                ajax: {
-                    url: '/api/employees/emails/search',
-                    dataType: 'json',
-                    delay: 300,
-                    data: function (params) {
-                        console.log('🔍 Searching:', params.term);
-                        return { q: params.term || '' };
-                    },
-                    processResults: function (data) {
-                        console.log('📧 Found:', data.length, 'emails');
-                        return {
-                            results: data.map(function(item) {
-                                return {
-                                    id: item.email,
-                                    text: item.email + ' (' + item.name + ')'
-                                };
-                            })
-                        };
-                    },
-                    cache: true
-                },
-                minimumInputLength: 0
+            positions.forEach(pos => {
+                const option = document.createElement('option');
+                option.value = pos;
+                option.textContent = pos;
+                positionSelect.appendChild(option);
             });
 
-            // ✅ เมื่อเลือก - ส่งเป็น string คั่นด้วย ;
-            $('#ccEmailSelect').on('change', function() {
-                const emails = $(this).val() || [];
-                const container = $('#ccEmailHiddenInputs');
-                container.empty();
+            // เปิดใช้งาน dropdown
+            positionSelect.disabled = false;
 
-                if (emails.length > 0) {
-                    // รวมเป็น string คั่นด้วย ;
-                    const emailString = emails.join(';');
-                    container.append('<input type="hidden" name="CCEmail" value="' + emailString + '" />');
-                    console.log('✅ CCEmail:', emailString);
-                    console.log('✅ Count:', emails.length, 'emails');
-                } else {
-                    console.log('⚠️ No emails selected');
-                }
-            });
+            console.log('✅ โหลด Positions สำเร็จ:', positions.length, 'รายการ');
 
-            console.log('✅ CCEmail Select2 initialized');
-        });
-
-        // ====================================================================
-        // Approvers Select2 Initialization (เหมือน CCEmail แต่เลือกได้แค่ 1 คน)
-        // ====================================================================
-        $(document).ready(function() {
-            console.log('🔧 Initializing Approvers Select2...');
-
-            // 1️⃣ Section Manager Select2
-            $('#sectionManagerSelect').select2({
-                theme: 'bootstrap-5',
-                placeholder: 'พิมพ์ชื่อเพื่อค้นหา Section Manager...',
-                allowClear: true,
-                multiple: false, // เลือกได้แค่ 1 คน
-                width: '100%',
-                ajax: {
-                    url: '/api/employees/approvers/section-manager',
-                    dataType: 'json',
-                    delay: 300,
-                    data: function (params) {
-                        const department = $('#departmentSelect').val();
-                        const position = $('#positionSelect').val();
-                        console.log('🔍 Searching Section Manager:', params.term);
-                        return {
-                            q: params.term || '',
-                            department: department || '',
-                            position: position || ''
-                        };
-                    },
-                    processResults: function (data) {
-                        console.log('📋 Section Managers found:', data.length);
-                        return {
-                            results: data.map(function(item) {
-                                return {
-                                    id: item.id,
-                                    text: item.email + ' (' + item.name + ' - ' + item.level + ')'
-                                };
-                            })
-                        };
-                    },
-                    cache: false
-                },
-                minimumInputLength: 0
-            });
-
-            $('#sectionManagerSelect').on('change', function() {
-                const selectedValue = $(this).val();
-                $('#sectionManagerIdHidden').val(selectedValue || '');
-                console.log('✅ Section Manager selected:', selectedValue);
-            });
-
-            // 2️⃣ Department Manager Select2
-            $('#departmentManagerSelect').select2({
-                theme: 'bootstrap-5',
-                placeholder: 'พิมพ์ชื่อเพื่อค้นหา Department Manager...',
-                allowClear: true,
-                multiple: false, // เลือกได้แค่ 1 คน
-                width: '100%',
-                ajax: {
-                    url: '/api/employees/approvers/department-manager',
-                    dataType: 'json',
-                    delay: 300,
-                    data: function (params) {
-                        const department = $('#departmentSelect').val();
-                        const position = $('#positionSelect').val();
-                        console.log('🔍 Searching Department Manager:', params.term);
-                        return {
-                            q: params.term || '',
-                            department: department || '',
-                            position: position || ''
-                        };
-                    },
-                    processResults: function (data) {
-                        console.log('📋 Department Managers found:', data.length);
-                        return {
-                            results: data.map(function(item) {
-                                return {
-                                    id: item.id,
-                                    text: item.email + ' (' + item.name + ' - ' + item.level + ')'
-                                };
-                            })
-                        };
-                    },
-                    cache: false
-                },
-                minimumInputLength: 0
-            });
-
-            $('#departmentManagerSelect').on('change', function() {
-                const selectedValue = $(this).val();
-                $('#departmentManagerIdHidden').val(selectedValue || '');
-                console.log('✅ Department Manager selected:', selectedValue);
-            });
-
-            // 3️⃣ Managing Director Select2
-            $('#managingDirectorSelect').select2({
-                theme: 'bootstrap-5',
-                placeholder: 'พิมพ์ชื่อเพื่อค้นหา Managing Director...',
-                allowClear: true,
-                multiple: false, // เลือกได้แค่ 1 คน
-                width: '100%',
-                ajax: {
-                    url: '/api/employees/approvers/managing-director',
-                    dataType: 'json',
-                    delay: 300,
-                    data: function (params) {
-                        console.log('🔍 Searching Managing Director:', params.term);
-                        return {
-                            q: params.term || ''
-                        };
-                    },
-                    processResults: function (data) {
-                        console.log('📋 Managing Directors found:', data.length);
-                        return {
-                            results: data.map(function(item) {
-                                return {
-                                    id: item.id,
-                                    text: item.email + ' (' + item.name + ' - ' + item.level + ')'
-                                };
-                            })
-                        };
-                    },
-                    cache: false
-                },
-                minimumInputLength: 0
-            });
-
-            $('#managingDirectorSelect').on('change', function() {
-                const selectedValue = $(this).val();
-                $('#managingDirectorIdHidden').val(selectedValue || '');
-                console.log('✅ Managing Director selected:', selectedValue);
-            });
-
-            console.log('✅ Approvers Select2 initialized');
-        });
-
-
-        // ✅ Format แสดงผลในรายการ Dropdown
-        function formatEmailOption(option) {
-            if (!option.id) {
-                return option.text;
-            }
-
-            var $option = $(
-                '<div>' +
-                    '<strong>' + option.text + '</strong>' +
-                    '<br><small class="text-muted">' +
-                        (option.name || '') +
-                        (option.department ? ' (' + option.department + ')' : '') +
-                    '</small>' +
-                '</div>'
-            );
-
-            return $option;
+        } catch (error) {
+            console.error('❌ Error loading positions:', error);
+            positionSelect.innerHTML = '<option value="">-- เกิดข้อผิดพลาด --</option>';
+            positionSelect.disabled = true;
+            alert('⚠️ ไม่สามารถโหลดข้อมูลตำแหน่งได้ กรุณาลองใหม่อีกครั้ง');
         }
+    });
 
-        // ✅ Format แสดงผลเมื่อเลือกแล้ว (แสดงแค่อีเมล)
-        function formatEmailSelection(option) {
-            return option.text || option.id;
-        }
+    // ✅ Event: เมื่อเลือก Position ให้ reset ผู้อนุมัติ
+    document.getElementById('positionSelect').addEventListener('change', function() {
+        // ✅ Reset Section Manager และ Department Manager
+        $('#sectionManagerSelect').val(null).trigger('change');
+        $('#departmentManagerSelect').val(null).trigger('change');
+        $('#sectionManagerIdHidden').val('');
+        $('#departmentManagerIdHidden').val('');
+        console.log('🔄 Reset Section Manager และ Department Manager (Position changed)');
+    });
 
-
-        // ✅ ฟังก์ชันดึงข้อมูล Department
-        async function loadDepartments() {
-            try {
-                const response = await fetch('/api/employees/departments');
-                if (!response.ok) {
-                    throw new Error('Failed to load departments');
-                }
-
-                const departments = await response.json();
-                const departmentSelect = document.getElementById('departmentSelect');
-
-                // เคลียร์ options เดิม (เก็บเฉพาะ option แรก)
-                departmentSelect.innerHTML = '<option value="">-- เลือกฝ่าย --</option>';
-
-                // เพิ่ม options จาก API
-                departments.forEach(dept => {
-                    const option = document.createElement('option');
-                    option.value = dept;
-                    option.textContent = dept;
-                    departmentSelect.appendChild(option);
-                });
-
-                console.log('✅ โหลด Departments สำเร็จ:', departments.length, 'รายการ');
-
-            } catch (error) {
-                console.error('❌ Error loading departments:', error);
-                alert('⚠️ ไม่สามารถโหลดข้อมูลฝ่ายได้ กรุณาลองใหม่อีกครั้ง');
-            }
-        }
-
-        // ✅ Event: เมื่อเลือก Department ให้โหลด Position และ reset ผู้อนุมัติ
-        document.getElementById('departmentSelect').addEventListener('change', async function() {
-            const department = this.value;
-            const positionSelect = document.getElementById('positionSelect');
-
-            // ✅ Reset Section Manager และ Department Manager
-            $('#sectionManagerSelect').val(null).trigger('change');
-            $('#departmentManagerSelect').val(null).trigger('change');
-            $('#sectionManagerIdHidden').val('');
-            $('#departmentManagerIdHidden').val('');
-            console.log('🔄 Reset Section Manager และ Department Manager');
-
-            // ถ้าไม่เลือกฝ่าย ให้ disable Position dropdown
-            if (!department) {
-                positionSelect.disabled = true;
-                positionSelect.innerHTML = '<option value="">-- เลือกฝ่ายก่อน --</option>';
-                return;
-            }
-
-            try {
-                // แสดง Loading
-                positionSelect.innerHTML = '<option value="">กำลังโหลด...</option>';
-                positionSelect.disabled = true;
-
-                // โหลด Positions ตาม Department ที่เลือก
-                const response = await fetch(`/api/employees/positions?department=${encodeURIComponent(department)}`);
-
-                if (!response.ok) {
-                    throw new Error('Failed to load positions');
-                }
-
-                const positions = await response.json();
-
-                // เคลียร์และเพิ่ม options ใหม่
-                positionSelect.innerHTML = '<option value="">-- เลือกตำแหน่ง --</option>';
-
-                if (positions.length === 0) {
-                    positionSelect.innerHTML = '<option value="">-- ไม่มีตำแหน่งในฝ่ายนี้ --</option>';
-                    positionSelect.disabled = true;
-                    console.warn('⚠️ ไม่พบตำแหน่งในฝ่าย:', department);
-                    return;
-                }
-
-                positions.forEach(pos => {
-                    const option = document.createElement('option');
-                    option.value = pos;
-                    option.textContent = pos;
-                    positionSelect.appendChild(option);
-                });
-
-                // เปิดใช้งาน dropdown
-                positionSelect.disabled = false;
-
-                console.log('✅ โหลด Positions สำเร็จ:', positions.length, 'รายการ');
-
-            } catch (error) {
-                console.error('❌ Error loading positions:', error);
-                positionSelect.innerHTML = '<option value="">-- เกิดข้อผิดพลาด --</option>';
-                positionSelect.disabled = true;
-                alert('⚠️ ไม่สามารถโหลดข้อมูลตำแหน่งได้ กรุณาลองใหม่อีกครั้ง');
-            }
-        });
-
-        // ✅ Event: เมื่อเลือก Position ให้ reset ผู้อนุมัติ
-        document.getElementById('positionSelect').addEventListener('change', function() {
-            // ✅ Reset Section Manager และ Department Manager
-            $('#sectionManagerSelect').val(null).trigger('change');
-            $('#departmentManagerSelect').val(null).trigger('change');
-            $('#sectionManagerIdHidden').val('');
-            $('#departmentManagerIdHidden').val('');
-            console.log('🔄 Reset Section Manager และ Department Manager (Position changed)');
-        });
     // ====================================================================
     // Step 2: Form Submit Handler (ป้องกันการทำงานซ้ำ)
     // ====================================================================
@@ -2169,56 +2171,37 @@
                     isSubmitting = false;
                     return false;
                 }
-                   // ====================================================================
-        // Validation ตาม TrainingType
-        // ====================================================================
 
-        const trainingTypeValue = trainingType.value;
+                // ====================================================================
+                // Validation ตาม TrainingType
+                // ====================================================================
 
-        if (trainingTypeValue === 'Public') {
-            // ตรวจสอบฟิลด์สำหรับ Public
-            const costPerPerson = document.getElementById('CostPerPerson');
-            const trainingHours = document.getElementById('TrainingHours');
+                const trainingTypeValue = trainingType.value;
 
-            if (!costPerPerson || !costPerPerson.value || parseFloat(costPerPerson.value) <= 0) {
-                alert('❌ กรุณากรอกค่าใช้จ่ายต่อคนสำหรับ Public Training');
-                isSubmitting = false;
-                costPerPerson?.focus();
-                return false;
-            }
+                if (trainingTypeValue === 'Public') {
+                    // ตรวจสอบฟิลด์สำหรับ Public
+                    const costPerPerson = document.getElementById('CostPerPerson');
+                    const trainingHours = document.getElementById('TrainingHours');
 
-            if (!trainingHours || !trainingHours.value || parseFloat(trainingHours.value) <= 0) {
-                alert('❌ กรุณากรอกจำนวนชั่วโมงการอบรมสำหรับ Public Training');
-                isSubmitting = false;
-                trainingHours?.focus();
-                return false;
-            }
+                    if (!costPerPerson || !costPerPerson.value || parseFloat(costPerPerson.value) <= 0) {
+                        alert('❌ กรุณากรอกค่าใช้จ่ายต่อคนสำหรับ Public Training');
+                        isSubmitting = false;
+                        costPerPerson?.focus();
+                        return false;
+                    }
 
-            console.log('✅ Public Training validation passed');
+                    if (!trainingHours || !trainingHours.value || parseFloat(trainingHours.value) <= 0) {
+                        alert('❌ กรุณากรอกจำนวนชั่วโมงการอบรมสำหรับ Public Training');
+                        isSubmitting = false;
+                        trainingHours?.focus();
+                        return false;
+                    }
 
-        } else if (trainingTypeValue === 'In House') {
-            // ตรวจสอบฟิลด์สำหรับ In House
-            // ⚠️ ปรับตาม field ที่คุณมีจริง
+                    console.log('✅ Public Training validation passed');
 
-            // const costPerHour = document.getElementById('CostPerHour');
-            // const numberOfDays = document.getElementById('NumberOfDays');
-
-            // if (!costPerHour || !costPerHour.value || parseFloat(costPerHour.value) <= 0) {
-            //     alert('❌ กรุณากรอกค่าใช้จ่ายต่อชั่วโมงสำหรับ In House Training');
-            //     isSubmitting = false;
-            //     costPerHour?.focus();
-            //     return false;
-            // }
-
-            // if (!numberOfDays || !numberOfDays.value || parseFloat(numberOfDays.value) <= 0) {
-            //     alert('❌ กรุณากรอกจำนวนวันการอบรมสำหรับ In House Training');
-            //     isSubmitting = false;
-            //     numberOfDays?.focus();
-            //     return false;
-            // }
-
-            console.log('✅ In House Training No required fields validation');
-        }
+                } else if (trainingTypeValue === 'In House') {
+                    console.log('✅ In House Training No required fields validation');
+                }
 
                 // ====================================================================
                 // ดึงข้อมูลพนักงาน
