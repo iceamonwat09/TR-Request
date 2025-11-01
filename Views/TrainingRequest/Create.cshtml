@@ -1743,7 +1743,7 @@ getEmployeesData() {  // ✅ ถูก - อยู่ใน class
                         results: data.map(function(item) {
                             return {
                                 id: item.id,
-                                text: item.name + ' (' + item.department + ' - ' + item.level + ')'
+                                text: item.email + ' (' + item.name + ' - ' + item.level + ')'
                             };
                         })
                     };
@@ -1786,7 +1786,7 @@ getEmployeesData() {  // ✅ ถูก - อยู่ใน class
                         results: data.map(function(item) {
                             return {
                                 id: item.id,
-                                text: item.name + ' (' + item.department + ' - ' + item.level + ')'
+                                text: item.email + ' (' + item.name + ' - ' + item.level + ')'
                             };
                         })
                     };
@@ -1825,7 +1825,7 @@ getEmployeesData() {  // ✅ ถูก - อยู่ใน class
                         results: data.map(function(item) {
                             return {
                                 id: item.id,
-                                text: item.name + ' (' + item.level + ')'
+                                text: item.email + ' (' + item.name + ' - ' + item.level + ')'
                             };
                         })
                     };

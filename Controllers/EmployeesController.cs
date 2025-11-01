@@ -224,7 +224,8 @@ namespace TrainingRequestApp.Controllers
                         Name = (e.Prefix + " " + e.Name + " " + e.Lastname).Trim(),
                         Department = e.Department ?? "",
                         Position = e.Position ?? "",
-                        Level = e.Level ?? ""
+                        Level = e.Level ?? "",
+                        Email = e.Email ?? ""
                     })
                     .Distinct()
                     .OrderBy(e => e.Name)
@@ -275,7 +276,8 @@ namespace TrainingRequestApp.Controllers
                         Name = (e.Prefix + " " + e.Name + " " + e.Lastname).Trim(),
                         Department = e.Department ?? "",
                         Position = e.Position ?? "",
-                        Level = e.Level ?? ""
+                        Level = e.Level ?? "",
+                        Email = e.Email ?? ""
                     })
                     .Distinct()
                     .OrderBy(e => e.Name)
@@ -320,7 +322,8 @@ namespace TrainingRequestApp.Controllers
                         Name = (e.Prefix + " " + e.Name + " " + e.Lastname).Trim(),
                         Department = e.Department ?? "",
                         Position = e.Position ?? "",
-                        Level = e.Level ?? ""
+                        Level = e.Level ?? "",
+                        Email = e.Email ?? ""
                     })
                     .Distinct()
                     .OrderBy(e => e.Name)
@@ -370,6 +373,7 @@ namespace TrainingRequestApp.Controllers
         public string Department { get; set; } = string.Empty;
         public string Position { get; set; } = string.Empty;
         public string Level { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
     }
 
 }
