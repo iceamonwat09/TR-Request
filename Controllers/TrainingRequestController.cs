@@ -120,6 +120,168 @@ namespace TrainingRequestApp.Controllers
         }
 
         // ====================================================================
+        // Approver APIs - เพิ่มใหม่
+        // ====================================================================
+
+        [HttpGet("api/employees/approvers/section-manager")]
+        public async Task<IActionResult> GetSectionManagers(string q = "", string department = "", string position = "")
+       {
+            try
+            {
+                string connectionString = _configuration.GetConnectionString("DefaultConnection");
+                using (SqlConnection conn = new SqlConnection(connectionString))
+                {
+                    await conn.OpenAsync();
+
+                    string query = @"
+                        SELECT TOP 20 
+                            UserID as id, 
+                            CONCAT(Prefix, Name, ' ', Lastname) as name, 
+                            Email as email, 
+                            Level as level
+                        FROM Employees
+                        WHERE Level = 'Section Mgr.'
+                        AND Department = @Department
+                        AND Position = @Position
+                        AND (Name LIKE @Search OR Email LIKE @Search)
+                        ORDER BY Name";
+
+                    using (SqlCommand cmd = new SqlCommand(query, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@Department", department ?? "");
+                        cmd.Parameters.AddWithValue("@Position", position ?? "");
+                        cmd.Parameters.AddWithValue("@Search", $"%{q}%");
+
+                        var results = new List<object>();
+                        using (var reader = await cmd.ExecuteReaderAsync())
+                        {
+                            while (await reader.ReadAsync())
+                            {
+                                results.Add(new
+                                {
+                                    id = reader["id"].ToString(),
+                                    name = reader["name"].ToString(),
+                                    email = reader["email"].ToString(),
+                                    level = reader["level"].ToString()
+                                });
+                            }
+                        }
+                        return Json(results);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ GetSectionManagers Error: {ex.Message}");
+                return Json(new List<object>());
+            }
+        }
+
+        [HttpGet("api/employees/approvers/dept-manager")]
+        public async Task<IActionResult> GetDeptManagers(string q = "", string department = "", string position = "")
+        {
+            try
+            {
+                string connectionString = _configuration.GetConnectionString("DefaultConnection");
+                using (SqlConnection conn = new SqlConnection(connectionString))
+                {
+                    await conn.OpenAsync();
+
+                    string query = @"
+                        SELECT TOP 20 
+                            UserID as id, 
+                            CONCAT(Prefix, Name, ' ', Lastname) as name, 
+                            Email as email, 
+                            Level as level
+                        FROM Employees
+                        WHERE Level = 'Department Mgr.'
+                        AND Department = @Department
+                        AND Position = @Position
+                        AND (Name LIKE @Search OR Email LIKE @Search)
+                        ORDER BY Name";
+
+                    using (SqlCommand cmd = new SqlCommand(query, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@Department", department ?? "");
+                        cmd.Parameters.AddWithValue("@Position", position ?? "");
+                        cmd.Parameters.AddWithValue("@Search", $"%{q}%");
+
+                        var results = new List<object>();
+                        using (var reader = await cmd.ExecuteReaderAsync())
+                        {
+                            while (await reader.ReadAsync())
+                            {
+                                results.Add(new
+                                {
+                                    id = reader["id"].ToString(),
+                                    name = reader["name"].ToString(),
+                                    email = reader["email"].ToString(),
+                                    level = reader["level"].ToString()
+                                });
+                            }
+                        }
+                        return Json(results);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ GetDeptManagers Error: {ex.Message}");
+                return Json(new List<object>());
+            }
+        }
+
+        [HttpGet("api/employees/approvers/director")]
+        public async Task<IActionResult> GetDirectors(string q = "")
+        {
+            try
+            {
+                string connectionString = _configuration.GetConnectionString("DefaultConnection");
+                using (SqlConnection conn = new SqlConnection(connectionString))
+                {
+                    await conn.OpenAsync();
+
+                    string query = @"
+                        SELECT TOP 20 
+                            UserID as id, 
+                            CONCAT(Prefix, Name, ' ', Lastname) as name, 
+                            Email as email, 
+                            Level as level
+                        FROM Employees
+                        WHERE Level IN ('Director', 'AMD', 'DMD', 'MD', 'CEO')
+                        AND (Name LIKE @Search OR Email LIKE @Search)
+                        ORDER BY Name";
+
+                    using (SqlCommand cmd = new SqlCommand(query, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@Search", $"%{q}%");
+
+                        var results = new List<object>();
+                        using (var reader = await cmd.ExecuteReaderAsync())
+                        {
+                            while (await reader.ReadAsync())
+                            {
+                                results.Add(new
+                                {
+                                    id = reader["id"].ToString(),
+                                    name = reader["name"].ToString(),
+                                    email = reader["email"].ToString(),
+                                    level = reader["level"].ToString()
+                                });
+                            }
+                        }
+                        return Json(results);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ GetDirectors Error: {ex.Message}");
+                return Json(new List<object>());
+            }
+        }
+
+        // ====================================================================
         // Helper Methods
         // ====================================================================
 
@@ -172,7 +334,8 @@ namespace TrainingRequestApp.Controllers
                     [RegistrationCost], [InstructorFee], [EquipmentCost], [FoodCost], [OtherCost], [OtherCostDescription],
                     [TotalCost], [CostPerPerson],[PerPersonTrainingHours], [TrainingObjective], [OtherObjective],
                     [URLSource], [AdditionalNotes], [ExpectedOutcome], 
-                    [Status], [CreatedDate], [CreatedBy], [IsActive],[TotalPeople]
+                    [Status], [CreatedDate], [CreatedBy], [IsActive],[TotalPeople],
+                    [SectionManagerId], [DepartmentManagerId], [ManagingDirectorId]
                 )
                 VALUES (
                     @DocNo, @Company, @TrainingType, @Factory, @CCEmail, @Department,@Position,
@@ -180,7 +343,8 @@ namespace TrainingRequestApp.Controllers
                     @RegistrationCost, @InstructorFee, @EquipmentCost, @FoodCost, @OtherCost, @OtherCostDescription,
                     @TotalCost, @CostPerPerson,@PerPersonTrainingHours, @TrainingObjective, @OtherObjective,
                     @URLSource, @AdditionalNotes, @ExpectedOutcome,
-                    'Pending', GETDATE(), 'System', 1,@TotalPeople
+                    'Pending', GETDATE(), 'System', 1,@TotalPeople,
+                    @SectionManagerId, @DepartmentManagerId, @ManagingDirectorId
                 );
                 SELECT CAST(SCOPE_IDENTITY() AS INT);";
 
@@ -216,6 +380,12 @@ namespace TrainingRequestApp.Controllers
                 cmd.Parameters.AddWithValue("@AdditionalNotes", formData.AdditionalNotes ?? (object)DBNull.Value);
                 cmd.Parameters.AddWithValue("@ExpectedOutcome", formData.ExpectedOutcome ?? (object)DBNull.Value);
                 cmd.Parameters.AddWithValue("@TotalPeople", formData.ParticipantCount ?? (object)DBNull.Value);
+
+                // ✅ เพิ่มใหม่ - Approvers
+                cmd.Parameters.AddWithValue("@SectionManagerId", formData.SectionManagerId ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@DepartmentManagerId", formData.DepartmentManagerId ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@ManagingDirectorId", formData.ManagingDirectorId ?? (object)DBNull.Value);
+
                 var result = await cmd.ExecuteScalarAsync();
                 return Convert.ToInt32(result);
             }
@@ -422,6 +592,11 @@ namespace TrainingRequestApp.Controllers
         }
     }
 
+
+
+
+
+
     // ====================================================================
     // ViewModels
     // ====================================================================
@@ -459,7 +634,11 @@ namespace TrainingRequestApp.Controllers
         public string? EmployeesJson { get; set; }
         public IFormFile? AttachedFiles { get; set; }
         public string? ParticipantCount { get; set; }
-        
+
+        // ✅ เพิ่มใหม่ - Approvers
+        public string? SectionManagerId { get; set; }
+        public string? DepartmentManagerId { get; set; }
+        public string? ManagingDirectorId { get; set; }
     }
 
     public class EmployeeData
