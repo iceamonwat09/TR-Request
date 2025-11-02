@@ -1851,19 +1851,60 @@
         if (employees && employees.length > 0) {
             console.log(`📊 Loading ${employees.length} existing employees`);
 
-            employees.forEach(emp => {
+            employees.forEach((emp, index) => {
+                // แยกชื่อออกเป็น prefix, name, lastname (ถ้าเป็นไปได้)
+                const fullName = emp.EmployeeName || '';
+                const nameParts = fullName.split(' ');
+
+                let prefix = '';
+                let name = '';
+                let lastname = '';
+
+                if (nameParts.length === 1) {
+                    name = nameParts[0];
+                } else if (nameParts.length === 2) {
+                    name = nameParts[0];
+                    lastname = nameParts[1];
+                } else if (nameParts.length >= 3) {
+                    prefix = nameParts[0];
+                    name = nameParts.slice(1, -1).join(' ');
+                    lastname = nameParts[nameParts.length - 1];
+                }
+
+                // สร้าง employee object ตามโครงสร้างที่ EmployeeManager ต้องการ
                 const employeeData = {
                     empCode: emp.EmployeeCode || '',
-                    fullName: emp.EmployeeName || '',
+                    prefix: prefix,
+                    name: name,
+                    lastname: lastname,
                     position: emp.Position || '',
                     currentYearHours: emp.PreviousTrainingHours || 0,
                     currentYearCost: emp.PreviousTrainingCost || 0,
                     thisTimeHours: emp.CurrentTrainingHours || 0,
                     thisTimeCost: emp.CurrentTrainingCost || 0,
+                    remainingHours: 12 - (emp.PreviousTrainingHours || 0) - (emp.CurrentTrainingHours || 0),
+                    remainingCost: 10000 - (emp.PreviousTrainingCost || 0) - (emp.CurrentTrainingCost || 0),
                     notes: emp.Notes || ''
                 };
 
-                employeeManager.addEmployee(employeeData);
+                // เพิ่ม employee เข้าไปใน array โดยตรง
+                employeeManager.employees.push(employeeData);
+
+                // สร้างและแสดง row ในตาราง
+                const row = employeeManager.createEmployeeRow(employeeData, employeeManager.rowCounter);
+                document.getElementById('employeeTableBody').appendChild(row);
+
+                // ถ้ามี notes ให้ set ค่าเข้าไปใน input
+                if (emp.Notes) {
+                    setTimeout(() => {
+                        const noteInput = document.querySelector(`input.note-input[data-emp-code="${employeeData.empCode}"]`);
+                        if (noteInput) {
+                            noteInput.value = emp.Notes;
+                        }
+                    }, 100);
+                }
+
+                employeeManager.rowCounter++;
             });
 
             console.log('✅ Employees loaded:', employees.length);
