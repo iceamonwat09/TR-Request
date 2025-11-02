@@ -70,7 +70,7 @@
                                 <div class="col-md-6">
                                     <div class="form-group">
                                         <label asp-for="Factory" class="form-label fw-bold">🏭 โรงงาน</label>
-                                        <input asp-for="Factory" name="Factory" id="Factory" class="form-control form-control-lg" style="border-radius: 10px;" />
+                                        <input asp-for="Factory" name="Factory" id="Factory" class="form-control form-control-lg" value="@Model.Factory" style="border-radius: 10px;" />
                                     </div>
                                     <div class="form-group">
                                         <label class="form-label fw-bold">
@@ -122,17 +122,17 @@
 
                                     <div class="form-group">
                                         <label asp-for="SeminarTitle" class="form-label fw-bold">📖 เรื่องสัมมนา</label>
-                                        <input asp-for="SeminarTitle" id="SeminarTitle" name="SeminarTitle" class="form-control form-control-lg" style="border-radius: 10px;" />
+                                        <input asp-for="SeminarTitle" id="SeminarTitle" name="SeminarTitle" class="form-control form-control-lg" value="@Model.SeminarTitle" style="border-radius: 10px;" />
                                     </div>
 
                                     <div class="form-group">
                                         <label asp-for="TrainingLocation" class="form-label fw-bold">📍 สถานที่อบรม</label>
-                                        <input asp-for="TrainingLocation" id="TrainingLocation" name="TrainingLocation" class="form-control form-control-lg" style="border-radius: 10px;" />
+                                        <input asp-for="TrainingLocation" id="TrainingLocation" name="TrainingLocation" class="form-control form-control-lg" value="@Model.TrainingLocation" style="border-radius: 10px;" />
                                     </div>
 
                                     <div class="form-group">
                                         <label asp-for="Instructor" class="form-label fw-bold">👨‍🏫 วิทยากร/สถาบัน</label>
-                                        <input asp-for="Instructor" id="Instructor" name="Instructor" class="form-control form-control-lg" style="border-radius: 10px;" />
+                                        <input asp-for="Instructor" id="Instructor" name="Instructor" class="form-control form-control-lg" value="@Model.Instructor" style="border-radius: 10px;" />
                                     </div>
                                 </div>
 
@@ -219,7 +219,7 @@
                                                 <!-- ระบุรายการอื่นๆ -->
                                                 <div class="col-md-6">
                                                     <label asp-for="OtherCostDescription" class="form-label fw-bold">📝 ระบุรายการอื่นๆ</label>
-                                                    <input asp-for="OtherCostDescription" name="OtherCostDescription" class="form-control form-control-lg" placeholder="กรุณาระบุรายการอื่นๆ" style="border-radius: 10px;" />
+                                                    <input asp-for="OtherCostDescription" name="OtherCostDescription" class="form-control form-control-lg" value="@Model.OtherCostDescription" placeholder="กรุณาระบุรายการอื่นๆ" style="border-radius: 10px;" />
                                                 </div>
 
                                                 <!-- จำนวนผู้เข้าอบรม -->
@@ -555,41 +555,41 @@
                                             <div class="row g-3">
                                                 <div class="col-md-6">
                                                     <div class="form-check p-3" style="background-color: white; border-radius: 10px; border: 1px solid #dee2e6;">
-                                                        <input class="form-check-input" type="radio" name="TrainingObjective" asp-for="TrainingObjective" value="พัฒนาทักษะความชำนาญ" id="objective1">
+                                                        <input class="form-check-input" type="radio" name="TrainingObjective" asp-for="TrainingObjective" value="พัฒนาทักษะความชำนาญ" id="objective1" @(Model.TrainingObjective == "พัฒนาทักษะความชำนาญ" ? "checked" : "")>
                                                         <label class="form-check-label" for="objective1">พัฒนาทักษะความชำนาญ</label>
                                                     </div>
                                                 </div>
                                                 <div class="col-md-6">
                                                     <div class="form-check p-3" style="background-color: white; border-radius: 10px; border: 1px solid #dee2e6;">
-                                                        <input class="form-check-input" type="radio" name="TrainingObjective" asp-for="TrainingObjective" value="เพิ่มประสิทธิภาพ / คุณภาพ" id="objective2">
+                                                        <input class="form-check-input" type="radio" name="TrainingObjective" asp-for="TrainingObjective" value="เพิ่มประสิทธิภาพ / คุณภาพ" id="objective2" @(Model.TrainingObjective == "เพิ่มประสิทธิภาพ / คุณภาพ" ? "checked" : "")>
                                                         <label class="form-check-label" for="objective2">เพิ่มประสิทธิภาพ / คุณภาพ</label>
                                                     </div>
                                                 </div>
                                                 <div class="col-md-6">
                                                     <div class="form-check p-3" style="background-color: white; border-radius: 10px; border: 1px solid #dee2e6;">
-                                                        <input class="form-check-input" type="radio" name="TrainingObjective" asp-for="TrainingObjective" value="ช่วยแก้ไข / ป้องกันปัญหา" id="objective3">
+                                                        <input class="form-check-input" type="radio" name="TrainingObjective" asp-for="TrainingObjective" value="ช่วยแก้ไข / ป้องกันปัญหา" id="objective3" @(Model.TrainingObjective == "ช่วยแก้ไข / ป้องกันปัญหา" ? "checked" : "")>
                                                         <label class="form-check-label" for="objective3">ช่วยแก้ไข / ป้องกันปัญหา</label>
                                                     </div>
                                                 </div>
                                                 <div class="col-md-6">
                                                     <div class="form-check p-3" style="background-color: white; border-radius: 10px; border: 1px solid #dee2e6;">
-                                                        <input class="form-check-input" type="radio" name="TrainingObjective" asp-for="TrainingObjective" value="กฎหมาย/ข้อกำหนดลูกค้า" id="objective4">
+                                                        <input class="form-check-input" type="radio" name="TrainingObjective" asp-for="TrainingObjective" value="กฎหมาย/ข้อกำหนดลูกค้า" id="objective4" @(Model.TrainingObjective == "กฎหมาย/ข้อกำหนดลูกค้า" ? "checked" : "")>
                                                         <label class="form-check-label" for="objective4">กฎหมาย/ข้อกำหนดลูกค้า</label>
                                                     </div>
                                                 </div>
                                                 <div class="col-md-6">
                                                     <div class="form-check p-3" style="background-color: white; border-radius: 10px; border: 1px solid #dee2e6;">
-                                                        <input class="form-check-input" type="radio" name="TrainingObjective" asp-for="TrainingObjective" value="ถ่ายทอดความรู้/ขยายผลสู่ผู้อื่น" id="objective5">
+                                                        <input class="form-check-input" type="radio" name="TrainingObjective" asp-for="TrainingObjective" value="ถ่ายทอดความรู้/ขยายผลสู่ผู้อื่น" id="objective5" @(Model.TrainingObjective == "ถ่ายทอดความรู้/ขยายผลสู่ผู้อื่น" ? "checked" : "")>
                                                         <label class="form-check-label" for="objective5">ถ่ายทอดความรู้/ขยายผลสู่ผู้อื่น</label>
                                                     </div>
                                                 </div>
                                                 <div class="col-md-6">
                                                     <div class="p-3" style="background-color: white; border-radius: 10px; border: 1px solid #dee2e6;">
                                                         <div class="form-check">
-                                                            <input class="form-check-input" type="radio" name="TrainingObjective" asp-for="TrainingObjective" value="อื่นๆ" id="objective6">
+                                                            <input class="form-check-input" type="radio" name="TrainingObjective" asp-for="TrainingObjective" value="อื่นๆ" id="objective6" @(Model.TrainingObjective == "อื่นๆ" ? "checked" : "")>
                                                             <label class="form-check-label" for="objective6">อื่นๆ (ระบุ)</label>
                                                         </div>
-                                                        <input type="text" class="form-control mt-2" asp-for="OtherObjective" id="OtherObjective" placeholder="กรุณาระบุหากเลือก 'อื่นๆ'" style="border-radius: 8px;">
+                                                        <input type="text" class="form-control mt-2" asp-for="OtherObjective" id="OtherObjective" value="@Model.OtherObjective" placeholder="กรุณาระบุหากเลือก 'อื่นๆ'" style="border-radius: 8px;">
                                                     </div>
                                                 </div>
                                             </div>
@@ -600,7 +600,7 @@
                                 <!-- ผลคาดว่าจะได้รับ -->
                                 <div class="form-group mt-4">
                                     <label asp-for="ExpectedOutcome" class="form-label fw-bold">🎯 ผลคาดว่าจะได้รับ</label>
-                                    <textarea asp-for="ExpectedOutcome" name="ExpectedOutcome" id="ExpectedOutcome" class="form-control" rows="3" style="border-radius: 10px;"></textarea>
+                                    <textarea asp-for="ExpectedOutcome" name="ExpectedOutcome" id="ExpectedOutcome" class="form-control" rows="3" style="border-radius: 10px;">@Model.ExpectedOutcome</textarea>
                                 </div>
 
                                 <!-- ตารางประวัติการอบรม -->
@@ -664,12 +664,12 @@
                                 <!-- ข้อมูลเพิ่มเติม -->
                                 <div class="form-group mt-4">
                                     <label asp-for="URLSource" class="form-label fw-bold">🔗 แหล่งที่มา URL (ห้ามพิมพ์ข้อความ ให้วางลิงก์เท่านั้น)</label>
-                                    <input asp-for="URLSource" name="URLSource" id="URLSource" class="form-control form-control-lg" type="url" placeholder="https://example.com" onkeypress="return false;" style="border-radius: 10px;" />
+                                    <input asp-for="URLSource" name="URLSource" id="URLSource" class="form-control form-control-lg" type="url" value="@Model.URLSource" placeholder="https://example.com" onkeypress="return false;" style="border-radius: 10px;" />
                                 </div>
 
                                 <div class="form-group">
                                     <label asp-for="AdditionalNotes" class="form-label fw-bold">📝 ระบุข้อมูลเพิ่มเติมให้ HR รับทราบ (ถ้ามี)</label>
-                                    <textarea asp-for="AdditionalNotes" name="AdditionalNotes" id="AdditionalNotes" class="form-control" rows="3" style="border-radius: 10px;"></textarea>
+                                    <textarea asp-for="AdditionalNotes" name="AdditionalNotes" id="AdditionalNotes" class="form-control" rows="3" style="border-radius: 10px;">@Model.AdditionalNotes</textarea>
                                 </div>
 
                                 <div class="form-group mt-4">
