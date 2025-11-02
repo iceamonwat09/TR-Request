@@ -120,6 +120,188 @@ namespace TrainingRequestApp.Controllers
         }
 
         // ====================================================================
+        // GET: /TrainingRequest/Edit/{docNo}
+        // ====================================================================
+        [HttpGet]
+        public async Task<IActionResult> Edit(string docNo)
+        {
+            if (string.IsNullOrEmpty(docNo))
+            {
+                return RedirectToAction("Index", "Home");
+            }
+
+            try
+            {
+                string connectionString = _configuration.GetConnectionString("DefaultConnection");
+                using (SqlConnection conn = new SqlConnection(connectionString))
+                {
+                    await conn.OpenAsync();
+
+                    // Fetch Training Request data
+                    string query = @"
+                        SELECT
+                            Id, DocNo, Company, TrainingType, Factory, CCEmail, Department, Position,
+                            StartDate, EndDate, SeminarTitle, TrainingLocation, Instructor,
+                            RegistrationCost, InstructorFee, EquipmentCost, FoodCost, OtherCost, OtherCostDescription,
+                            TotalCost, CostPerPerson, PerPersonTrainingHours, TrainingObjective, OtherObjective,
+                            URLSource, AdditionalNotes, ExpectedOutcome, TotalPeople,
+                            SectionManagerId, Status_SectionManager, Comment_SectionManager, ApproveInfo_SectionManager,
+                            DepartmentManagerId, Status_DepartmentManager, Comment_DepartmentManager, ApproveInfo_DepartmentManager,
+                            ManagingDirectorId, Status_ManagingDirector, Comment_ManagingDirector, ApproveInfo_ManagingDirector,
+                            Status, CreatedDate, CreatedBy
+                        FROM [HRDSYSTEM].[dbo].[TrainingRequests]
+                        WHERE DocNo = @DocNo AND IsActive = 1";
+
+                    using (SqlCommand cmd = new SqlCommand(query, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@DocNo", docNo);
+
+                        using (var reader = await cmd.ExecuteReaderAsync())
+                        {
+                            if (await reader.ReadAsync())
+                            {
+                                var model = new TrainingRequestEditViewModel
+                                {
+                                    Id = reader.GetInt32(reader.GetOrdinal("Id")),
+                                    DocNo = reader["DocNo"].ToString(),
+                                    Company = reader["Company"].ToString(),
+                                    TrainingType = reader["TrainingType"].ToString(),
+                                    Factory = reader["Factory"].ToString(),
+                                    CCEmail = reader["CCEmail"]?.ToString(),
+                                    Department = reader["Department"].ToString(),
+                                    Position = reader["Position"]?.ToString(),
+                                    StartDate = reader["StartDate"] != DBNull.Value ? (DateTime?)reader.GetDateTime(reader.GetOrdinal("StartDate")) : null,
+                                    EndDate = reader["EndDate"] != DBNull.Value ? (DateTime?)reader.GetDateTime(reader.GetOrdinal("EndDate")) : null,
+                                    SeminarTitle = reader["SeminarTitle"].ToString(),
+                                    TrainingLocation = reader["TrainingLocation"].ToString(),
+                                    Instructor = reader["Instructor"].ToString(),
+                                    RegistrationCost = reader["RegistrationCost"] != DBNull.Value ? (decimal?)reader.GetDecimal(reader.GetOrdinal("RegistrationCost")) : null,
+                                    InstructorFee = reader["InstructorFee"] != DBNull.Value ? (decimal?)reader.GetDecimal(reader.GetOrdinal("InstructorFee")) : null,
+                                    EquipmentCost = reader["EquipmentCost"] != DBNull.Value ? (decimal?)reader.GetDecimal(reader.GetOrdinal("EquipmentCost")) : null,
+                                    FoodCost = reader["FoodCost"] != DBNull.Value ? (decimal?)reader.GetDecimal(reader.GetOrdinal("FoodCost")) : null,
+                                    OtherCost = reader["OtherCost"] != DBNull.Value ? (decimal?)reader.GetDecimal(reader.GetOrdinal("OtherCost")) : null,
+                                    OtherCostDescription = reader["OtherCostDescription"]?.ToString(),
+                                    TotalCost = reader["TotalCost"] != DBNull.Value ? (decimal?)reader.GetDecimal(reader.GetOrdinal("TotalCost")) : null,
+                                    CostPerPerson = reader["CostPerPerson"] != DBNull.Value ? (decimal?)reader.GetDecimal(reader.GetOrdinal("CostPerPerson")) : null,
+                                    TrainingHours = reader["PerPersonTrainingHours"] != DBNull.Value ? (int?)reader.GetInt32(reader.GetOrdinal("PerPersonTrainingHours")) : null,
+                                    TrainingObjective = reader["TrainingObjective"]?.ToString(),
+                                    OtherObjective = reader["OtherObjective"]?.ToString(),
+                                    URLSource = reader["URLSource"]?.ToString(),
+                                    AdditionalNotes = reader["AdditionalNotes"]?.ToString(),
+                                    ExpectedOutcome = reader["ExpectedOutcome"]?.ToString(),
+                                    ParticipantCount = reader["TotalPeople"]?.ToString(),
+                                    SectionManagerId = reader["SectionManagerId"]?.ToString(),
+                                    Status_SectionManager = reader["Status_SectionManager"]?.ToString(),
+                                    Comment_SectionManager = reader["Comment_SectionManager"]?.ToString(),
+                                    ApproveInfo_SectionManager = reader["ApproveInfo_SectionManager"]?.ToString(),
+                                    DepartmentManagerId = reader["DepartmentManagerId"]?.ToString(),
+                                    Status_DepartmentManager = reader["Status_DepartmentManager"]?.ToString(),
+                                    Comment_DepartmentManager = reader["Comment_DepartmentManager"]?.ToString(),
+                                    ApproveInfo_DepartmentManager = reader["ApproveInfo_DepartmentManager"]?.ToString(),
+                                    ManagingDirectorId = reader["ManagingDirectorId"]?.ToString(),
+                                    Status_ManagingDirector = reader["Status_ManagingDirector"]?.ToString(),
+                                    Comment_ManagingDirector = reader["Comment_ManagingDirector"]?.ToString(),
+                                    ApproveInfo_ManagingDirector = reader["ApproveInfo_ManagingDirector"]?.ToString(),
+                                    Status = reader["Status"].ToString(),
+                                    CreatedDate = reader.GetDateTime(reader.GetOrdinal("CreatedDate")),
+                                    CreatedBy = reader["CreatedBy"].ToString()
+                                };
+
+                                // Fetch employees for this training request
+                                reader.Close();
+                                model.Employees = await GetEmployeesForRequest(conn, model.Id);
+
+                                return View(model);
+                            }
+                            else
+                            {
+                                TempData["Error"] = "ไม่พบข้อมูลคำร้องขออบรม";
+                                return RedirectToAction("MonthlyRequests", "Home");
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Error in Edit GET: {ex.Message}");
+                TempData["Error"] = "เกิดข้อผิดพลาดในการโหลดข้อมูล";
+                return RedirectToAction("MonthlyRequests", "Home");
+            }
+        }
+
+        // ====================================================================
+        // POST: /TrainingRequest/UpdateTrainingRequest
+        // ====================================================================
+        [HttpPost]
+        public async Task<IActionResult> UpdateTrainingRequest([FromForm] TrainingRequestFormData formData, [FromForm] string docNo)
+        {
+            try
+            {
+                Console.WriteLine($"🔵 UpdateTrainingRequest called for DocNo: {docNo}");
+
+                string connectionString = _configuration.GetConnectionString("DefaultConnection");
+
+                using (SqlConnection conn = new SqlConnection(connectionString))
+                {
+                    await conn.OpenAsync();
+                    Console.WriteLine("✅ Database connected");
+
+                    using (SqlTransaction transaction = conn.BeginTransaction())
+                    {
+                        try
+                        {
+                            // 1. Update main training request data
+                            await UpdateTrainingRequestData(conn, transaction, formData, docNo);
+                            Console.WriteLine($"✅ Training Request Updated: {docNo}");
+
+                            // 2. Get TrainingRequestId for employee updates
+                            int trainingRequestId = await GetTrainingRequestId(conn, transaction, docNo);
+
+                            // 3. Delete existing employees and insert new ones
+                            if (!string.IsNullOrEmpty(formData.EmployeesJson))
+                            {
+                                await DeleteEmployees(conn, transaction, trainingRequestId);
+                                await InsertEmployees(conn, transaction, trainingRequestId, formData.EmployeesJson);
+                                Console.WriteLine("✅ Employees updated");
+                            }
+
+                            // 4. Handle file attachments if provided
+                            if (formData.AttachedFiles != null)
+                            {
+                                await SaveAttachment(conn, transaction, docNo, formData.AttachedFiles);
+                                Console.WriteLine("✅ File uploaded");
+                            }
+
+                            transaction.Commit();
+                            Console.WriteLine("✅ Transaction committed");
+
+                            return Json(new
+                            {
+                                success = true,
+                                message = "✅ อัพเดทข้อมูลสำเร็จ",
+                                docNo = docNo
+                            });
+                        }
+                        catch (Exception ex)
+                        {
+                            transaction.Rollback();
+                            Console.WriteLine($"❌ Error in transaction: {ex.Message}");
+                            Console.WriteLine($"StackTrace: {ex.StackTrace}");
+                            return Json(new { success = false, message = "❌ เกิดข้อผิดพลาด: " + ex.Message });
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Error: {ex.Message}");
+                Console.WriteLine($"StackTrace: {ex.StackTrace}");
+                return Json(new { success = false, message = "❌ เกิดข้อผิดพลาด: " + ex.Message });
+            }
+        }
+
+        // ====================================================================
         // Approver APIs - เพิ่มใหม่
         // ====================================================================
 
@@ -477,6 +659,166 @@ namespace TrainingRequestApp.Controllers
         }
 
         // ====================================================================
+        // Helper Methods for Edit functionality
+        // ====================================================================
+
+        private async Task<List<EmployeeViewModel>> GetEmployeesForRequest(SqlConnection conn, int trainingRequestId)
+        {
+            var employees = new List<EmployeeViewModel>();
+            string query = @"
+                SELECT
+                    EmployeeCode, EmployeeName, Position,
+                    PreviousTrainingHours, PreviousTrainingCost,
+                    CurrentTrainingHours, CurrentTrainingCost, Notes
+                FROM [HRDSYSTEM].[dbo].[TrainingRequestEmployees]
+                WHERE TrainingRequestId = @TrainingRequestId";
+
+            using (SqlCommand cmd = new SqlCommand(query, conn))
+            {
+                cmd.Parameters.AddWithValue("@TrainingRequestId", trainingRequestId);
+
+                using (var reader = await cmd.ExecuteReaderAsync())
+                {
+                    while (await reader.ReadAsync())
+                    {
+                        employees.Add(new EmployeeViewModel
+                        {
+                            EmployeeCode = reader["EmployeeCode"]?.ToString(),
+                            EmployeeName = reader["EmployeeName"]?.ToString(),
+                            Position = reader["Position"]?.ToString(),
+                            PreviousTrainingHours = reader["PreviousTrainingHours"] != DBNull.Value ? (int?)reader.GetInt32(reader.GetOrdinal("PreviousTrainingHours")) : null,
+                            PreviousTrainingCost = reader["PreviousTrainingCost"] != DBNull.Value ? (decimal?)reader.GetDecimal(reader.GetOrdinal("PreviousTrainingCost")) : null,
+                            CurrentTrainingHours = reader["CurrentTrainingHours"] != DBNull.Value ? (int?)reader.GetInt32(reader.GetOrdinal("CurrentTrainingHours")) : null,
+                            CurrentTrainingCost = reader["CurrentTrainingCost"] != DBNull.Value ? (decimal?)reader.GetDecimal(reader.GetOrdinal("CurrentTrainingCost")) : null,
+                            Notes = reader["Notes"]?.ToString()
+                        });
+                    }
+                }
+            }
+
+            return employees;
+        }
+
+        private async Task UpdateTrainingRequestData(SqlConnection conn, SqlTransaction transaction,
+            TrainingRequestFormData formData, string docNo)
+        {
+            string query = @"
+                UPDATE [HRDSYSTEM].[dbo].[TrainingRequests]
+                SET
+                    [Company] = @Company,
+                    [TrainingType] = @TrainingType,
+                    [Factory] = @Factory,
+                    [CCEmail] = @CCEmail,
+                    [Department] = @Department,
+                    [Position] = @Position,
+                    [StartDate] = @StartDate,
+                    [EndDate] = @EndDate,
+                    [SeminarTitle] = @SeminarTitle,
+                    [TrainingLocation] = @TrainingLocation,
+                    [Instructor] = @Instructor,
+                    [RegistrationCost] = @RegistrationCost,
+                    [InstructorFee] = @InstructorFee,
+                    [EquipmentCost] = @EquipmentCost,
+                    [FoodCost] = @FoodCost,
+                    [OtherCost] = @OtherCost,
+                    [OtherCostDescription] = @OtherCostDescription,
+                    [TotalCost] = @TotalCost,
+                    [CostPerPerson] = @CostPerPerson,
+                    [PerPersonTrainingHours] = @PerPersonTrainingHours,
+                    [TrainingObjective] = @TrainingObjective,
+                    [OtherObjective] = @OtherObjective,
+                    [URLSource] = @URLSource,
+                    [AdditionalNotes] = @AdditionalNotes,
+                    [ExpectedOutcome] = @ExpectedOutcome,
+                    [TotalPeople] = @TotalPeople,
+                    [SectionManagerId] = @SectionManagerId,
+                    [Status_SectionManager] = @Status_SectionManager,
+                    [Comment_SectionManager] = @Comment_SectionManager,
+                    [ApproveInfo_SectionManager] = @ApproveInfo_SectionManager,
+                    [DepartmentManagerId] = @DepartmentManagerId,
+                    [Status_DepartmentManager] = @Status_DepartmentManager,
+                    [Comment_DepartmentManager] = @Comment_DepartmentManager,
+                    [ApproveInfo_DepartmentManager] = @ApproveInfo_DepartmentManager,
+                    [ManagingDirectorId] = @ManagingDirectorId,
+                    [Status_ManagingDirector] = @Status_ManagingDirector,
+                    [Comment_ManagingDirector] = @Comment_ManagingDirector,
+                    [ApproveInfo_ManagingDirector] = @ApproveInfo_ManagingDirector
+                WHERE [DocNo] = @DocNo AND [IsActive] = 1";
+
+            using (SqlCommand cmd = new SqlCommand(query, conn, transaction))
+            {
+                cmd.Parameters.AddWithValue("@DocNo", docNo);
+                cmd.Parameters.AddWithValue("@Company", formData.Company ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@TrainingType", formData.TrainingType ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@Factory", formData.Factory ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@CCEmail", formData.CCEmail ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@Department", formData.Department ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@Position", formData.Position ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@StartDate", formData.StartDate ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@EndDate", formData.EndDate ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@SeminarTitle", formData.SeminarTitle ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@TrainingLocation", formData.TrainingLocation ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@Instructor", formData.Instructor ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@RegistrationCost", formData.RegistrationCost ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@InstructorFee", formData.InstructorFee ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@EquipmentCost", formData.EquipmentCost ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@FoodCost", formData.FoodCost ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@OtherCost", formData.OtherCost ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@OtherCostDescription", formData.OtherCostDescription ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@TotalCost", formData.TotalCost ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@CostPerPerson", formData.CostPerPerson ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@PerPersonTrainingHours", formData.TrainingHours ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@TrainingObjective", formData.TrainingObjective ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@OtherObjective", formData.OtherObjective ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@URLSource", formData.URLSource ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@AdditionalNotes", formData.AdditionalNotes ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@ExpectedOutcome", formData.ExpectedOutcome ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@TotalPeople", formData.ParticipantCount ?? (object)DBNull.Value);
+
+                // Approvers
+                cmd.Parameters.AddWithValue("@SectionManagerId", formData.SectionManagerId ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@Status_SectionManager", formData.Status_SectionManager ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@Comment_SectionManager", formData.Comment_SectionManager ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@ApproveInfo_SectionManager", formData.ApproveInfo_SectionManager ?? (object)DBNull.Value);
+
+                cmd.Parameters.AddWithValue("@DepartmentManagerId", formData.DepartmentManagerId ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@Status_DepartmentManager", formData.Status_DepartmentManager ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@Comment_DepartmentManager", formData.Comment_DepartmentManager ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@ApproveInfo_DepartmentManager", formData.ApproveInfo_DepartmentManager ?? (object)DBNull.Value);
+
+                cmd.Parameters.AddWithValue("@ManagingDirectorId", formData.ManagingDirectorId ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@Status_ManagingDirector", formData.Status_ManagingDirector ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@Comment_ManagingDirector", formData.Comment_ManagingDirector ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@ApproveInfo_ManagingDirector", formData.ApproveInfo_ManagingDirector ?? (object)DBNull.Value);
+
+                await cmd.ExecuteNonQueryAsync();
+            }
+        }
+
+        private async Task<int> GetTrainingRequestId(SqlConnection conn, SqlTransaction transaction, string docNo)
+        {
+            string query = "SELECT Id FROM [HRDSYSTEM].[dbo].[TrainingRequests] WHERE DocNo = @DocNo AND IsActive = 1";
+
+            using (SqlCommand cmd = new SqlCommand(query, conn, transaction))
+            {
+                cmd.Parameters.AddWithValue("@DocNo", docNo);
+                var result = await cmd.ExecuteScalarAsync();
+                return Convert.ToInt32(result);
+            }
+        }
+
+        private async Task DeleteEmployees(SqlConnection conn, SqlTransaction transaction, int trainingRequestId)
+        {
+            string query = "DELETE FROM [HRDSYSTEM].[dbo].[TrainingRequestEmployees] WHERE TrainingRequestId = @TrainingRequestId";
+
+            using (SqlCommand cmd = new SqlCommand(query, conn, transaction))
+            {
+                cmd.Parameters.AddWithValue("@TrainingRequestId", trainingRequestId);
+                await cmd.ExecuteNonQueryAsync();
+            }
+        }
+
+        // ====================================================================
         // โค้ดเดิม - ไม่แก้ไข
         // ====================================================================
 
@@ -733,6 +1075,22 @@ namespace TrainingRequestApp.Controllers
         public string? SectionManagerId { get; set; }
         public string? DepartmentManagerId { get; set; }
         public string? ManagingDirectorId { get; set; }
+
+        // ✅ Approval Status and Comments for each level
+        // Section Manager
+        public string? Status_SectionManager { get; set; }
+        public string? Comment_SectionManager { get; set; }
+        public string? ApproveInfo_SectionManager { get; set; }
+
+        // Department Manager
+        public string? Status_DepartmentManager { get; set; }
+        public string? Comment_DepartmentManager { get; set; }
+        public string? ApproveInfo_DepartmentManager { get; set; }
+
+        // Managing Director
+        public string? Status_ManagingDirector { get; set; }
+        public string? Comment_ManagingDirector { get; set; }
+        public string? ApproveInfo_ManagingDirector { get; set; }
     }
 
     public class EmployeeData
@@ -762,5 +1120,71 @@ namespace TrainingRequestApp.Controllers
         public string? Name { get; set; }
         public string? Lastname { get; set; }
         public string? Level { get; set; }
+    }
+
+    public class TrainingRequestEditViewModel
+    {
+        public int Id { get; set; }
+        public string? DocNo { get; set; }
+        public string? Company { get; set; }
+        public string? TrainingType { get; set; }
+        public string? Factory { get; set; }
+        public string? CCEmail { get; set; }
+        public string? Department { get; set; }
+        public string? Position { get; set; }
+        public DateTime? StartDate { get; set; }
+        public DateTime? EndDate { get; set; }
+        public string? SeminarTitle { get; set; }
+        public string? TrainingLocation { get; set; }
+        public string? Instructor { get; set; }
+        public decimal? RegistrationCost { get; set; }
+        public decimal? InstructorFee { get; set; }
+        public decimal? EquipmentCost { get; set; }
+        public decimal? FoodCost { get; set; }
+        public decimal? OtherCost { get; set; }
+        public string? OtherCostDescription { get; set; }
+        public decimal? TotalCost { get; set; }
+        public decimal? CostPerPerson { get; set; }
+        public int? TrainingHours { get; set; }
+        public string? TrainingObjective { get; set; }
+        public string? OtherObjective { get; set; }
+        public string? URLSource { get; set; }
+        public string? AdditionalNotes { get; set; }
+        public string? ExpectedOutcome { get; set; }
+        public string? ParticipantCount { get; set; }
+
+        // Approvers
+        public string? SectionManagerId { get; set; }
+        public string? Status_SectionManager { get; set; }
+        public string? Comment_SectionManager { get; set; }
+        public string? ApproveInfo_SectionManager { get; set; }
+
+        public string? DepartmentManagerId { get; set; }
+        public string? Status_DepartmentManager { get; set; }
+        public string? Comment_DepartmentManager { get; set; }
+        public string? ApproveInfo_DepartmentManager { get; set; }
+
+        public string? ManagingDirectorId { get; set; }
+        public string? Status_ManagingDirector { get; set; }
+        public string? Comment_ManagingDirector { get; set; }
+        public string? ApproveInfo_ManagingDirector { get; set; }
+
+        public string? Status { get; set; }
+        public DateTime CreatedDate { get; set; }
+        public string? CreatedBy { get; set; }
+
+        public List<EmployeeViewModel> Employees { get; set; } = new List<EmployeeViewModel>();
+    }
+
+    public class EmployeeViewModel
+    {
+        public string? EmployeeCode { get; set; }
+        public string? EmployeeName { get; set; }
+        public string? Position { get; set; }
+        public int? PreviousTrainingHours { get; set; }
+        public decimal? PreviousTrainingCost { get; set; }
+        public int? CurrentTrainingHours { get; set; }
+        public decimal? CurrentTrainingCost { get; set; }
+        public string? Notes { get; set; }
     }
 }

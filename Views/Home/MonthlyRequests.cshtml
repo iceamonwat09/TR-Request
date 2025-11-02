@@ -463,7 +463,7 @@
                         </td>
                         <td class="text-center">
                             <button class="action-btn btn-edit"
-                                    onclick="editRequest(${item.id})"
+                                    onclick="editRequest('${item.docNo}')"
                                     title="แก้ไข">
                                 <i class="fas fa-edit"></i>
                             </button>
@@ -519,8 +519,8 @@
             loadData();
         }
 
-        function editRequest(id) {
-            window.location.href = '@Url.Action("Edit", "TrainingRequest")/' + id;
+        function editRequest(docNo) {
+            window.location.href = '@Url.Action("Edit", "TrainingRequest")?docNo=' + encodeURIComponent(docNo);
         }
 
         function viewReport(id) {
