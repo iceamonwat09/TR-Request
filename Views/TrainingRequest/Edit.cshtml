@@ -1848,10 +1848,13 @@
     function loadExistingEmployees() {
         const employees = @Html.Raw(Json.Serialize(Model.Employees));
 
+        console.log('🔍 Raw employees data from Model:', employees);
+
         if (employees && employees.length > 0) {
             console.log(`📊 Loading ${employees.length} existing employees`);
 
             employees.forEach((emp, index) => {
+                console.log(`Employee ${index + 1}:`, emp);
                 // แยกชื่อออกเป็น prefix, name, lastname (ถ้าเป็นไปได้)
                 const fullName = emp.EmployeeName || '';
                 const nameParts = fullName.split(' ');
