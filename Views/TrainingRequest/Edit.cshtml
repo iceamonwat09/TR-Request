@@ -1,12 +1,15 @@
-@model TrainingRequestApp.Models.TrainingRequest
+@model TrainingRequestApp.Models.TrainingRequestEditViewModel
 <div class="container-fluid py-4" style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); min-height: 100vh;">
     <div class="container">
         <div class="row justify-content-center">
             <div class="col-lg-11">
                 <div class="card shadow-lg border-0" style="border-radius: 15px;">
-                    <div class="card-header bg-primary text-center py-4" style="border-radius: 15px 15px 0 0;">
-                        <h2 class="mb-0 text-white fw-bold">
-                            📌 เพิ่มคำร้องขออบรม
+                    <div class="card-header bg-primary py-4 position-relative" style="border-radius: 15px 15px 0 0;">
+                        <div class="position-absolute top-0 end-0 p-3">
+                            <span class="badge bg-light text-primary fs-6">เลขที่เอกสาร: @Model.DocNo</span>
+                        </div>
+                        <h2 class="mb-0 text-white fw-bold text-center">
+                            📝 แก้ไขคำร้องขออบรม
                         </h2>
                     </div>
 
@@ -22,13 +25,13 @@
                                         </label>
                                         <div class="d-flex gap-4">
                                             <div class="form-check">
-                                                <input class="form-check-input" type="radio" name="Company" asp-for="Company" value="F2-สมุทรสาคร" id="company1" style="transform: scale(1.2);">
+                                                <input class="form-check-input" type="radio" name="Company" asp-for="Company" value="F2-สมุทรสาคร" id="company1" @(Model.Company == "F2-สมุทรสาคร" ? "checked" : "") style="transform: scale(1.2);">
                                                 <label class="form-check-label fw-medium" for="company1">
                                                     F2-สมุทรสาคร
                                                 </label>
                                             </div>
                                             <div class="form-check">
-                                                <input class="form-check-input" type="radio" name="Company" asp-for="Company" value="F4-ปราจีนบุรี" id="company2" style="transform: scale(1.2);">
+                                                <input class="form-check-input" type="radio" name="Company" asp-for="Company" value="F4-ปราจีนบุรี" id="company2" @(Model.Company == "F4-ปราจีนบุรี" ? "checked" : "") style="transform: scale(1.2);">
                                                 <label class="form-check-label fw-medium" for="company2">
                                                     F4-ปราจีนบุรี
                                                 </label>
@@ -44,13 +47,13 @@
                                         </label>
                                         <div class="d-flex gap-4">
                                             <div class="form-check">
-                                                <input class="form-check-input" type="radio" name="TrainingType" asp-for="TrainingType" value="Public" id="type1" style="transform: scale(1.2);">
+                                                <input class="form-check-input" type="radio" name="TrainingType" asp-for="TrainingType" value="Public" id="type1" @(Model.TrainingType == "Public" ? "checked" : "") style="transform: scale(1.2);">
                                                 <label class="form-check-label fw-medium" for="type1">
                                                     Public
                                                 </label>
                                             </div>
                                             <div class="form-check">
-                                                <input class="form-check-input" type="radio" name="TrainingType" asp-for="TrainingType" value="In House" id="type2" style="transform: scale(1.2);">
+                                                <input class="form-check-input" type="radio" name="TrainingType" asp-for="TrainingType" value="In House" id="type2" @(Model.TrainingType == "In House" ? "checked" : "") style="transform: scale(1.2);">
                                                 <label class="form-check-label fw-medium" for="type2">
                                                     In House
                                                 </label>
@@ -67,7 +70,7 @@
                                 <div class="col-md-6">
                                     <div class="form-group">
                                         <label asp-for="Factory" class="form-label fw-bold">🏭 โรงงาน</label>
-                                        <input asp-for="Factory" name="Factory" id="Factory" class="form-control form-control-lg" style="border-radius: 10px;" />
+                                        <input asp-for="Factory" name="Factory" id="Factory" class="form-control form-control-lg" value="@Model.Factory" style="border-radius: 10px;" />
                                     </div>
                                     <div class="form-group">
                                         <label class="form-label fw-bold">
@@ -106,30 +109,30 @@
                                         <div class="col-md-6">
                                             <div class="form-group">
                                                 <label asp-for="StartDate" class="form-label fw-bold">📅 วันที่เริ่มอบรม</label>
-                                                <input asp-for="StartDate" id="StartDate" name="StartDate" class="form-control form-control-lg" type="date" style="border-radius: 10px;" />
+                                                <input asp-for="StartDate" id="StartDate" name="StartDate" class="form-control form-control-lg" type="date" value="@Model.StartDate?.ToString("yyyy-MM-dd")" style="border-radius: 10px;" />
                                             </div>
                                         </div>
                                         <div class="col-md-6">
                                             <div class="form-group">
                                                 <label asp-for="EndDate" class="form-label fw-bold">📅 วันที่สิ้นสุดการอบรม</label>
-                                                <input asp-for="EndDate" id="EndDate" name="EndDate" class="form-control form-control-lg" type="date" style="border-radius: 10px;" />
+                                                <input asp-for="EndDate" id="EndDate" name="EndDate" class="form-control form-control-lg" type="date" value="@Model.EndDate?.ToString("yyyy-MM-dd")" style="border-radius: 10px;" />
                                             </div>
                                         </div>
                                     </div>
 
                                     <div class="form-group">
                                         <label asp-for="SeminarTitle" class="form-label fw-bold">📖 เรื่องสัมมนา</label>
-                                        <input asp-for="SeminarTitle" id="SeminarTitle" name="SeminarTitle" class="form-control form-control-lg" style="border-radius: 10px;" />
+                                        <input asp-for="SeminarTitle" id="SeminarTitle" name="SeminarTitle" class="form-control form-control-lg" value="@Model.SeminarTitle" style="border-radius: 10px;" />
                                     </div>
 
                                     <div class="form-group">
                                         <label asp-for="TrainingLocation" class="form-label fw-bold">📍 สถานที่อบรม</label>
-                                        <input asp-for="TrainingLocation" id="TrainingLocation" name="TrainingLocation" class="form-control form-control-lg" style="border-radius: 10px;" />
+                                        <input asp-for="TrainingLocation" id="TrainingLocation" name="TrainingLocation" class="form-control form-control-lg" value="@Model.TrainingLocation" style="border-radius: 10px;" />
                                     </div>
 
                                     <div class="form-group">
                                         <label asp-for="Instructor" class="form-label fw-bold">👨‍🏫 วิทยากร/สถาบัน</label>
-                                        <input asp-for="Instructor" id="Instructor" name="Instructor" class="form-control form-control-lg" style="border-radius: 10px;" />
+                                        <input asp-for="Instructor" id="Instructor" name="Instructor" class="form-control form-control-lg" value="@Model.Instructor" style="border-radius: 10px;" />
                                     </div>
                                 </div>
 
@@ -144,13 +147,13 @@
                                                 <!-- ค่าใช้จ่ายต่อคน -->
                                                 <div class="col-md-6">
                                                     <label class="form-label fw-bold">💰 ค่าใช้จ่ายต่อคน (บาท)</label>
-                                                    <input type="number" id="CostPerPerson" name="CostPerPerson" class="form-control form-control-lg budget-input-public" step="0.01" min="0" value="0" style="border-radius: 10px;" />
+                                                    <input type="number" id="CostPerPerson" name="CostPerPerson" class="form-control form-control-lg budget-input-public" step="0.01" min="0" value="@Model.CostPerPerson" style="border-radius: 10px;" />
                                                 </div>
 
                                                 <!-- จำนวนชั่วโมงการอบรม -->
                                                 <div class="col-md-6">
                                                     <label class="form-label fw-bold">⏰ จำนวนชั่วโมงการอบรม</label>
-                                                    <input type="number" name="TrainingHours" id="TrainingHours" class="form-control form-control-lg budget-input-public" min="0.5" step="0.5" value="0" style="border-radius: 10px;" />
+                                                    <input type="number" name="TrainingHours" id="TrainingHours" class="form-control form-control-lg budget-input-public" min="0.5" step="0.5" value="@Model.TrainingHours" style="border-radius: 10px;" />
                                                 </div>
 
                                                 <!-- รวมสุทธิ -->
@@ -179,14 +182,14 @@
                                                 <!-- ค่าลงทะเบียน/วิทยากร -->
                                                 <div class="col-md-6">
                                                     <label asp-for="RegistrationCost" class="form-label fw-bold">📋 ค่าลงทะเบียน/วิทยากร (บาท)</label>
-                                                    <input asp-for="RegistrationCost" name="RegistrationCost" id="RegistrationCost" class="form-control form-control-lg budget-input" type="number" step="0.01" min="0" value="0" style="border-radius: 10px;" />
+                                                    <input asp-for="RegistrationCost" name="RegistrationCost" id="RegistrationCost" class="form-control form-control-lg budget-input" type="number" step="0.01" min="0" value="@Model.RegistrationCost" style="border-radius: 10px;" />
                                                 </div>
 
 
                                                 <!-- ค่าวิทยากร -->
                                                 <div class="col-md-6">
                                                     <label asp-for="InstructorFee" class="form-label fw-bold">👨‍🏫 ค่าวิทยากร (บาท)</label>
-                                                    <input asp-for="InstructorFee" name="InstructorFee" id="InstructorFee" class="form-control form-control-lg budget-input-inhouse" type="number" step="0.01" min="0" value="0" style="border-radius: 10px;" />
+                                                    <input asp-for="InstructorFee" name="InstructorFee" id="InstructorFee" class="form-control form-control-lg budget-input-inhouse" type="number" step="0.01" min="0" value="@Model.InstructorFee" style="border-radius: 10px;" />
                                                 </div>
 
                                                 <!-- ค่าคอมแมนวิทยากร -->
@@ -198,31 +201,31 @@
                                                 <!-- ค่าอุปกรณ์ -->
                                                 <div class="col-md-6">
                                                     <label asp-for="EquipmentCost" class="form-label fw-bold">🛠️ ค่าอุปกรณ์ (บาท)</label>
-                                                    <input asp-for="EquipmentCost" name="EquipmentCost" id="EquipmentCost" class="form-control form-control-lg budget-input-inhouse" type="number" step="0.01" min="0" value="0" style="border-radius: 10px;" />
+                                                    <input asp-for="EquipmentCost" name="EquipmentCost" id="EquipmentCost" class="form-control form-control-lg budget-input-inhouse" type="number" step="0.01" min="0" value="@Model.EquipmentCost" style="border-radius: 10px;" />
                                                 </div>
 
                                                 <!-- ค่าอาหาร -->
                                                 <div class="col-md-6">
                                                     <label asp-for="FoodCost" class="form-label fw-bold">🍽️ ค่าอาหาร (บาท)</label>
-                                                    <input asp-for="FoodCost" name="FoodCost" id="FoodCost" class="form-control form-control-lg budget-input-inhouse" type="number" step="0.01" min="0" value="0" style="border-radius: 10px;" />
+                                                    <input asp-for="FoodCost" name="FoodCost" id="FoodCost" class="form-control form-control-lg budget-input-inhouse" type="number" step="0.01" min="0" value="@Model.FoodCost" style="border-radius: 10px;" />
                                                 </div>
 
                                                 <!-- อื่นๆ -->
                                                 <div class="col-md-6">
                                                     <label asp-for="OtherCost" class="form-label fw-bold">🔧 อื่นๆ (บาท)</label>
-                                                    <input asp-for="OtherCost" name="OtherCost" id="OtherCost" class="form-control form-control-lg budget-input-inhouse" type="number" step="0.01" min="0" value="0" style="border-radius: 10px;" />
+                                                    <input asp-for="OtherCost" name="OtherCost" id="OtherCost" class="form-control form-control-lg budget-input-inhouse" type="number" step="0.01" min="0" value="@Model.OtherCost" style="border-radius: 10px;" />
                                                 </div>
 
                                                 <!-- ระบุรายการอื่นๆ -->
                                                 <div class="col-md-6">
                                                     <label asp-for="OtherCostDescription" class="form-label fw-bold">📝 ระบุรายการอื่นๆ</label>
-                                                    <input asp-for="OtherCostDescription" name="OtherCostDescription" class="form-control form-control-lg" placeholder="กรุณาระบุรายการอื่นๆ" style="border-radius: 10px;" />
+                                                    <input asp-for="OtherCostDescription" name="OtherCostDescription" class="form-control form-control-lg" value="@Model.OtherCostDescription" placeholder="กรุณาระบุรายการอื่นๆ" style="border-radius: 10px;" />
                                                 </div>
 
                                                 <!-- จำนวนผู้เข้าอบรม -->
                                                 <div class="col-md-6">
                                                     <label class="form-label fw-bold">👥 จำนวนผู้เข้าอบรม</label>
-                                                    <input type="number" name="ParticipantCount" id="ParticipantCount" class="form-control form-control-lg" min="1" value="0" style="border-radius: 10px;" />
+                                                    <input type="number" name="ParticipantCount" id="ParticipantCount" class="form-control form-control-lg" min="1" value="@Model.ParticipantCount" style="border-radius: 10px;" />
                                                 </div>
 
                                                 <!-- รวมสุทธิ -->
@@ -552,41 +555,41 @@
                                             <div class="row g-3">
                                                 <div class="col-md-6">
                                                     <div class="form-check p-3" style="background-color: white; border-radius: 10px; border: 1px solid #dee2e6;">
-                                                        <input class="form-check-input" type="radio" name="TrainingObjective" asp-for="TrainingObjective" value="พัฒนาทักษะความชำนาญ" id="objective1">
+                                                        <input class="form-check-input" type="radio" name="TrainingObjective" asp-for="TrainingObjective" value="พัฒนาทักษะความชำนาญ" id="objective1" @(Model.TrainingObjective == "พัฒนาทักษะความชำนาญ" ? "checked" : "")>
                                                         <label class="form-check-label" for="objective1">พัฒนาทักษะความชำนาญ</label>
                                                     </div>
                                                 </div>
                                                 <div class="col-md-6">
                                                     <div class="form-check p-3" style="background-color: white; border-radius: 10px; border: 1px solid #dee2e6;">
-                                                        <input class="form-check-input" type="radio" name="TrainingObjective" asp-for="TrainingObjective" value="เพิ่มประสิทธิภาพ / คุณภาพ" id="objective2">
+                                                        <input class="form-check-input" type="radio" name="TrainingObjective" asp-for="TrainingObjective" value="เพิ่มประสิทธิภาพ / คุณภาพ" id="objective2" @(Model.TrainingObjective == "เพิ่มประสิทธิภาพ / คุณภาพ" ? "checked" : "")>
                                                         <label class="form-check-label" for="objective2">เพิ่มประสิทธิภาพ / คุณภาพ</label>
                                                     </div>
                                                 </div>
                                                 <div class="col-md-6">
                                                     <div class="form-check p-3" style="background-color: white; border-radius: 10px; border: 1px solid #dee2e6;">
-                                                        <input class="form-check-input" type="radio" name="TrainingObjective" asp-for="TrainingObjective" value="ช่วยแก้ไข / ป้องกันปัญหา" id="objective3">
+                                                        <input class="form-check-input" type="radio" name="TrainingObjective" asp-for="TrainingObjective" value="ช่วยแก้ไข / ป้องกันปัญหา" id="objective3" @(Model.TrainingObjective == "ช่วยแก้ไข / ป้องกันปัญหา" ? "checked" : "")>
                                                         <label class="form-check-label" for="objective3">ช่วยแก้ไข / ป้องกันปัญหา</label>
                                                     </div>
                                                 </div>
                                                 <div class="col-md-6">
                                                     <div class="form-check p-3" style="background-color: white; border-radius: 10px; border: 1px solid #dee2e6;">
-                                                        <input class="form-check-input" type="radio" name="TrainingObjective" asp-for="TrainingObjective" value="กฎหมาย/ข้อกำหนดลูกค้า" id="objective4">
+                                                        <input class="form-check-input" type="radio" name="TrainingObjective" asp-for="TrainingObjective" value="กฎหมาย/ข้อกำหนดลูกค้า" id="objective4" @(Model.TrainingObjective == "กฎหมาย/ข้อกำหนดลูกค้า" ? "checked" : "")>
                                                         <label class="form-check-label" for="objective4">กฎหมาย/ข้อกำหนดลูกค้า</label>
                                                     </div>
                                                 </div>
                                                 <div class="col-md-6">
                                                     <div class="form-check p-3" style="background-color: white; border-radius: 10px; border: 1px solid #dee2e6;">
-                                                        <input class="form-check-input" type="radio" name="TrainingObjective" asp-for="TrainingObjective" value="ถ่ายทอดความรู้/ขยายผลสู่ผู้อื่น" id="objective5">
+                                                        <input class="form-check-input" type="radio" name="TrainingObjective" asp-for="TrainingObjective" value="ถ่ายทอดความรู้/ขยายผลสู่ผู้อื่น" id="objective5" @(Model.TrainingObjective == "ถ่ายทอดความรู้/ขยายผลสู่ผู้อื่น" ? "checked" : "")>
                                                         <label class="form-check-label" for="objective5">ถ่ายทอดความรู้/ขยายผลสู่ผู้อื่น</label>
                                                     </div>
                                                 </div>
                                                 <div class="col-md-6">
                                                     <div class="p-3" style="background-color: white; border-radius: 10px; border: 1px solid #dee2e6;">
                                                         <div class="form-check">
-                                                            <input class="form-check-input" type="radio" name="TrainingObjective" asp-for="TrainingObjective" value="อื่นๆ" id="objective6">
+                                                            <input class="form-check-input" type="radio" name="TrainingObjective" asp-for="TrainingObjective" value="อื่นๆ" id="objective6" @(Model.TrainingObjective == "อื่นๆ" ? "checked" : "")>
                                                             <label class="form-check-label" for="objective6">อื่นๆ (ระบุ)</label>
                                                         </div>
-                                                        <input type="text" class="form-control mt-2" asp-for="OtherObjective" id="OtherObjective" placeholder="กรุณาระบุหากเลือก 'อื่นๆ'" style="border-radius: 8px;">
+                                                        <input type="text" class="form-control mt-2" asp-for="OtherObjective" id="OtherObjective" value="@Model.OtherObjective" placeholder="กรุณาระบุหากเลือก 'อื่นๆ'" style="border-radius: 8px;">
                                                     </div>
                                                 </div>
                                             </div>
@@ -597,7 +600,7 @@
                                 <!-- ผลคาดว่าจะได้รับ -->
                                 <div class="form-group mt-4">
                                     <label asp-for="ExpectedOutcome" class="form-label fw-bold">🎯 ผลคาดว่าจะได้รับ</label>
-                                    <textarea asp-for="ExpectedOutcome" name="ExpectedOutcome" id="ExpectedOutcome" class="form-control" rows="3" style="border-radius: 10px;"></textarea>
+                                    <textarea asp-for="ExpectedOutcome" name="ExpectedOutcome" id="ExpectedOutcome" class="form-control" rows="3" style="border-radius: 10px;">@Model.ExpectedOutcome</textarea>
                                 </div>
 
                                 <!-- ตารางประวัติการอบรม -->
@@ -661,12 +664,12 @@
                                 <!-- ข้อมูลเพิ่มเติม -->
                                 <div class="form-group mt-4">
                                     <label asp-for="URLSource" class="form-label fw-bold">🔗 แหล่งที่มา URL (ห้ามพิมพ์ข้อความ ให้วางลิงก์เท่านั้น)</label>
-                                    <input asp-for="URLSource" name="URLSource" id="URLSource" class="form-control form-control-lg" type="url" placeholder="https://example.com" onkeypress="return false;" style="border-radius: 10px;" />
+                                    <input asp-for="URLSource" name="URLSource" id="URLSource" class="form-control form-control-lg" type="url" value="@Model.URLSource" placeholder="https://example.com" onkeypress="return false;" style="border-radius: 10px;" />
                                 </div>
 
                                 <div class="form-group">
                                     <label asp-for="AdditionalNotes" class="form-label fw-bold">📝 ระบุข้อมูลเพิ่มเติมให้ HR รับทราบ (ถ้ามี)</label>
-                                    <textarea asp-for="AdditionalNotes" name="AdditionalNotes" id="AdditionalNotes" class="form-control" rows="3" style="border-radius: 10px;"></textarea>
+                                    <textarea asp-for="AdditionalNotes" name="AdditionalNotes" id="AdditionalNotes" class="form-control" rows="3" style="border-radius: 10px;">@Model.AdditionalNotes</textarea>
                                 </div>
 
                                 <div class="form-group mt-4">
@@ -674,47 +677,88 @@
                                     <input asp-for="AttachedFiles" id="AttachedFiles" class="form-control form-control-lg" type="file" style="border-radius: 10px;" />
                                 </div>
 
-                                <!-- ผู้อนุมัติ 3 ระดับ -->
+                                <!-- ผู้อนุมัติระดับที่ 1: Section Manager -->
                                 <hr class="my-4">
-                                <h5 class="fw-bold mb-3">👥 ผู้อนุมัติ</h5>
+                                <h5 class="fw-bold mb-3">👤 ผู้อนุมัติระดับที่ 1: Section Manager</h5>
 
-                                <div class="form-group mt-3">
-                                    <label class="form-label fw-bold">
-                                        👤 Section Manager
-                                        <small class="text-muted">(กรองจาก ฝ่าย + ตำแหน่งที่เลือก)</small>
-                                    </label>
-                                    <select id="sectionManagerSelect" class="form-select form-select-lg" style="width: 100%; border-radius: 10px;">
-                                        <option value="">-- เลือก Section Manager --</option>
-                                    </select>
-                                    <input type="hidden" id="sectionManagerIdHidden" name="SectionManagerId" value="" />
+                                <div class="row g-3">
+                                    <div class="col-md-12">
+                                        <label class="form-label fw-bold">Section Manager</label>
+                                        <select id="sectionManagerSelect" class="form-select form-select-lg" style="width: 100%; border-radius: 10px;">
+                                            <option value="">พิมพ์ชื่อเพื่อค้นหา...</option>
+                                        </select>
+                                        <input type="hidden" id="sectionManagerIdHidden" name="SectionManagerId" value="@Model.SectionManagerId" />
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label fw-bold">สถานะ</label>
+                                        <input type="text" name="Status_SectionManager" class="form-control form-control-lg" value="@Model.Status_SectionManager" readonly style="background-color: #e9ecef;" />
+                                    </div>
+                                    <div class="col-md-8">
+                                        <label class="form-label fw-bold">ความคิดเห็น</label>
+                                        <textarea name="Comment_SectionManager" class="form-control form-control-lg" rows="2" readonly style="background-color: #e9ecef;">@Model.Comment_SectionManager</textarea>
+                                    </div>
+                                    <div class="col-md-12">
+                                        <label class="form-label fw-bold">ข้อมูลการอนุมัติ</label>
+                                        <input type="text" name="ApproveInfo_SectionManager" class="form-control form-control-lg" value="@Model.ApproveInfo_SectionManager" readonly style="background-color: #e9ecef;" />
+                                    </div>
                                 </div>
 
-                                <div class="form-group mt-3">
-                                    <label class="form-label fw-bold">
-                                        👤 Department Manager
-                                        <small class="text-muted">(กรองจาก ฝ่าย + ตำแหน่งที่เลือก)</small>
-                                    </label>
-                                    <select id="departmentManagerSelect" class="form-select form-select-lg" style="width: 100%; border-radius: 10px;">
-                                        <option value="">-- เลือก Department Manager --</option>
-                                    </select>
-                                    <input type="hidden" id="departmentManagerIdHidden" name="DepartmentManagerId" value="" />
+                                <!-- ผู้อนุมัติระดับที่ 2: Department Manager -->
+                                <hr class="my-4">
+                                <h5 class="fw-bold mb-3">👤 ผู้อนุมัติระดับที่ 2: Department Manager</h5>
+
+                                <div class="row g-3">
+                                    <div class="col-md-12">
+                                        <label class="form-label fw-bold">Department Manager</label>
+                                        <select id="departmentManagerSelect" class="form-select form-select-lg" style="width: 100%; border-radius: 10px;">
+                                            <option value="">พิมพ์ชื่อเพื่อค้นหา...</option>
+                                        </select>
+                                        <input type="hidden" id="departmentManagerIdHidden" name="DepartmentManagerId" value="@Model.DepartmentManagerId" />
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label fw-bold">สถานะ</label>
+                                        <input type="text" name="Status_DepartmentManager" class="form-control form-control-lg" value="@Model.Status_DepartmentManager" readonly style="background-color: #e9ecef;" />
+                                    </div>
+                                    <div class="col-md-8">
+                                        <label class="form-label fw-bold">ความคิดเห็น</label>
+                                        <textarea name="Comment_DepartmentManager" class="form-control form-control-lg" rows="2" readonly style="background-color: #e9ecef;">@Model.Comment_DepartmentManager</textarea>
+                                    </div>
+                                    <div class="col-md-12">
+                                        <label class="form-label fw-bold">ข้อมูลการอนุมัติ</label>
+                                        <input type="text" name="ApproveInfo_DepartmentManager" class="form-control form-control-lg" value="@Model.ApproveInfo_DepartmentManager" readonly style="background-color: #e9ecef;" />
+                                    </div>
                                 </div>
 
-                                <div class="form-group mt-3">
-                                    <label class="form-label fw-bold">
-                                        👤 Managing Director
-                                        <small class="text-muted">(Director / AMD / DMD / MD / CEO)</small>
-                                    </label>
-                                    <select id="managingDirectorSelect" class="form-select form-select-lg" style="width: 100%; border-radius: 10px;">
-                                        <option value="">-- เลือก Managing Director --</option>
-                                    </select>
-                                    <input type="hidden" id="managingDirectorIdHidden" name="ManagingDirectorId" value="" />
+                                <!-- ผู้อนุมัติระดับที่ 3: Managing Director -->
+                                <hr class="my-4">
+                                <h5 class="fw-bold mb-3">👤 ผู้อนุมัติระดับที่ 3: Managing Director</h5>
+
+                                <div class="row g-3">
+                                    <div class="col-md-12">
+                                        <label class="form-label fw-bold">Managing Director</label>
+                                        <select id="managingDirectorSelect" class="form-select form-select-lg" style="width: 100%; border-radius: 10px;">
+                                            <option value="">พิมพ์ชื่อเพื่อค้นหา...</option>
+                                        </select>
+                                        <input type="hidden" id="managingDirectorIdHidden" name="ManagingDirectorId" value="@Model.ManagingDirectorId" />
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label fw-bold">สถานะ</label>
+                                        <input type="text" name="Status_ManagingDirector" class="form-control form-control-lg" value="@Model.Status_ManagingDirector" readonly style="background-color: #e9ecef;" />
+                                    </div>
+                                    <div class="col-md-8">
+                                        <label class="form-label fw-bold">ความคิดเห็น</label>
+                                        <textarea name="Comment_ManagingDirector" class="form-control form-control-lg" rows="2" readonly style="background-color: #e9ecef;">@Model.Comment_ManagingDirector</textarea>
+                                    </div>
+                                    <div class="col-md-12">
+                                        <label class="form-label fw-bold">ข้อมูลการอนุมัติ</label>
+                                        <input type="text" name="ApproveInfo_ManagingDirector" class="form-control form-control-lg" value="@Model.ApproveInfo_ManagingDirector" readonly style="background-color: #e9ecef;" />
+                                    </div>
                                 </div>
 
                                 <!-- ปุ่มบันทึก -->
                                 <div class="text-center mt-5">
                                     <button type="submit" class="btn btn-primary btn-lg text-white px-5 py-3 fw-bold" style="border-radius: 25px; box-shadow: 0 4px 15px rgba(13, 110, 253, 0.3);">
-                                        💾 บันทึก
+                                        💾 อัพเดทข้อมูล
                                     </button>
                                 </div>
                             </div>
@@ -1384,7 +1428,7 @@
 
         console.log('✅ All Approvers Select2 initialized');
     });
-  
+
         // ====================================================================
         // 1. Employee Manager Class
         // ====================================================================
@@ -1774,7 +1818,228 @@
     // ✅ โหลด Departments เมื่อเปิดหน้า
     document.addEventListener('DOMContentLoaded', async function() {
         await loadDepartments();
+
+        // ✅ โหลดข้อมูลที่มีอยู่แล้วจาก Model
+        await loadExistingData();
     });
+
+    // ===============================================
+    // 🔹 Load Existing Data from Model (for Edit mode)
+    // ===============================================
+    async function loadExistingData() {
+        console.log('🔄 Loading existing data from Model...');
+
+        // 1. Load Employees from Model
+        loadExistingEmployees();
+
+        // 2. Set Department and Position values
+        await setDepartmentAndPosition();
+
+        // 3. Set CCEmail values
+        await setCCEmail();
+
+        // 4. Set Approvers values
+        await setApprovers();
+
+        console.log('✅ Existing data loaded');
+    }
+
+    // โหลดข้อมูลพนักงานจาก Model.Employees
+    function loadExistingEmployees() {
+        const employees = @Html.Raw(Json.Serialize(Model.Employees));
+
+        console.log('🔍 Raw employees data from Model:', employees);
+
+        if (employees && employees.length > 0) {
+            console.log(`📊 Loading ${employees.length} existing employees`);
+
+            employees.forEach((emp, index) => {
+                console.log(`Employee ${index + 1}:`, emp);
+                // แยกชื่อออกเป็น prefix, name, lastname (ถ้าเป็นไปได้)
+                const fullName = emp.employeeName || '';  // ← camelCase
+                const nameParts = fullName.split(' ');
+
+                let prefix = '';
+                let name = '';
+                let lastname = '';
+
+                if (nameParts.length === 1) {
+                    name = nameParts[0];
+                } else if (nameParts.length === 2) {
+                    name = nameParts[0];
+                    lastname = nameParts[1];
+                } else if (nameParts.length >= 3) {
+                    prefix = nameParts[0];
+                    name = nameParts.slice(1, -1).join(' ');
+                    lastname = nameParts[nameParts.length - 1];
+                }
+
+                // สร้าง employee object ตามโครงสร้างที่ EmployeeManager ต้องการ
+                const employeeData = {
+                    empCode: emp.employeeCode || '',  // ← camelCase
+                    prefix: prefix,
+                    name: name,
+                    lastname: lastname,
+                    position: emp.position || '',  // ← camelCase
+                    currentYearHours: emp.previousTrainingHours || 0,  // ← camelCase
+                    currentYearCost: emp.previousTrainingCost || 0,  // ← camelCase
+                    thisTimeHours: emp.currentTrainingHours || 0,  // ← camelCase
+                    thisTimeCost: emp.currentTrainingCost || 0,  // ← camelCase
+                    remainingHours: 12 - (emp.previousTrainingHours || 0) - (emp.currentTrainingHours || 0),
+                    remainingCost: 10000 - (emp.previousTrainingCost || 0) - (emp.currentTrainingCost || 0),
+                    notes: emp.notes || ''  // ← camelCase
+                };
+
+                console.log('✅ Employee data created:', employeeData);
+
+                // เพิ่ม employee เข้าไปใน array โดยตรง
+                employeeManager.employees.push(employeeData);
+
+                // สร้างและแสดง row ในตาราง
+                const row = employeeManager.createEmployeeRow(employeeData, employeeManager.rowCounter);
+                document.getElementById('employeeTableBody').appendChild(row);
+
+                // ถ้ามี notes ให้ set ค่าเข้าไปใน input
+                if (emp.notes) {
+                    setTimeout(() => {
+                        const noteInput = document.querySelector(`input.note-input[data-emp-code="${employeeData.empCode}"]`);
+                        if (noteInput) {
+                            noteInput.value = emp.notes;
+                        }
+                    }, 100);
+                }
+
+                employeeManager.rowCounter++;
+            });
+
+            console.log('✅ Employees loaded:', employees.length);
+        } else {
+            console.log('ℹ️ No existing employees');
+        }
+    }
+
+    // Set Department และ Position dropdown
+    async function setDepartmentAndPosition() {
+        // Decode HTML entities (แก้ปัญหา &amp; เป็น &)
+        const department = '@Html.Raw(Model.Department)';
+        const position = '@Html.Raw(Model.Position)';
+
+        if (department) {
+            console.log('🔧 Setting Department (decoded):', department);
+
+            // Set department value
+            const departmentSelect = document.getElementById('departmentSelect');
+            if (departmentSelect) {
+                departmentSelect.value = department;
+
+                console.log('✅ Department dropdown value set:', departmentSelect.value);
+
+                // Trigger change event to load positions
+                departmentSelect.dispatchEvent(new Event('change'));
+
+                // รอให้โหลด positions เสร็จ แล้วค่อย set position
+                if (position) {
+                    setTimeout(() => {
+                        const positionSelect = document.getElementById('positionSelect');
+                        if (positionSelect) {
+                            positionSelect.value = position;
+                            console.log('✅ Position set:', position);
+                        }
+                    }, 500);
+                }
+            }
+        }
+    }
+
+    // Set CCEmail dropdown
+    async function setCCEmail() {
+        const ccEmail = '@Html.Raw(Model.CCEmail)';
+
+        if (ccEmail) {
+            console.log('🔧 Setting CCEmail (raw):', ccEmail);
+
+            // รอให้ Select2 initialize เสร็จก่อน
+            setTimeout(() => {
+                // แยก email โดยใช้ทั้ง comma และ semicolon
+                const emails = ccEmail.split(/[,;]/).map(e => e.trim()).filter(e => e);
+
+                console.log('📧 Parsed emails:', emails, 'Count:', emails.length);
+
+                if (emails.length > 0) {
+                    // สร้าง options และ select
+                    const $select = $('#ccEmailSelect');
+
+                    emails.forEach(email => {
+                        // สร้าง option ถ้ายังไม่มี
+                        if ($select.find(`option[value="${email}"]`).length === 0) {
+                            const newOption = new Option(email, email, true, true);
+                            $select.append(newOption);
+                        }
+                    });
+
+                    // Select the emails
+                    $select.val(emails).trigger('change');
+
+                    console.log('✅ CCEmail set successfully:', emails);
+                }
+            }, 1000);
+        }
+    }
+
+    // Set Approvers dropdown
+    async function setApprovers() {
+        const sectionManagerId = '@Html.Raw(Model.SectionManagerId)';
+        const departmentManagerId = '@Html.Raw(Model.DepartmentManagerId)';
+        const managingDirectorId = '@Html.Raw(Model.ManagingDirectorId)';
+
+        console.log('🔧 Setting Approvers...');
+        console.log('  Section Manager ID:', sectionManagerId);
+        console.log('  Department Manager ID:', departmentManagerId);
+        console.log('  Managing Director ID:', managingDirectorId);
+
+        // รอให้ Select2 initialize เสร็จก่อน
+        setTimeout(async () => {
+            // Set Section Manager
+            if (sectionManagerId) {
+                $('#sectionManagerIdHidden').val(sectionManagerId);
+
+                // สร้าง option และแสดงใน Select2
+                const $select = $('#sectionManagerSelect');
+                if ($select.find(`option[value="${sectionManagerId}"]`).length === 0) {
+                    const newOption = new Option(sectionManagerId, sectionManagerId, true, true);
+                    $select.append(newOption).trigger('change');
+                }
+
+                console.log('✅ SectionManager set:', sectionManagerId);
+            }
+
+            // Set Department Manager
+            if (departmentManagerId) {
+                $('#departmentManagerIdHidden').val(departmentManagerId);
+
+                const $select = $('#departmentManagerSelect');
+                if ($select.find(`option[value="${departmentManagerId}"]`).length === 0) {
+                    const newOption = new Option(departmentManagerId, departmentManagerId, true, true);
+                    $select.append(newOption).trigger('change');
+                }
+
+                console.log('✅ DepartmentManager set:', departmentManagerId);
+            }
+
+            // Set Managing Director
+            if (managingDirectorId) {
+                $('#managingDirectorIdHidden').val(managingDirectorId);
+
+                const $select = $('#managingDirectorSelect');
+                if ($select.find(`option[value="${managingDirectorId}"]`).length === 0) {
+                    const newOption = new Option(managingDirectorId, managingDirectorId, true, true);
+                    $select.append(newOption).trigger('change');
+                }
+
+                console.log('✅ ManagingDirector set:', managingDirectorId);
+            }
+        }, 1500);
+    }
 
     // ===============================================
     // Multi-Select Email
@@ -2226,6 +2491,7 @@
 
                 const formData = new FormData(form);
                 formData.append('EmployeesJson', JSON.stringify(employeesData));
+                formData.append('docNo', '@Model.DocNo');
 
                 console.log('📦 FormData prepared');
                 console.log('📄 EmployeesJson:', employeesData);
@@ -2240,9 +2506,9 @@
                 submitBtn.disabled = true;
                 submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>กำลังบันทึก...';
 
-                console.log('🚀 Sending to /TrainingRequest/SaveTrainingRequest');
+                console.log('🚀 Sending to /TrainingRequest/UpdateTrainingRequest');
 
-                const response = await fetch('/TrainingRequest/SaveTrainingRequest', {
+                const response = await fetch('/TrainingRequest/UpdateTrainingRequest', {
                     method: 'POST',
                     body: formData
                 });
@@ -2264,7 +2530,7 @@
 
                     // Redirect
                     setTimeout(() => {
-                        window.location.href = '/Home#';
+                        window.location.href = '/TrainingRequest/Index';
                     }, 500);
 
                 } else {
@@ -2281,7 +2547,7 @@
                 const submitBtn = form.querySelector('button[type="submit"]');
                 if (submitBtn) {
                     submitBtn.disabled = false;
-                    submitBtn.innerHTML = '💾 บันทึก';
+                    submitBtn.innerHTML = '💾 อัพเดทข้อมูล';
                 }
                 isSubmitting = false;
             }
