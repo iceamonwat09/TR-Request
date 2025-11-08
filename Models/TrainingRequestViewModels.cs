@@ -62,6 +62,8 @@ namespace TrainingRequestApp.Models
         public string? EmployeeCode { get; set; }
         public string? EmployeeName { get; set; }
         public string? Position { get; set; }
+        public string? Level { get; set; }
+        public string? Department { get; set; }
         public int? PreviousTrainingHours { get; set; }
         public decimal? PreviousTrainingCost { get; set; }
         public int? CurrentTrainingHours { get; set; }

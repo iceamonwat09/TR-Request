@@ -21,6 +21,12 @@ namespace TrainingRequestApp.Models
         [StringLength(100)]
         public string? Position { get; set; }
 
+        [StringLength(100)]
+        public string? Level { get; set; }
+
+        [StringLength(100)]
+        public string? Department { get; set; }
+
         public int? PreviousTrainingHours { get; set; }
 
         [Column(TypeName = "decimal(10,2)")]
