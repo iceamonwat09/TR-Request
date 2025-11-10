@@ -1030,6 +1030,266 @@ namespace TrainingRequestApp.Controllers
             }
         }
 
+        // ====================================================================
+        // File Attachment APIs
+        // ====================================================================
+
+        [HttpGet]
+        public async Task<IActionResult> GetAttachments(string docNo)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(docNo))
+                {
+                    return Json(new { success = false, message = "DocNo is required" });
+                }
+
+                string connectionString = _configuration.GetConnectionString("DefaultConnection");
+                var attachments = new List<object>();
+
+                using (SqlConnection conn = new SqlConnection(connectionString))
+                {
+                    await conn.OpenAsync();
+
+                    string query = @"
+                        SELECT
+                            Id,
+                            File_Name,
+                            Modify_Date
+                        FROM [HRDSYSTEM].[dbo].[TrainingRequestAttachments]
+                        WHERE DocNo = @DocNo
+                        ORDER BY Modify_Date DESC";
+
+                    using (SqlCommand cmd = new SqlCommand(query, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@DocNo", docNo);
+
+                        using (SqlDataReader reader = await cmd.ExecuteReaderAsync())
+                        {
+                            while (await reader.ReadAsync())
+                            {
+                                // Extract year from filename pattern: DocNo_YYYYMMDD_OriginalName
+                                string fileName = reader["File_Name"].ToString();
+                                string year = DateTime.Now.Year.ToString();
+
+                                // Try to extract year from filename
+                                var parts = fileName.Split('_');
+                                if (parts.Length >= 2 && parts[1].Length >= 8)
+                                {
+                                    year = parts[1].Substring(0, 4);
+                                }
+
+                                attachments.Add(new
+                                {
+                                    id = reader.GetInt32(0),
+                                    fileName = fileName,
+                                    originalName = GetOriginalFileName(fileName),
+                                    uploadDate = reader["Modify_Date"].ToString(),
+                                    fileUrl = $"/uploads/{year}/{fileName}",
+                                    year = year
+                                });
+                            }
+                        }
+                    }
+                }
+
+                return Json(new { success = true, attachments = attachments });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Error in GetAttachments: {ex.Message}");
+                return Json(new { success = false, message = "เกิดข้อผิดพลาดในการดึงข้อมูลไฟล์แนบ" });
+            }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> DeleteAttachment(int attachmentId)
+        {
+            try
+            {
+                string connectionString = _configuration.GetConnectionString("DefaultConnection");
+
+                using (SqlConnection conn = new SqlConnection(connectionString))
+                {
+                    await conn.OpenAsync();
+
+                    // Get file information before deleting
+                    string fileName = "";
+                    string year = DateTime.Now.Year.ToString();
+
+                    string selectQuery = @"
+                        SELECT File_Name
+                        FROM [HRDSYSTEM].[dbo].[TrainingRequestAttachments]
+                        WHERE Id = @Id";
+
+                    using (SqlCommand cmd = new SqlCommand(selectQuery, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@Id", attachmentId);
+                        var result = await cmd.ExecuteScalarAsync();
+
+                        if (result == null)
+                        {
+                            return Json(new { success = false, message = "ไม่พบไฟล์ที่ต้องการลบ" });
+                        }
+
+                        fileName = result.ToString();
+
+                        // Extract year from filename
+                        var parts = fileName.Split('_');
+                        if (parts.Length >= 2 && parts[1].Length >= 8)
+                        {
+                            year = parts[1].Substring(0, 4);
+                        }
+                    }
+
+                    // Delete from database
+                    string deleteQuery = @"
+                        DELETE FROM [HRDSYSTEM].[dbo].[TrainingRequestAttachments]
+                        WHERE Id = @Id";
+
+                    using (SqlCommand cmd = new SqlCommand(deleteQuery, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@Id", attachmentId);
+                        await cmd.ExecuteNonQueryAsync();
+                    }
+
+                    // Delete physical file
+                    try
+                    {
+                        string filePath = Path.Combine(
+                            Directory.GetCurrentDirectory(),
+                            "wwwroot",
+                            "uploads",
+                            year,
+                            fileName
+                        );
+
+                        if (System.IO.File.Exists(filePath))
+                        {
+                            System.IO.File.Delete(filePath);
+                            Console.WriteLine($"✅ File deleted: {filePath}");
+                        }
+                    }
+                    catch (Exception fileEx)
+                    {
+                        Console.WriteLine($"⚠️ Could not delete physical file: {fileEx.Message}");
+                        // Continue even if physical file deletion fails
+                    }
+                }
+
+                return Json(new { success = true, message = "ลบไฟล์สำเร็จ" });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Error in DeleteAttachment: {ex.Message}");
+                return Json(new { success = false, message = "เกิดข้อผิดพลาดในการลบไฟล์" });
+            }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> DownloadAttachment(int attachmentId)
+        {
+            try
+            {
+                string connectionString = _configuration.GetConnectionString("DefaultConnection");
+
+                using (SqlConnection conn = new SqlConnection(connectionString))
+                {
+                    await conn.OpenAsync();
+
+                    string query = @"
+                        SELECT File_Name
+                        FROM [HRDSYSTEM].[dbo].[TrainingRequestAttachments]
+                        WHERE Id = @Id";
+
+                    string fileName = "";
+                    string year = DateTime.Now.Year.ToString();
+
+                    using (SqlCommand cmd = new SqlCommand(query, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@Id", attachmentId);
+                        var result = await cmd.ExecuteScalarAsync();
+
+                        if (result == null)
+                        {
+                            return NotFound("ไม่พบไฟล์");
+                        }
+
+                        fileName = result.ToString();
+
+                        // Extract year from filename
+                        var parts = fileName.Split('_');
+                        if (parts.Length >= 2 && parts[1].Length >= 8)
+                        {
+                            year = parts[1].Substring(0, 4);
+                        }
+                    }
+
+                    string filePath = Path.Combine(
+                        Directory.GetCurrentDirectory(),
+                        "wwwroot",
+                        "uploads",
+                        year,
+                        fileName
+                    );
+
+                    if (!System.IO.File.Exists(filePath))
+                    {
+                        return NotFound("ไม่พบไฟล์ในระบบ");
+                    }
+
+                    var memory = new MemoryStream();
+                    using (var stream = new FileStream(filePath, FileMode.Open))
+                    {
+                        await stream.CopyToAsync(memory);
+                    }
+                    memory.Position = 0;
+
+                    var originalFileName = GetOriginalFileName(fileName);
+                    var contentType = GetContentType(originalFileName);
+
+                    return File(memory, contentType, originalFileName);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Error in DownloadAttachment: {ex.Message}");
+                return StatusCode(500, "เกิดข้อผิดพลาดในการดาวน์โหลดไฟล์");
+            }
+        }
+
+        // Helper method to extract original filename
+        private string GetOriginalFileName(string storedFileName)
+        {
+            // Format: DocNo_YYYYMMDDHHMMSS_OriginalName.ext
+            var parts = storedFileName.Split('_');
+            if (parts.Length >= 3)
+            {
+                return string.Join("_", parts.Skip(2));
+            }
+            return storedFileName;
+        }
+
+        // Helper method to get content type
+        private string GetContentType(string fileName)
+        {
+            var extension = Path.GetExtension(fileName).ToLowerInvariant();
+            return extension switch
+            {
+                ".pdf" => "application/pdf",
+                ".doc" => "application/msword",
+                ".docx" => "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                ".xls" => "application/vnd.ms-excel",
+                ".xlsx" => "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                ".png" => "image/png",
+                ".jpg" or ".jpeg" => "image/jpeg",
+                ".gif" => "image/gif",
+                ".txt" => "text/plain",
+                ".zip" => "application/zip",
+                _ => "application/octet-stream"
+            };
+        }
+
     }
 
 
