@@ -83,11 +83,14 @@ namespace TrainingRequestApp.Controllers
                                 Console.WriteLine("✅ Employees inserted");
                             }
 
-                            // 4. Upload และบันทึกไฟล์แนบ
-                            if (formData.AttachedFiles != null)
+                            // 4. Upload และบันทึกไฟล์แนบ (รองรับหลายไฟล์)
+                            if (formData.AttachedFiles != null && formData.AttachedFiles.Count > 0)
                             {
-                                await SaveAttachment(conn, transaction, docNo, formData.AttachedFiles);
-                                Console.WriteLine("✅ File uploaded");
+                                foreach (var file in formData.AttachedFiles)
+                                {
+                                    await SaveAttachment(conn, transaction, docNo, file);
+                                }
+                                Console.WriteLine($"✅ {formData.AttachedFiles.Count} file(s) uploaded");
                             }
 
                             transaction.Commit();
@@ -266,11 +269,14 @@ namespace TrainingRequestApp.Controllers
                                 Console.WriteLine("✅ Employees updated");
                             }
 
-                            // 4. Handle file attachments if provided
-                            if (formData.AttachedFiles != null)
+                            // 4. Handle file attachments if provided (รองรับหลายไฟล์)
+                            if (formData.AttachedFiles != null && formData.AttachedFiles.Count > 0)
                             {
-                                await SaveAttachment(conn, transaction, docNo, formData.AttachedFiles);
-                                Console.WriteLine("✅ File uploaded");
+                                foreach (var file in formData.AttachedFiles)
+                                {
+                                    await SaveAttachment(conn, transaction, docNo, file);
+                                }
+                                Console.WriteLine($"✅ {formData.AttachedFiles.Count} file(s) uploaded");
                             }
 
                             transaction.Commit();
@@ -1332,7 +1338,7 @@ namespace TrainingRequestApp.Controllers
         public string? AdditionalNotes { get; set; }
         public string? ExpectedOutcome { get; set; }
         public string? EmployeesJson { get; set; }
-        public IFormFile? AttachedFiles { get; set; }
+        public List<IFormFile>? AttachedFiles { get; set; }
         public string? ParticipantCount { get; set; }
 
         // ✅ เพิ่มใหม่ - Approvers
