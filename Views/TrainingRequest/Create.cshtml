@@ -1608,7 +1608,7 @@
                         ${employee.prefix}${employee.name} ${employee.lastname}
                     </td>
                     <td class="text-center py-3 fw-medium border-2">
-                        <span class="badge bg-info text-white px-3 py-2">${employee.position}</span>
+                        <span class="badge bg-info text-white px-3 py-2">${employee.level || '-'}</span>
                     </td>
                     <td class="text-center py-3 fw-bold border-2" style="background-color: #e3f2fd; color: #1976d2; font-size: 1.1rem;">
                         ${trainingData.currentYearHours}
@@ -1749,6 +1749,8 @@
                 empCode: emp.empCode || '',
                 fullName: `${emp.prefix || ''}${emp.name || ''} ${emp.lastname || ''}`.trim(),
                 position: emp.position || '',
+                level: emp.level || '',
+                department: emp.department || '',
                 currentYearHours: emp.currentYearHours || 0,
                 currentYearCost: emp.currentYearCost || 0,
                 thisTimeHours: emp.thisTimeHours || 0,

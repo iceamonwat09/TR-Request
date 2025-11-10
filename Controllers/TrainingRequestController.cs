@@ -583,12 +583,12 @@ namespace TrainingRequestApp.Controllers
             // ✅ ใช้ TrainingRequestId และไม่มี CreatedDate, IsActive
             string query = @"
                 INSERT INTO [HRDSYSTEM].[dbo].[TrainingRequestEmployees] (
-                    [TrainingRequestId], [EmployeeCode], [EmployeeName], [Position],
+                    [TrainingRequestId], [EmployeeCode], [EmployeeName], [Position], [Level], [Department],
                     [PreviousTrainingHours], [PreviousTrainingCost],
                     [CurrentTrainingHours], [CurrentTrainingCost], [Notes]
                 )
                 VALUES (
-                    @TrainingRequestId, @EmployeeCode, @EmployeeName, @Position,
+                    @TrainingRequestId, @EmployeeCode, @EmployeeName, @Position, @Level, @Department,
                     @PreviousTrainingHours, @PreviousTrainingCost,
                     @CurrentTrainingHours, @CurrentTrainingCost, @Notes
                 )";
@@ -601,6 +601,8 @@ namespace TrainingRequestApp.Controllers
                     cmd.Parameters.AddWithValue("@EmployeeCode", emp.empCode ?? (object)DBNull.Value);
                     cmd.Parameters.AddWithValue("@EmployeeName", emp.fullName ?? (object)DBNull.Value);
                     cmd.Parameters.AddWithValue("@Position", emp.position ?? (object)DBNull.Value);
+                    cmd.Parameters.AddWithValue("@Level", emp.level ?? (object)DBNull.Value);
+                    cmd.Parameters.AddWithValue("@Department", emp.department ?? (object)DBNull.Value);
                     cmd.Parameters.AddWithValue("@PreviousTrainingHours", emp.currentYearHours);
                     cmd.Parameters.AddWithValue("@PreviousTrainingCost", emp.currentYearCost);
                     cmd.Parameters.AddWithValue("@CurrentTrainingHours", emp.thisTimeHours);
@@ -667,7 +669,7 @@ namespace TrainingRequestApp.Controllers
             var employees = new List<EmployeeViewModel>();
             string query = @"
                 SELECT
-                    EmployeeCode, EmployeeName, Position,
+                    EmployeeCode, EmployeeName, Position, Level, Department,
                     PreviousTrainingHours, PreviousTrainingCost,
                     CurrentTrainingHours, CurrentTrainingCost, Notes
                 FROM [HRDSYSTEM].[dbo].[TrainingRequestEmployees]
@@ -686,6 +688,8 @@ namespace TrainingRequestApp.Controllers
                             EmployeeCode = reader["EmployeeCode"]?.ToString(),
                             EmployeeName = reader["EmployeeName"]?.ToString(),
                             Position = reader["Position"]?.ToString(),
+                            Level = reader["Level"]?.ToString(),
+                            Department = reader["Department"]?.ToString(),
                             PreviousTrainingHours = reader["PreviousTrainingHours"] != DBNull.Value ? (int?)reader.GetInt32(reader.GetOrdinal("PreviousTrainingHours")) : null,
                             PreviousTrainingCost = reader["PreviousTrainingCost"] != DBNull.Value ? (decimal?)reader.GetDecimal(reader.GetOrdinal("PreviousTrainingCost")) : null,
                             CurrentTrainingHours = reader["CurrentTrainingHours"] != DBNull.Value ? (int?)reader.GetInt32(reader.GetOrdinal("CurrentTrainingHours")) : null,
@@ -1098,6 +1102,8 @@ namespace TrainingRequestApp.Controllers
         public string? empCode { get; set; }
         public string? fullName { get; set; }
         public string? position { get; set; }
+        public string? level { get; set; }
+        public string? department { get; set; }
         public int currentYearHours { get; set; }
         public decimal currentYearCost { get; set; }
         public int thisTimeHours { get; set; }
