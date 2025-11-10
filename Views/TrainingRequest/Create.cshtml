@@ -2228,6 +2228,18 @@
                 // ====================================================================
 
                 const formData = new FormData(form);
+
+                // ⭐ แก้ไข: ลบไฟล์เดิมและเพิ่มไฟล์ทุกไฟล์ที่เลือก (เพื่อรองรับ multiple files)
+                formData.delete('AttachedFiles');
+                const fileInput = document.getElementById('AttachedFiles');
+                if (fileInput && fileInput.files.length > 0) {
+                    console.log(`📎 Attaching ${fileInput.files.length} file(s)`);
+                    for (let i = 0; i < fileInput.files.length; i++) {
+                        formData.append('AttachedFiles', fileInput.files[i]);
+                        console.log(`  📄 File ${i + 1}: ${fileInput.files[i].name}`);
+                    }
+                }
+
                 formData.append('EmployeesJson', JSON.stringify(employeesData));
 
                 console.log('📦 FormData prepared');
