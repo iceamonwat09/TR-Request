@@ -90,27 +90,65 @@ namespace TrainingRequestApp.Controllers
                         }
                     }
 
-                    // 2. คำนวณโควต้า (Approved + Public + ปีปัจจุบัน)
+                    // 2. ดึงโควต้าฝ่ายจาก TrainingRequest_Cost
+                    decimal departmentQuota = 0;
+                    string currentYear = DateTime.Now.Year.ToString();
+
+                    string quotaDeptQuery = @"
+                SELECT ISNULL([Cost], 0) AS DepartmentQuota
+                FROM [HRDSYSTEM].[dbo].[TrainingRequest_Cost]
+                WHERE [Department] = @Department
+                    AND [Year] = @Year";
+
+                    System.Diagnostics.Debug.WriteLine($"[SEARCH] Checking department quota for: {department}, Year: {currentYear}");
+
+                    using (SqlCommand command = new SqlCommand(quotaDeptQuery, connection))
+                    {
+                        command.Parameters.AddWithValue("@Department", department);
+                        command.Parameters.AddWithValue("@Year", currentYear);
+
+                        using (SqlDataReader reader = command.ExecuteReader())
+                        {
+                            if (reader.Read())
+                            {
+                                departmentQuota = Convert.ToDecimal(reader["DepartmentQuota"]);
+                                System.Diagnostics.Debug.WriteLine($"[SEARCH] Department Quota: {departmentQuota}");
+                            }
+                        }
+                    }
+
+                    // ✅ เช็คว่ามีโควต้าหรือไม่
+                    if (departmentQuota == 0)
+                    {
+                        System.Diagnostics.Debug.WriteLine("[SEARCH] No quota found for department");
+                        return BadRequest(new
+                        {
+                            success = false,
+                            message = $"❌ ไม่มี Cost สำหรับฝ่าย {department} กรุณาติดต่อผู้ดูแลระบบ"
+                        });
+                    }
+
+                    // 3. คำนวณยอดรวมที่ใช้ไปของทั้งฝ่าย (Approved/Rescheduled/Complete + Public + ปีปัจจุบัน)
                     int currentYearHours = 0;
                     decimal currentYearCost = 0;
 
-                    string quotaQuery = @"
-                SELECT 
+                    string usageQuery = @"
+                SELECT
                     ISNULL(SUM(tre.CurrentTrainingHours), 0) AS TotalHours,
                     ISNULL(SUM(tre.CurrentTrainingCost), 0) AS TotalCost
                 FROM [HRDSYSTEM].[dbo].[TrainingRequestEmployees] tre
-                INNER JOIN [HRDSYSTEM].[dbo].[TrainingRequests] tr 
+                INNER JOIN [HRDSYSTEM].[dbo].[TrainingRequests] tr
                     ON tre.TrainingRequestId = tr.Id
-                WHERE tre.EmployeeCode = @EmployeeCode
-                    AND UPPER(tr.Status) = 'APPROVED'
+                WHERE tre.Department = @Department
+                    AND UPPER(tr.Status) IN ('APPROVED', 'RESCHEDULED', 'COMPLETE')
                     AND UPPER(tr.TrainingType) = 'PUBLIC'
                     AND YEAR(tr.StartDate) = YEAR(GETDATE())";
 
-                    System.Diagnostics.Debug.WriteLine("[SEARCH] Running quota query...");
+                    System.Diagnostics.Debug.WriteLine("[SEARCH] Running department usage query...");
 
-                    using (SqlCommand command = new SqlCommand(quotaQuery, connection))
+                    using (SqlCommand command = new SqlCommand(usageQuery, connection))
                     {
-                        command.Parameters.AddWithValue("@EmployeeCode", employeeCode);
+                        command.Parameters.AddWithValue("@Department", department);
 
                         using (SqlDataReader reader = command.ExecuteReader())
                         {
@@ -119,18 +157,18 @@ namespace TrainingRequestApp.Controllers
                                 currentYearHours = Convert.ToInt32(reader["TotalHours"]);
                                 currentYearCost = Convert.ToDecimal(reader["TotalCost"]);
 
-                                System.Diagnostics.Debug.WriteLine($"[SEARCH] Quota Result - Hours: {currentYearHours}, Cost: {currentYearCost}");
+                                System.Diagnostics.Debug.WriteLine($"[SEARCH] Department Usage - Hours: {currentYearHours}, Cost: {currentYearCost}");
                             }
                         }
                     }
 
-                    // 3. คำนวณค่าคงเหลือ
-                    int remainingHours = 12 - currentYearHours;
-                    decimal remainingCost = 10000 - currentYearCost;
+                    // 4. คำนวณค่าคงเหลือของฝ่าย
+                    int remainingHours = 12 - currentYearHours;  // ชั่วโมงยังคงเป็นต่อคน
+                    decimal remainingCost = departmentQuota - currentYearCost;  // เงินเป็นต่อฝ่าย
 
                     System.Diagnostics.Debug.WriteLine($"[SEARCH] Remaining - Hours: {remainingHours}, Cost: {remainingCost}");
 
-                    // 4. สร้าง response
+                    // 5. สร้าง response
                     var employee = new
                     {
                         empCode = empCode,
@@ -147,7 +185,8 @@ namespace TrainingRequestApp.Controllers
                         thisTimeHours = 0,
                         thisTimeCost = 0,
                         remainingHours = remainingHours,
-                        remainingCost = remainingCost
+                        remainingCost = remainingCost,
+                        departmentQuota = departmentQuota  // ✅ เพิ่มโควต้าฝ่าย
                     };
 
                     System.Diagnostics.Debug.WriteLine("[SEARCH] Returning employee data");
