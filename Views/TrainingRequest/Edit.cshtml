@@ -2082,8 +2082,11 @@
                             console.log('✅ Department quota loaded:', {
                                 quota: employeeManager.departmentQuota,
                                 qhours: employeeManager.departmentQhours,
+                                currentYearCostFromAPI: data.employee.currentYearCost,
+                                totalCostOfThisForm: totalCostOfThisForm,
                                 usedCostExcludingThis: departmentUsedCostExcludingThis,
-                                usedHoursExcludingThis: departmentUsedHoursExcludingThis
+                                usedHoursExcludingThis: departmentUsedHoursExcludingThis,
+                                calculation: `${data.employee.currentYearCost} - ${totalCostOfThisForm} = ${departmentUsedCostExcludingThis}`
                             });
                         }
                     } catch (error) {
@@ -2128,6 +2131,8 @@
                         departmentUsedHoursExcludingThis - accumulatedHours - (emp.currentTrainingHours || 0);
                     remainingCost = employeeManager.departmentQuota -
                         departmentUsedCostExcludingThis - accumulatedCost - (emp.currentTrainingCost || 0);
+
+                    console.log(`Employee ${index + 1} (${emp.employeeCode}): ${employeeManager.departmentQuota} - ${departmentUsedCostExcludingThis} - ${accumulatedCost} - ${emp.currentTrainingCost} = ${remainingCost}`);
 
                     // บวกยอดสะสม
                     accumulatedCost += (emp.currentTrainingCost || 0);
