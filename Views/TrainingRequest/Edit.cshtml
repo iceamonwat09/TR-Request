@@ -1963,6 +1963,34 @@
                             employeeManager.departmentQuota = result.employee.departmentQuota;
                             employeeManager.updateDepartmentQuotaDisplay();
                             console.log(`✅ Department quota set: ${employeeManager.departmentQuota}`);
+
+                            // ✅ คำนวณ remainingCost ใหม่สำหรับพนักงานที่โหลดมาแล้ว
+                            const currentYearCost = result.employee.currentYearCost || 0;
+                            let accumulatedCost = 0;
+
+                            employeeManager.employees.forEach((emp, index) => {
+                                // คำนวณ remainingCost = quota - ยอดปีนี้ - ยอดสะสมในฟอร์ม
+                                emp.remainingCost = employeeManager.departmentQuota - currentYearCost - accumulatedCost - emp.thisTimeCost;
+                                accumulatedCost += emp.thisTimeCost;
+
+                                // อัพเดตตารางที่แสดงผล
+                                const row = document.querySelector(`tr[data-emp-code="${emp.empCode}"]`);
+                                if (row) {
+                                    const costCell = row.querySelectorAll('td')[9]; // คอลัมน์ remainingCost
+                                    if (costCell) {
+                                        const costColorClass = emp.remainingCost >= 0 ? '#e8f5e8' : '#ffebee';
+                                        const costTextClass = emp.remainingCost >= 0 ? 'bg-success' : 'bg-danger';
+                                        costCell.style.backgroundColor = costColorClass;
+                                        costCell.innerHTML = `
+                                            <span class="badge ${costTextClass} text-white px-3 py-2" style="font-size: 1rem;">
+                                                ${emp.remainingCost.toLocaleString()}
+                                            </span>
+                                        `;
+                                    }
+                                }
+
+                                console.log(`✅ Updated employee ${index + 1} remainingCost: ${emp.remainingCost}`);
+                            });
                         }
                     })
                     .catch(error => console.error('Error fetching department quota:', error));
