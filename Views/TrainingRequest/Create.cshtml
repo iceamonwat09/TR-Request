@@ -1744,7 +1744,69 @@
                     }
 
                     this.updateRowNumbers();
+
+                    // ✅ คำนวณใหม่หลังจากลบพนักงาน (เฉพาะ Public)
+                    if (trainingType?.toUpperCase() === 'PUBLIC') {
+                        this.recalculateAllRemainingQuota();
+                    }
+
                     this.showSuccessToast('✅ ลบพนักงานเรียบร้อยแล้ว');
+                }
+            }
+
+            // ✅ คำนวณโควต้าใหม่สำหรับทุกคนในตาราง
+            recalculateAllRemainingQuota() {
+                let accumulatedCost = 0;
+                let accumulatedHours = 0;
+
+                this.employees.forEach((emp, index) => {
+                    // คำนวณค่าคงเหลือใหม่
+                    emp.remainingCost = this.departmentQuota -
+                        emp.currentYearCost - accumulatedCost - emp.thisTimeCost;
+                    emp.remainingHours = this.departmentQhours -
+                        emp.currentYearHours - accumulatedHours - emp.thisTimeHours;
+
+                    // บวกยอดสะสม
+                    accumulatedCost += emp.thisTimeCost;
+                    accumulatedHours += emp.thisTimeHours;
+
+                    // อัพเดตตารางที่แสดงผล
+                    this.updateEmployeeRowDisplay(emp);
+                });
+
+                console.log('✅ Recalculated all remaining quotas');
+            }
+
+            // ✅ อัพเดตการแสดงผลในตาราง
+            updateEmployeeRowDisplay(emp) {
+                const row = document.querySelector(`tr[data-emp-code="${emp.empCode}"]`);
+                if (!row) return;
+
+                // อัพเดต remaining hours cell
+                const hoursCells = row.querySelectorAll('td');
+                if (hoursCells.length > 8) {
+                    const hoursCell = hoursCells[8];
+                    const hoursColorClass = emp.remainingHours >= 0 ? '#e8f5e8' : '#ffebee';
+                    const hoursTextClass = emp.remainingHours >= 0 ? 'bg-success' : 'bg-danger';
+                    hoursCell.style.backgroundColor = hoursColorClass;
+                    hoursCell.innerHTML = `
+                        <span class="badge ${hoursTextClass} text-white px-3 py-2" style="font-size: 1rem;">
+                            ${emp.remainingHours.toLocaleString()}
+                        </span>
+                    `;
+                }
+
+                // อัพเดต remaining cost cell
+                if (hoursCells.length > 9) {
+                    const costCell = hoursCells[9];
+                    const costColorClass = emp.remainingCost >= 0 ? '#e8f5e8' : '#ffebee';
+                    const costTextClass = emp.remainingCost >= 0 ? 'bg-success' : 'bg-danger';
+                    costCell.style.backgroundColor = costColorClass;
+                    costCell.innerHTML = `
+                        <span class="badge ${costTextClass} text-white px-3 py-2" style="font-size: 1rem;">
+                            ${emp.remainingCost.toLocaleString()}
+                        </span>
+                    `;
                 }
             }
 

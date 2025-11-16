@@ -170,7 +170,7 @@ namespace TrainingRequestApp.Controllers
                     WHERE tre.Department = @DeptParam
                         AND UPPER(tr.Status) IN ('APPROVED', 'RESCHEDULED', 'COMPLETE')
                         AND UPPER(tr.TrainingType) = 'PUBLIC'
-                        AND YEAR(tr.TrainingDate) = YEAR(GETDATE())";
+                        AND YEAR(tr.StartDate) = YEAR(GETDATE())";
 
                         System.Diagnostics.Debug.WriteLine("[SEARCH] Running department usage query...");
 
@@ -203,7 +203,7 @@ namespace TrainingRequestApp.Controllers
                     WHERE tre.EmployeeCode = @EmployeeCode
                         AND UPPER(tr.Status) IN ('APPROVED', 'RESCHEDULED', 'COMPLETE')
                         AND UPPER(tr.TrainingType) = 'IN HOUSE'
-                        AND YEAR(tr.TrainingDate) = YEAR(GETDATE())";
+                        AND YEAR(tr.StartDate) = YEAR(GETDATE())";
 
                         System.Diagnostics.Debug.WriteLine("[SEARCH] Running individual usage query (In House)...");
 
