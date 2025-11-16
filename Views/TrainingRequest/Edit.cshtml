@@ -1452,6 +1452,8 @@
                 this.totalHoursUsedInForm = 0;
                 this.departmentQuota = 0;
                 this.departmentQhours = 0;
+                this.departmentUsedCostExcludingThis = 0;  // ✅ ยอดของฝ่ายที่ใช้ไป (ไม่รวมฟอร์มนี้)
+                this.departmentUsedHoursExcludingThis = 0;
                 this.initializeEvents();
             }
 
@@ -1808,15 +1810,25 @@
 
             // ✅ คำนวณโควต้าใหม่สำหรับทุกคนในตาราง
             recalculateAllRemainingQuota() {
+                const trainingType = document.querySelector('input[name="TrainingType"]:checked')?.value;
                 let accumulatedCost = 0;
                 let accumulatedHours = 0;
 
                 this.employees.forEach((emp, index) => {
-                    // คำนวณค่าคงเหลือใหม่
-                    emp.remainingCost = this.departmentQuota -
-                        emp.currentYearCost - accumulatedCost - emp.thisTimeCost;
-                    emp.remainingHours = this.departmentQhours -
-                        emp.currentYearHours - accumulatedHours - emp.thisTimeHours;
+                    // ✅ คำนวณค่าคงเหลือใหม่
+                    if (trainingType?.toUpperCase() === 'PUBLIC') {
+                        // สำหรับ Public: ใช้ยอดของฝ่าย (ไม่รวมฟอร์มนี้)
+                        emp.remainingCost = this.departmentQuota -
+                            this.departmentUsedCostExcludingThis - accumulatedCost - emp.thisTimeCost;
+                        emp.remainingHours = this.departmentQhours -
+                            this.departmentUsedHoursExcludingThis - accumulatedHours - emp.thisTimeHours;
+                    } else {
+                        // สำหรับ In House: ใช้ยอดของคนๆนั้น
+                        emp.remainingCost = this.departmentQuota -
+                            emp.currentYearCost - accumulatedCost - emp.thisTimeCost;
+                        emp.remainingHours = this.departmentQhours -
+                            emp.currentYearHours - accumulatedHours - emp.thisTimeHours;
+                    }
 
                     // บวกยอดสะสม
                     accumulatedCost += emp.thisTimeCost;
@@ -1826,7 +1838,11 @@
                     this.updateEmployeeRowDisplay(emp);
                 });
 
-                console.log('✅ Recalculated all remaining quotas');
+                console.log('✅ Recalculated all remaining quotas', {
+                    trainingType,
+                    departmentUsed: this.departmentUsedCostExcludingThis,
+                    accumulatedCost
+                });
             }
 
             // ✅ อัพเดตการแสดงผลในตาราง
@@ -2056,6 +2072,10 @@
 
                             departmentUsedCostExcludingThis = (data.employee.currentYearCost || 0) - totalCostOfThisForm;
                             departmentUsedHoursExcludingThis = (data.employee.currentYearHours || 0) - totalHoursOfThisForm;
+
+                            // ✅ เก็บค่าไว้ใน employeeManager เพื่อใช้ใน recalculate
+                            employeeManager.departmentUsedCostExcludingThis = departmentUsedCostExcludingThis;
+                            employeeManager.departmentUsedHoursExcludingThis = departmentUsedHoursExcludingThis;
 
                             employeeManager.updateDepartmentQuotaDisplay();
 
