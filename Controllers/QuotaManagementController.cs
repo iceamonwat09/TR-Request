@@ -59,6 +59,7 @@ namespace TrainingRequestApp.Controllers
 
                 // บันทึกข้อมูล
                 string userName = HttpContext.Session.GetString("UserId") ?? "System";
+                model.CreatedBy = userName; // เก็บไว้ใน memory เฉพาะ session นี้
                 string connectionString = _configuration.GetConnectionString("DefaultConnection");
 
                 using (SqlConnection connection = new SqlConnection(connectionString))
@@ -66,8 +67,8 @@ namespace TrainingRequestApp.Controllers
                     connection.Open();
                     string query = @"
                         INSERT INTO [HRDSYSTEM].[dbo].[TrainingRequest_Cost]
-                        (Department, Year, Qhours, Cost, CreatedBy, CreatedDate)
-                        VALUES (@Department, @Year, @Qhours, @Cost, @CreatedBy, @CreatedDate)";
+                        (Department, Year, Qhours, Cost)
+                        VALUES (@Department, @Year, @Qhours, @Cost)";
 
                     using (SqlCommand command = new SqlCommand(query, connection))
                     {
@@ -75,8 +76,6 @@ namespace TrainingRequestApp.Controllers
                         command.Parameters.AddWithValue("@Year", model.Year);
                         command.Parameters.AddWithValue("@Qhours", model.Qhours);
                         command.Parameters.AddWithValue("@Cost", model.Cost);
-                        command.Parameters.AddWithValue("@CreatedBy", userName);
-                        command.Parameters.AddWithValue("@CreatedDate", DateTime.Now);
 
                         command.ExecuteNonQuery();
                     }
@@ -127,7 +126,6 @@ namespace TrainingRequestApp.Controllers
                 }
 
                 // อัพเดตข้อมูล
-                string userName = HttpContext.Session.GetString("UserId") ?? "System";
                 string connectionString = _configuration.GetConnectionString("DefaultConnection");
 
                 using (SqlConnection connection = new SqlConnection(connectionString))
@@ -138,9 +136,7 @@ namespace TrainingRequestApp.Controllers
                         SET Department = @Department,
                             Year = @Year,
                             Qhours = @Qhours,
-                            Cost = @Cost,
-                            UpdatedBy = @UpdatedBy,
-                            UpdatedDate = @UpdatedDate
+                            Cost = @Cost
                         WHERE ID = @ID";
 
                     using (SqlCommand command = new SqlCommand(query, connection))
@@ -150,8 +146,6 @@ namespace TrainingRequestApp.Controllers
                         command.Parameters.AddWithValue("@Year", model.Year);
                         command.Parameters.AddWithValue("@Qhours", model.Qhours);
                         command.Parameters.AddWithValue("@Cost", model.Cost);
-                        command.Parameters.AddWithValue("@UpdatedBy", userName);
-                        command.Parameters.AddWithValue("@UpdatedDate", DateTime.Now);
 
                         command.ExecuteNonQuery();
                     }
@@ -199,7 +193,7 @@ namespace TrainingRequestApp.Controllers
             {
                 connection.Open();
                 string query = @"
-                    SELECT ID, Department, Year, Qhours, Cost, CreatedBy, CreatedDate, UpdatedBy, UpdatedDate
+                    SELECT ID, Department, Year, Qhours, Cost
                     FROM [HRDSYSTEM].[dbo].[TrainingRequest_Cost]
                     WHERE Year = @Year
                     ORDER BY Department";
@@ -218,11 +212,7 @@ namespace TrainingRequestApp.Controllers
                                 Department = reader["Department"].ToString() ?? "",
                                 Year = reader["Year"].ToString() ?? "",
                                 Qhours = Convert.ToInt32(reader["Qhours"]),
-                                Cost = Convert.ToDecimal(reader["Cost"]),
-                                CreatedBy = reader["CreatedBy"].ToString(),
-                                CreatedDate = reader["CreatedDate"] as DateTime?,
-                                UpdatedBy = reader["UpdatedBy"].ToString(),
-                                UpdatedDate = reader["UpdatedDate"] as DateTime?
+                                Cost = Convert.ToDecimal(reader["Cost"])
                             });
                         }
                     }
@@ -240,7 +230,7 @@ namespace TrainingRequestApp.Controllers
             {
                 connection.Open();
                 string query = @"
-                    SELECT ID, Department, Year, Qhours, Cost, CreatedBy, CreatedDate, UpdatedBy, UpdatedDate
+                    SELECT ID, Department, Year, Qhours, Cost
                     FROM [HRDSYSTEM].[dbo].[TrainingRequest_Cost]
                     WHERE ID = @ID";
 
@@ -258,11 +248,7 @@ namespace TrainingRequestApp.Controllers
                                 Department = reader["Department"].ToString() ?? "",
                                 Year = reader["Year"].ToString() ?? "",
                                 Qhours = Convert.ToInt32(reader["Qhours"]),
-                                Cost = Convert.ToDecimal(reader["Cost"]),
-                                CreatedBy = reader["CreatedBy"].ToString(),
-                                CreatedDate = reader["CreatedDate"] as DateTime?,
-                                UpdatedBy = reader["UpdatedBy"].ToString(),
-                                UpdatedDate = reader["UpdatedDate"] as DateTime?
+                                Cost = Convert.ToDecimal(reader["Cost"])
                             };
                         }
                     }

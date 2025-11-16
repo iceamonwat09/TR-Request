@@ -2007,7 +2007,7 @@
         console.log('🔄 Loading existing data from Model...');
 
         // 1. Load Employees from Model
-        loadExistingEmployees();
+        await loadExistingEmployees();
 
         // 2. Set Department and Position values
         await setDepartmentAndPosition();
@@ -2022,13 +2022,45 @@
     }
 
     // โหลดข้อมูลพนักงานจาก Model.Employees
-    function loadExistingEmployees() {
+    async function loadExistingEmployees() {
         const employees = @Html.Raw(Json.Serialize(Model.Employees));
 
         console.log('🔍 Raw employees data from Model:', employees);
 
         if (employees && employees.length > 0) {
             console.log(`📊 Loading ${employees.length} existing employees`);
+
+            // ✅ ดึงข้อมูลโควต้าฝ่ายจาก API (ใช้พนักงานคนแรก)
+            const trainingType = '@Model.TrainingType';
+            if (employees.length > 0 && trainingType?.toUpperCase() === 'PUBLIC') {
+                const firstEmp = employees[0];
+                const department = firstEmp.department;
+
+                if (department) {
+                    try {
+                        console.log('🔍 Fetching department quota for:', department);
+                        const response = await fetch(`/api/employee/search/${firstEmp.employeeCode}?department=${encodeURIComponent(department)}&trainingType=${trainingType}`);
+                        const data = await response.json();
+
+                        if (data.success && data.employee) {
+                            employeeManager.departmentQuota = data.employee.departmentQuota || 0;
+                            employeeManager.departmentQhours = data.employee.departmentQhours || 0;
+                            employeeManager.updateDepartmentQuotaDisplay();
+
+                            console.log('✅ Department quota loaded:', {
+                                quota: employeeManager.departmentQuota,
+                                qhours: employeeManager.departmentQhours
+                            });
+                        }
+                    } catch (error) {
+                        console.error('❌ Error fetching department quota:', error);
+                    }
+                }
+            }
+
+            // ✅ คำนวณยอดสะสมสำหรับการแสดงผล
+            let accumulatedCost = 0;
+            let accumulatedHours = 0;
 
             employees.forEach((emp, index) => {
                 console.log(`Employee ${index + 1}:`, emp);
@@ -2051,6 +2083,26 @@
                     lastname = nameParts[nameParts.length - 1];
                 }
 
+                // ✅ คำนวณค่าคงเหลือตามประเภท Training
+                let remainingHours = 0;
+                let remainingCost = 0;
+
+                if (trainingType?.toUpperCase() === 'PUBLIC' && employeeManager.departmentQuota > 0) {
+                    // คำนวณแบบฝ่าย (Department-based) พร้อม accumulated
+                    remainingHours = employeeManager.departmentQhours -
+                        (emp.previousTrainingHours || 0) - accumulatedHours - (emp.currentTrainingHours || 0);
+                    remainingCost = employeeManager.departmentQuota -
+                        (emp.previousTrainingCost || 0) - accumulatedCost - (emp.currentTrainingCost || 0);
+
+                    // บวกยอดสะสม
+                    accumulatedCost += (emp.currentTrainingCost || 0);
+                    accumulatedHours += (emp.currentTrainingHours || 0);
+                } else {
+                    // คำนวณแบบบุคคล (Individual-based)
+                    remainingHours = 12 - (emp.previousTrainingHours || 0) - (emp.currentTrainingHours || 0);
+                    remainingCost = 10000 - (emp.previousTrainingCost || 0) - (emp.currentTrainingCost || 0);
+                }
+
                 // สร้าง employee object ตามโครงสร้างที่ EmployeeManager ต้องการ
                 const employeeData = {
                     empCode: emp.employeeCode || '',  // ← camelCase
@@ -2064,8 +2116,8 @@
                     currentYearCost: emp.previousTrainingCost || 0,  // ← camelCase
                     thisTimeHours: emp.currentTrainingHours || 0,  // ← camelCase
                     thisTimeCost: emp.currentTrainingCost || 0,  // ← camelCase
-                    remainingHours: 12 - (emp.previousTrainingHours || 0) - (emp.currentTrainingHours || 0),
-                    remainingCost: 10000 - (emp.previousTrainingCost || 0) - (emp.currentTrainingCost || 0),
+                    remainingHours: remainingHours,
+                    remainingCost: remainingCost,
                     notes: emp.notes || ''  // ← camelCase
                 };
 
@@ -2091,7 +2143,17 @@
                 employeeManager.rowCounter++;
             });
 
+            // ✅ อัพเดตยอดสะสมในฟอร์ม
+            if (trainingType?.toUpperCase() === 'PUBLIC') {
+                employeeManager.totalCostUsedInForm = accumulatedCost;
+                employeeManager.totalHoursUsedInForm = accumulatedHours;
+            }
+
             console.log('✅ Employees loaded:', employees.length);
+            console.log('✅ Accumulated totals:', {
+                totalCost: employeeManager.totalCostUsedInForm,
+                totalHours: employeeManager.totalHoursUsedInForm
+            });
         } else {
             console.log('ℹ️ No existing employees');
         }
