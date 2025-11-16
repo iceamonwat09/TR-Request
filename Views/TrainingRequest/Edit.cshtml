@@ -611,13 +611,29 @@
                                                 <h4 class="mb-0 text-white fw-bold">
                                                     📜 ประวัติการขออบรมและค่าใช้จ่ายที่ขออนุมัติ
                                                 </h4>
-                                                <button type="button" class="btn add-employee-btn text-white" data-bs-toggle="modal" data-bs-target="#employeeSearchModal">
-                                                    <i class="fas fa-plus"></i>
-                                                </button>
+                                                <div>
+                                                    <button type="button" class="btn btn-info text-white me-2" id="recalculateBtn" title="คำนวณยอดคงเหลือใหม่จากโควต้าปัจจุบัน">
+                                                        <i class="fas fa-sync-alt me-1"></i>คำนวณใหม่
+                                                    </button>
+                                                    <button type="button" class="btn add-employee-btn text-white" data-bs-toggle="modal" data-bs-target="#employeeSearchModal">
+                                                        <i class="fas fa-plus"></i>
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
 
                                         <div class="card-body p-0">
+                                            <!-- ⚠️ คำเตือนข้อมูลอาจไม่เป็นปัจจุบัน -->
+                                            @if (Model.Employees != null && Model.Employees.Any())
+                                            {
+                                                <div class="alert alert-info mb-0 mx-3 mt-3" role="alert" id="outdatedWarning" style="border-radius: 10px;">
+                                                    <i class="fas fa-info-circle me-2"></i>
+                                                    <strong>หมายเหตุ:</strong>
+                                                    ข้อมูลยอดคงเหลือคำนวณ ณ วันที่
+                                                    <strong>@Model.CreatedDate.ToString("dd/MM/yyyy HH:mm")</strong>
+                                                    <span class="text-muted">(อาจไม่เป็นปัจจุบัน หากมีฟอร์มอื่นอนุมัติหลังจากนั้น คลิกปุ่ม "คำนวณใหม่" เพื่ออัพเดต)</span>
+                                                </div>
+                                            }
                                             <div class="table-responsive">
                                                 <table class="table table-bordered mb-0" style="font-size: 0.9rem;" id="employeeTable">
                                                     <thead>
@@ -1475,6 +1491,14 @@
                 document.getElementById('employeeSearchModal').addEventListener('hidden.bs.modal', () => {
                     this.resetModal();
                 });
+
+                // ✅ Event listener สำหรับปุ่มคำนวณใหม่
+                const recalculateBtn = document.getElementById('recalculateBtn');
+                if (recalculateBtn) {
+                    recalculateBtn.addEventListener('click', () => {
+                        this.recalculateFromCurrentQuota();
+                    });
+                }
             }
 
             async searchEmployee() {
@@ -1997,6 +2021,131 @@
         console.log('✅ Employees data prepared:', employeesData);
         return employeesData;
     }
+
+    // ✅ คำนวณยอดคงเหลือใหม่จากโควต้าปัจจุบัน
+    async recalculateFromCurrentQuota() {
+        console.log('🔄 Starting recalculation from current quota...');
+
+        const trainingType = '@Model.TrainingType'?.toUpperCase();
+        const department = '@Html.Raw(Model.Department)';
+
+        // ถ้าเป็น IN HOUSE ไม่ต้องคำนวณใหม่
+        if (trainingType !== 'PUBLIC') {
+            alert('การคำนวณใหม่ใช้ได้กับ PUBLIC training เท่านั้น');
+            return;
+        }
+
+        if (!department) {
+            alert('ไม่พบข้อมูลฝ่าย ไม่สามารถคำนวณใหม่ได้');
+            return;
+        }
+
+        try {
+            // 1. ดึงข้อมูลโควต้าฝ่ายปัจจุบันจาก API
+            console.log('📡 Fetching current quota for department:', department);
+            const response = await fetch(`/api/TrainingRequest/GetEmployeeData?empCode=0000000`);
+            const data = await response.json();
+
+            if (!data || !data.department || data.department !== department) {
+                alert('ไม่สามารถดึงข้อมูลโควต้าฝ่ายได้');
+                return;
+            }
+
+            const currentDepartmentQuota = data.departmentQuota || 0;
+            const currentDepartmentQhours = data.departmentQhours || 0;
+            const currentYearCost = data.currentYearCost || 0;
+            const currentYearHours = data.currentYearHours || 0;
+
+            console.log('✅ Current quota fetched:', {
+                quota: currentDepartmentQuota,
+                hours: currentDepartmentQhours,
+                usedCost: currentYearCost,
+                usedHours: currentYearHours
+            });
+
+            // 2. ตรวจสอบว่าฟอร์มนี้รวมอยู่ใน currentYearCost หรือไม่
+            const currentStatus = '@Model.Status'.toUpperCase();
+            const approvedStatuses = ['APPROVED', 'RESCHEDULED', 'COMPLETE'];
+            const isApproved = approvedStatuses.includes(currentStatus);
+
+            // คำนวณ departmentUsedCostExcludingThis
+            let departmentUsedCostExcludingThis = currentYearCost;
+            let departmentUsedHoursExcludingThis = currentYearHours;
+
+            if (isApproved && this.totalCostUsedInForm > 0) {
+                departmentUsedCostExcludingThis = currentYearCost - this.totalCostUsedInForm;
+                departmentUsedHoursExcludingThis = currentYearHours - this.totalHoursUsedInForm;
+            }
+
+            console.log('📊 Department used (excluding this form):', {
+                cost: departmentUsedCostExcludingThis,
+                hours: departmentUsedHoursExcludingThis
+            });
+
+            // 3. คำนวณใหม่สำหรับแต่ละพนักงาน (accumulated pattern)
+            let accumulatedCost = 0;
+            let accumulatedHours = 0;
+
+            this.employees.forEach((emp, index) => {
+                // คำนวณยอดคงเหลือ (accumulated)
+                const remainingCost = currentDepartmentQuota - departmentUsedCostExcludingThis - accumulatedCost - emp.thisTimeCost;
+                const remainingHours = currentDepartmentQhours - departmentUsedHoursExcludingThis - accumulatedHours - emp.thisTimeHours;
+
+                console.log(`Employee ${index + 1} (${emp.empCode}):`, {
+                    thisTimeCost: emp.thisTimeCost,
+                    thisTimeHours: emp.thisTimeHours,
+                    accumulatedCost,
+                    accumulatedHours,
+                    remainingCost,
+                    remainingHours
+                });
+
+                // อัพเดตค่าใน employee object
+                emp.remainingCost = remainingCost;
+                emp.remainingHours = remainingHours;
+
+                // อัพเดตการแสดงผลในตาราง
+                const rows = document.querySelectorAll('#employeeTableBody tr');
+                if (rows[index]) {
+                    const cells = rows[index].querySelectorAll('td');
+                    if (cells.length >= 10) {
+                        // Column 9: Remaining Hours
+                        cells[8].textContent = remainingHours.toLocaleString();
+                        // Column 10: Remaining Cost
+                        cells[9].textContent = remainingCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+                        // เปลี่ยนสีถ้าเป็นค่าลบ
+                        cells[8].style.color = remainingHours < 0 ? 'red' : '';
+                        cells[9].style.color = remainingCost < 0 ? 'red' : '';
+                    }
+                }
+
+                // สะสมยอดสำหรับคนถัดไป
+                accumulatedCost += emp.thisTimeCost;
+                accumulatedHours += emp.thisTimeHours;
+            });
+
+            // 4. อัพเดตโควต้าที่แสดง
+            this.departmentQuota = currentDepartmentQuota;
+            this.departmentQhours = currentDepartmentQhours;
+            this.updateDepartmentQuotaDisplay();
+
+            // 5. ซ่อนคำเตือน
+            const warning = document.getElementById('outdatedWarning');
+            if (warning) {
+                warning.style.display = 'none';
+            }
+
+            // 6. แสดงข้อความสำเร็จ
+            this.showSuccessToast('✅ คำนวณยอดคงเหลือใหม่สำเร็จ!');
+
+            console.log('✅ Recalculation completed successfully!');
+
+        } catch (error) {
+            console.error('❌ Error during recalculation:', error);
+            alert('เกิดข้อผิดพลาดในการคำนวณใหม่: ' + error.message);
+        }
+    }
         }
 
         // ⭐ Initialize - อยู่นอก class
@@ -2049,6 +2198,10 @@
             // ✅ โหลดข้อมูลจาก database โดยตรง (ไม่คำนวณใหม่)
             const trainingType = '@Model.TrainingType';
 
+            // ✅ ตัวแปรเก็บยอดรวมในฟอร์มนี้
+            let accumulatedCost = 0;
+            let accumulatedHours = 0;
+
             employees.forEach((emp, index) => {
                 console.log(`Employee ${index + 1}:`, emp);
                 // แยกชื่อออกเป็น prefix, name, lastname (ถ้าเป็นไปได้)
@@ -2095,6 +2248,12 @@
                 };
 
                 console.log('✅ Employee data created:', employeeData);
+
+                // ✅ รวมยอดสำหรับ PUBLIC training
+                if (trainingType?.toUpperCase() === 'PUBLIC') {
+                    accumulatedCost += employeeData.thisTimeCost;
+                    accumulatedHours += employeeData.thisTimeHours;
+                }
 
                 // เพิ่ม employee เข้าไปใน array โดยตรง
                 employeeManager.employees.push(employeeData);
