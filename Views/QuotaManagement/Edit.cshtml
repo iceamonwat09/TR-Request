@@ -18,7 +18,6 @@
                         @Html.AntiForgeryToken()
                         <input type="hidden" asp-for="ID" />
                         <input type="hidden" asp-for="CreatedBy" />
-                        <input type="hidden" asp-for="CreatedDate" />
 
                         <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
 
@@ -84,47 +83,6 @@
                             </div>
                         </div>
 
-                        <!-- Created Info (Read-only) -->
-                        <div class="card bg-light mb-3">
-                            <div class="card-body">
-                                <h6 class="card-title">
-                                    <i class="fas fa-info-circle"></i> ข้อมูลการสร้าง
-                                </h6>
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <p class="mb-1">
-                                            <strong>สร้างโดย:</strong>
-                                            @(Model.CreatedBy ?? "-")
-                                        </p>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <p class="mb-1">
-                                            <strong>วันที่สร้าง:</strong>
-                                            @(Model.CreatedDate.HasValue ? Model.CreatedDate.Value.ToString("dd/MM/yyyy HH:mm") : "-")
-                                        </p>
-                                    </div>
-                                </div>
-                                @if (!string.IsNullOrEmpty(Model.UpdatedBy))
-                                {
-                                    <hr class="my-2" />
-                                    <div class="row">
-                                        <div class="col-md-6">
-                                            <p class="mb-1">
-                                                <strong>แก้ไขล่าสุดโดย:</strong>
-                                                @Model.UpdatedBy
-                                            </p>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <p class="mb-1">
-                                                <strong>วันที่แก้ไข:</strong>
-                                                @(Model.UpdatedDate.HasValue ? Model.UpdatedDate.Value.ToString("dd/MM/yyyy HH:mm") : "-")
-                                            </p>
-                                        </div>
-                                    </div>
-                                }
-                            </div>
-                        </div>
-
                         <!-- Buttons -->
                         <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
                             <a href="@Url.Action("Index", "QuotaManagement")" class="btn btn-secondary">
@@ -146,7 +104,6 @@
                     </h6>
                     <ul class="mb-0">
                         <li>แก้ไขฝ่าย ปี จำนวนชั่วโมง หรืองบประมาณตามต้องการ</li>
-                        <li>ระบบจะบันทึกข้อมูลผู้แก้ไขและวันที่แก้ไขอัตโนมัติ</li>
                         <li>ตรวจสอบข้อมูลให้ถูกต้องก่อนบันทึก</li>
                         <li>หากเปลี่ยนฝ่ายหรือปี ต้องตรวจสอบว่าไม่ซ้ำกับข้อมูลที่มีอยู่</li>
                     </ul>

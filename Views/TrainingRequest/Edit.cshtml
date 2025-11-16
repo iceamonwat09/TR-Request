@@ -2032,6 +2032,9 @@
 
             // ✅ ดึงข้อมูลโควต้าฝ่ายจาก API (ใช้พนักงานคนแรก)
             const trainingType = '@Model.TrainingType';
+            let departmentUsedCostExcludingThis = 0;  // ยอดใช้ไปของฝ่าย ไม่รวมฟอร์มนี้
+            let departmentUsedHoursExcludingThis = 0;
+
             if (employees.length > 0 && trainingType?.toUpperCase() === 'PUBLIC') {
                 const firstEmp = employees[0];
                 const department = firstEmp.department;
@@ -2045,11 +2048,22 @@
                         if (data.success && data.employee) {
                             employeeManager.departmentQuota = data.employee.departmentQuota || 0;
                             employeeManager.departmentQhours = data.employee.departmentQhours || 0;
+
+                            // ✅ คำนวณยอดใช้ไปของฝ่าย ไม่รวมฟอร์มนี้
+                            // API ส่ง currentYearCost ซึ่งรวมฟอร์มนี้ด้วย ต้องหักออก
+                            const totalCostOfThisForm = employees.reduce((sum, emp) => sum + (emp.currentTrainingCost || 0), 0);
+                            const totalHoursOfThisForm = employees.reduce((sum, emp) => sum + (emp.currentTrainingHours || 0), 0);
+
+                            departmentUsedCostExcludingThis = (data.employee.currentYearCost || 0) - totalCostOfThisForm;
+                            departmentUsedHoursExcludingThis = (data.employee.currentYearHours || 0) - totalHoursOfThisForm;
+
                             employeeManager.updateDepartmentQuotaDisplay();
 
                             console.log('✅ Department quota loaded:', {
                                 quota: employeeManager.departmentQuota,
-                                qhours: employeeManager.departmentQhours
+                                qhours: employeeManager.departmentQhours,
+                                usedCostExcludingThis: departmentUsedCostExcludingThis,
+                                usedHoursExcludingThis: departmentUsedHoursExcludingThis
                             });
                         }
                     } catch (error) {
@@ -2089,10 +2103,11 @@
 
                 if (trainingType?.toUpperCase() === 'PUBLIC' && employeeManager.departmentQuota > 0) {
                     // คำนวณแบบฝ่าย (Department-based) พร้อม accumulated
+                    // เริ่มจากยอดที่ใช้ไปของฝ่าย (ไม่รวมฟอร์มนี้) แล้วบวกทีละคน
                     remainingHours = employeeManager.departmentQhours -
-                        (emp.previousTrainingHours || 0) - accumulatedHours - (emp.currentTrainingHours || 0);
+                        departmentUsedHoursExcludingThis - accumulatedHours - (emp.currentTrainingHours || 0);
                     remainingCost = employeeManager.departmentQuota -
-                        (emp.previousTrainingCost || 0) - accumulatedCost - (emp.currentTrainingCost || 0);
+                        departmentUsedCostExcludingThis - accumulatedCost - (emp.currentTrainingCost || 0);
 
                     // บวกยอดสะสม
                     accumulatedCost += (emp.currentTrainingCost || 0);

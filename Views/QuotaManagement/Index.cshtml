@@ -63,7 +63,6 @@
                                         <th class="text-end">โควต้าชั่วโมง (ชม.)</th>
                                         <th class="text-end">โควต้าเงิน (บาท)</th>
                                         <th>สร้างโดย</th>
-                                        <th>วันที่สร้าง</th>
                                         <th width="150" class="text-center">จัดการ</th>
                                     </tr>
                                 </thead>
@@ -84,9 +83,6 @@
                                                 @quota.Cost.ToString("N2")
                                             </td>
                                             <td>@(quota.CreatedBy ?? "-")</td>
-                                            <td>
-                                                @(quota.CreatedDate.HasValue ? quota.CreatedDate.Value.ToString("dd/MM/yyyy HH:mm") : "-")
-                                            </td>
                                             <td class="text-center">
                                                 <a href="@Url.Action("Edit", "QuotaManagement", new { id = quota.ID })"
                                                    class="btn btn-sm btn-warning" title="แก้ไข">
