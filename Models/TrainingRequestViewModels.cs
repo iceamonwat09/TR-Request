@@ -68,6 +68,8 @@ namespace TrainingRequestApp.Models
         public decimal? PreviousTrainingCost { get; set; }
         public int? CurrentTrainingHours { get; set; }
         public decimal? CurrentTrainingCost { get; set; }
+        public int? RemainingHours { get; set; }
+        public decimal? RemainingCost { get; set; }
         public string? Notes { get; set; }
     }
 }

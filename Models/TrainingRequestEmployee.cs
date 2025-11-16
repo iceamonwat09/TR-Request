@@ -37,6 +37,11 @@ namespace TrainingRequestApp.Models
         [Column(TypeName = "decimal(10,2)")]
         public decimal? CurrentTrainingCost { get; set; }
 
+        public int? RemainingHours { get; set; }
+
+        [Column(TypeName = "decimal(10,2)")]
+        public decimal? RemainingCost { get; set; }
+
         [StringLength(500)]
         public string? Notes { get; set; }
 
