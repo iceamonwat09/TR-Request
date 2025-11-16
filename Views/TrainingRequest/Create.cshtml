@@ -670,8 +670,9 @@
                                 </div>
 
                                 <div class="form-group mt-4">
-                                    <label asp-for="AttachedFiles" class="form-label fw-bold">📎 ไฟล์แนบ</label>
-                                    <input asp-for="AttachedFiles" id="AttachedFiles" class="form-control form-control-lg" type="file" style="border-radius: 10px;" />
+                                    <label asp-for="AttachedFiles" class="form-label fw-bold">📎 ไฟล์แนบ (เลือกได้หลายไฟล์)</label>
+                                    <input asp-for="AttachedFiles" id="AttachedFiles" class="form-control form-control-lg" type="file" multiple style="border-radius: 10px;" />
+                                    <small class="form-text text-muted">สามารถเลือกหลายไฟล์พร้อมกันได้ (PDF, Word, Excel, รูปภาพ, ZIP)</small>
                                 </div>
 
                                 <!-- ผู้อนุมัติ 3 ระดับ -->
@@ -2227,6 +2228,18 @@
                 // ====================================================================
 
                 const formData = new FormData(form);
+
+                // ⭐ แก้ไข: ลบไฟล์เดิมและเพิ่มไฟล์ทุกไฟล์ที่เลือก (เพื่อรองรับ multiple files)
+                formData.delete('AttachedFiles');
+                const fileInput = document.getElementById('AttachedFiles');
+                if (fileInput && fileInput.files.length > 0) {
+                    console.log(`📎 Attaching ${fileInput.files.length} file(s)`);
+                    for (let i = 0; i < fileInput.files.length; i++) {
+                        formData.append('AttachedFiles', fileInput.files[i]);
+                        console.log(`  📄 File ${i + 1}: ${fileInput.files[i].name}`);
+                    }
+                }
+
                 formData.append('EmployeesJson', JSON.stringify(employeesData));
 
                 console.log('📦 FormData prepared');

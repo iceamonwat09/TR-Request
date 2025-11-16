@@ -673,8 +673,17 @@
                                 </div>
 
                                 <div class="form-group mt-4">
-                                    <label asp-for="AttachedFiles" class="form-label fw-bold">📎 ไฟล์แนบ</label>
-                                    <input asp-for="AttachedFiles" id="AttachedFiles" class="form-control form-control-lg" type="file" style="border-radius: 10px;" />
+                                    <label asp-for="AttachedFiles" class="form-label fw-bold">📎 ไฟล์แนบใหม่ (เลือกได้หลายไฟล์)</label>
+                                    <input asp-for="AttachedFiles" id="AttachedFiles" class="form-control form-control-lg" type="file" multiple style="border-radius: 10px;" />
+                                    <small class="form-text text-muted">สามารถเลือกหลายไฟล์พร้อมกันได้ (PDF, Word, Excel, รูปภาพ, ZIP)</small>
+                                </div>
+
+                                <!-- รายการไฟล์แนบที่มีอยู่ -->
+                                <div class="form-group mt-3" id="attachmentsSection" style="display: none;">
+                                    <label class="form-label fw-bold">📂 ไฟล์แนบทั้งหมด</label>
+                                    <div id="attachmentsList" class="list-group">
+                                        <!-- ไฟล์แนบจะแสดงที่นี่ -->
+                                    </div>
                                 </div>
 
                                 <!-- ผู้อนุมัติระดับที่ 1: Section Manager -->
@@ -2494,6 +2503,18 @@
                 // ====================================================================
 
                 const formData = new FormData(form);
+
+                // ⭐ แก้ไข: ลบไฟล์เดิมและเพิ่มไฟล์ทุกไฟล์ที่เลือก (เพื่อรองรับ multiple files)
+                formData.delete('AttachedFiles');
+                const fileInput = document.getElementById('AttachedFiles');
+                if (fileInput && fileInput.files.length > 0) {
+                    console.log(`📎 Attaching ${fileInput.files.length} file(s)`);
+                    for (let i = 0; i < fileInput.files.length; i++) {
+                        formData.append('AttachedFiles', fileInput.files[i]);
+                        console.log(`  📄 File ${i + 1}: ${fileInput.files[i].name}`);
+                    }
+                }
+
                 formData.append('EmployeesJson', JSON.stringify(employeesData));
                 formData.append('docNo', '@Model.DocNo');
 
@@ -2561,5 +2582,142 @@
         }, { once: false, capture: true }); // ⭐ ใช้ capture phase
 
         console.log('✅ Form submit handler installed!');
+
+        // ====================================================================
+        // File Attachment Management
+        // ====================================================================
+
+        // Load attachments when page loads
+        async function loadAttachments() {
+            const docNo = '@Model.DocNo';
+            console.log('📎 Loading attachments for DocNo:', docNo);
+
+            try {
+                const response = await fetch(`/TrainingRequest/GetAttachments?docNo=${encodeURIComponent(docNo)}`);
+                const result = await response.json();
+
+                if (result.success && result.attachments && result.attachments.length > 0) {
+                    console.log('✅ Attachments loaded:', result.attachments.length);
+                    displayAttachments(result.attachments);
+                    document.getElementById('attachmentsSection').style.display = 'block';
+                } else {
+                    console.log('ℹ️ No attachments found');
+                    document.getElementById('attachmentsSection').style.display = 'none';
+                }
+            } catch (error) {
+                console.error('❌ Error loading attachments:', error);
+            }
+        }
+
+        function displayAttachments(attachments) {
+            const listContainer = document.getElementById('attachmentsList');
+            listContainer.innerHTML = '';
+
+            attachments.forEach((attachment, index) => {
+                const item = document.createElement('div');
+                item.className = 'list-group-item d-flex justify-content-between align-items-center';
+                item.style.borderRadius = '8px';
+                item.style.marginBottom = '8px';
+
+                // File icon based on extension
+                const ext = attachment.originalName.split('.').pop().toLowerCase();
+                let icon = 'fa-file';
+                let iconColor = '#6c757d';
+
+                if (['pdf'].includes(ext)) {
+                    icon = 'fa-file-pdf';
+                    iconColor = '#dc3545';
+                } else if (['doc', 'docx'].includes(ext)) {
+                    icon = 'fa-file-word';
+                    iconColor = '#2b579a';
+                } else if (['xls', 'xlsx'].includes(ext)) {
+                    icon = 'fa-file-excel';
+                    iconColor = '#217346';
+                } else if (['jpg', 'jpeg', 'png', 'gif'].includes(ext)) {
+                    icon = 'fa-file-image';
+                    iconColor = '#0dcaf0';
+                } else if (['zip', 'rar'].includes(ext)) {
+                    icon = 'fa-file-zipper';
+                    iconColor = '#ffc107';
+                }
+
+                item.innerHTML = `
+                    <div class="d-flex align-items-center flex-grow-1">
+                        <i class="fas ${icon} fa-2x me-3" style="color: ${iconColor};"></i>
+                        <div>
+                            <div class="fw-bold">${attachment.originalName}</div>
+                            <small class="text-muted">อัปโหลดเมื่อ: ${formatDate(attachment.uploadDate)}</small>
+                        </div>
+                    </div>
+                    <div class="btn-group">
+                        <a href="/TrainingRequest/DownloadAttachment?attachmentId=${attachment.id}"
+                           class="btn btn-sm btn-outline-primary"
+                           title="ดาวน์โหลด">
+                            <i class="fas fa-download"></i> ดาวน์โหลด
+                        </a>
+                        <button type="button"
+                                class="btn btn-sm btn-outline-danger"
+                                onclick="deleteAttachment(${attachment.id}, '${attachment.originalName}')"
+                                title="ลบไฟล์">
+                            <i class="fas fa-trash"></i> ลบ
+                        </button>
+                    </div>
+                `;
+
+                listContainer.appendChild(item);
+            });
+        }
+
+        async function deleteAttachment(attachmentId, fileName) {
+            if (!confirm(`ต้องการลบไฟล์ "${fileName}" หรือไม่?`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/TrainingRequest/DeleteAttachment', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ attachmentId: attachmentId })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    console.log('✅ File deleted successfully');
+                    alert('✅ ลบไฟล์สำเร็จ');
+                    // Reload attachments list
+                    await loadAttachments();
+                } else {
+                    alert('❌ ' + result.message);
+                }
+            } catch (error) {
+                console.error('❌ Error deleting attachment:', error);
+                alert('❌ เกิดข้อผิดพลาดในการลบไฟล์');
+            }
+        }
+
+        function formatDate(dateString) {
+            try {
+                const date = new Date(dateString);
+                const options = {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                };
+                return date.toLocaleDateString('th-TH', options);
+            } catch (e) {
+                return dateString;
+            }
+        }
+
+        // Make deleteAttachment available globally
+        window.deleteAttachment = deleteAttachment;
+
+        // Load attachments on page load
+        loadAttachments();
     })();
 </script>
