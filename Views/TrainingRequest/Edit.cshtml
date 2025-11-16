@@ -2066,12 +2066,23 @@
                             employeeManager.departmentQhours = data.employee.departmentQhours || 0;
 
                             // ✅ คำนวณยอดใช้ไปของฝ่าย ไม่รวมฟอร์มนี้
-                            // API ส่ง currentYearCost ซึ่งรวมฟอร์มนี้ด้วย ต้องหักออก
                             const totalCostOfThisForm = employees.reduce((sum, emp) => sum + (emp.currentTrainingCost || 0), 0);
                             const totalHoursOfThisForm = employees.reduce((sum, emp) => sum + (emp.currentTrainingHours || 0), 0);
 
-                            departmentUsedCostExcludingThis = (data.employee.currentYearCost || 0) - totalCostOfThisForm;
-                            departmentUsedHoursExcludingThis = (data.employee.currentYearHours || 0) - totalHoursOfThisForm;
+                            // ✅ ตรวจสอบ Status ของฟอร์มนี้
+                            // Query API กรองด้วย Status IN ('APPROVED', 'RESCHEDULED', 'COMPLETE')
+                            const currentStatus = '@Model.Status'.toUpperCase();
+                            const approvedStatuses = ['APPROVED', 'RESCHEDULED', 'COMPLETE'];
+
+                            if (approvedStatuses.includes(currentStatus)) {
+                                // ฟอร์มนี้ถูกรวมใน API แล้ว → ต้องหักออก
+                                departmentUsedCostExcludingThis = (data.employee.currentYearCost || 0) - totalCostOfThisForm;
+                                departmentUsedHoursExcludingThis = (data.employee.currentYearHours || 0) - totalHoursOfThisForm;
+                            } else {
+                                // ฟอร์มนี้ไม่ถูกรวมใน API → ไม่ต้องหัก
+                                departmentUsedCostExcludingThis = data.employee.currentYearCost || 0;
+                                departmentUsedHoursExcludingThis = data.employee.currentYearHours || 0;
+                            }
 
                             // ✅ เก็บค่าไว้ใน employeeManager เพื่อใช้ใน recalculate
                             employeeManager.departmentUsedCostExcludingThis = departmentUsedCostExcludingThis;
@@ -2080,13 +2091,17 @@
                             employeeManager.updateDepartmentQuotaDisplay();
 
                             console.log('✅ Department quota loaded:', {
+                                status: currentStatus,
+                                isApproved: approvedStatuses.includes(currentStatus),
                                 quota: employeeManager.departmentQuota,
                                 qhours: employeeManager.departmentQhours,
                                 currentYearCostFromAPI: data.employee.currentYearCost,
                                 totalCostOfThisForm: totalCostOfThisForm,
                                 usedCostExcludingThis: departmentUsedCostExcludingThis,
                                 usedHoursExcludingThis: departmentUsedHoursExcludingThis,
-                                calculation: `${data.employee.currentYearCost} - ${totalCostOfThisForm} = ${departmentUsedCostExcludingThis}`
+                                calculation: approvedStatuses.includes(currentStatus)
+                                    ? `${data.employee.currentYearCost} - ${totalCostOfThisForm} = ${departmentUsedCostExcludingThis} (หักเพราะ Status=${currentStatus})`
+                                    : `${data.employee.currentYearCost} - 0 = ${departmentUsedCostExcludingThis} (ไม่หักเพราะ Status=${currentStatus})`
                             });
                         }
                     } catch (error) {
