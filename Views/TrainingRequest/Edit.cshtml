@@ -2046,73 +2046,8 @@
         if (employees && employees.length > 0) {
             console.log(`📊 Loading ${employees.length} existing employees`);
 
-            // ✅ ดึงข้อมูลโควต้าฝ่ายจาก API (ใช้พนักงานคนแรก)
+            // ✅ โหลดข้อมูลจาก database โดยตรง (ไม่คำนวณใหม่)
             const trainingType = '@Model.TrainingType';
-            let departmentUsedCostExcludingThis = 0;  // ยอดใช้ไปของฝ่าย ไม่รวมฟอร์มนี้
-            let departmentUsedHoursExcludingThis = 0;
-
-            if (employees.length > 0 && trainingType?.toUpperCase() === 'PUBLIC') {
-                const firstEmp = employees[0];
-                const department = firstEmp.department;
-
-                if (department) {
-                    try {
-                        console.log('🔍 Fetching department quota for:', department);
-                        const response = await fetch(`/api/employee/search/${firstEmp.employeeCode}?department=${encodeURIComponent(department)}&trainingType=${trainingType}`);
-                        const data = await response.json();
-
-                        if (data.success && data.employee) {
-                            employeeManager.departmentQuota = data.employee.departmentQuota || 0;
-                            employeeManager.departmentQhours = data.employee.departmentQhours || 0;
-
-                            // ✅ คำนวณยอดใช้ไปของฝ่าย ไม่รวมฟอร์มนี้
-                            const totalCostOfThisForm = employees.reduce((sum, emp) => sum + (emp.currentTrainingCost || 0), 0);
-                            const totalHoursOfThisForm = employees.reduce((sum, emp) => sum + (emp.currentTrainingHours || 0), 0);
-
-                            // ✅ ตรวจสอบ Status ของฟอร์มนี้
-                            // Query API กรองด้วย Status IN ('APPROVED', 'RESCHEDULED', 'COMPLETE')
-                            const currentStatus = '@Model.Status'.toUpperCase();
-                            const approvedStatuses = ['APPROVED', 'RESCHEDULED', 'COMPLETE'];
-
-                            if (approvedStatuses.includes(currentStatus)) {
-                                // ฟอร์มนี้ถูกรวมใน API แล้ว → ต้องหักออก
-                                departmentUsedCostExcludingThis = (data.employee.currentYearCost || 0) - totalCostOfThisForm;
-                                departmentUsedHoursExcludingThis = (data.employee.currentYearHours || 0) - totalHoursOfThisForm;
-                            } else {
-                                // ฟอร์มนี้ไม่ถูกรวมใน API → ไม่ต้องหัก
-                                departmentUsedCostExcludingThis = data.employee.currentYearCost || 0;
-                                departmentUsedHoursExcludingThis = data.employee.currentYearHours || 0;
-                            }
-
-                            // ✅ เก็บค่าไว้ใน employeeManager เพื่อใช้ใน recalculate
-                            employeeManager.departmentUsedCostExcludingThis = departmentUsedCostExcludingThis;
-                            employeeManager.departmentUsedHoursExcludingThis = departmentUsedHoursExcludingThis;
-
-                            employeeManager.updateDepartmentQuotaDisplay();
-
-                            console.log('✅ Department quota loaded:', {
-                                status: currentStatus,
-                                isApproved: approvedStatuses.includes(currentStatus),
-                                quota: employeeManager.departmentQuota,
-                                qhours: employeeManager.departmentQhours,
-                                currentYearCostFromAPI: data.employee.currentYearCost,
-                                totalCostOfThisForm: totalCostOfThisForm,
-                                usedCostExcludingThis: departmentUsedCostExcludingThis,
-                                usedHoursExcludingThis: departmentUsedHoursExcludingThis,
-                                calculation: approvedStatuses.includes(currentStatus)
-                                    ? `${data.employee.currentYearCost} - ${totalCostOfThisForm} = ${departmentUsedCostExcludingThis} (หักเพราะ Status=${currentStatus})`
-                                    : `${data.employee.currentYearCost} - 0 = ${departmentUsedCostExcludingThis} (ไม่หักเพราะ Status=${currentStatus})`
-                            });
-                        }
-                    } catch (error) {
-                        console.error('❌ Error fetching department quota:', error);
-                    }
-                }
-            }
-
-            // ✅ คำนวณยอดสะสมสำหรับการแสดงผล
-            let accumulatedCost = 0;
-            let accumulatedHours = 0;
 
             employees.forEach((emp, index) => {
                 console.log(`Employee ${index + 1}:`, emp);
@@ -2135,28 +2070,11 @@
                     lastname = nameParts[nameParts.length - 1];
                 }
 
-                // ✅ คำนวณค่าคงเหลือตามประเภท Training
-                let remainingHours = 0;
-                let remainingCost = 0;
+                // ✅ อ่านค่าคงเหลือจาก database (ไม่คำนวณ)
+                const remainingHours = emp.remainingHours || 0;
+                const remainingCost = emp.remainingCost || 0;
 
-                if (trainingType?.toUpperCase() === 'PUBLIC' && employeeManager.departmentQuota > 0) {
-                    // คำนวณแบบฝ่าย (Department-based) พร้อม accumulated
-                    // เริ่มจากยอดที่ใช้ไปของฝ่าย (ไม่รวมฟอร์มนี้) แล้วบวกทีละคน
-                    remainingHours = employeeManager.departmentQhours -
-                        departmentUsedHoursExcludingThis - accumulatedHours - (emp.currentTrainingHours || 0);
-                    remainingCost = employeeManager.departmentQuota -
-                        departmentUsedCostExcludingThis - accumulatedCost - (emp.currentTrainingCost || 0);
-
-                    console.log(`Employee ${index + 1} (${emp.employeeCode}): ${employeeManager.departmentQuota} - ${departmentUsedCostExcludingThis} - ${accumulatedCost} - ${emp.currentTrainingCost} = ${remainingCost}`);
-
-                    // บวกยอดสะสม
-                    accumulatedCost += (emp.currentTrainingCost || 0);
-                    accumulatedHours += (emp.currentTrainingHours || 0);
-                } else {
-                    // คำนวณแบบบุคคล (Individual-based)
-                    remainingHours = 12 - (emp.previousTrainingHours || 0) - (emp.currentTrainingHours || 0);
-                    remainingCost = 10000 - (emp.previousTrainingCost || 0) - (emp.currentTrainingCost || 0);
-                }
+                console.log(`Employee ${index + 1} (${emp.employeeCode}): Loaded remaining from DB - Hours: ${remainingHours}, Cost: ${remainingCost}`);
 
                 // สร้าง employee object ตามโครงสร้างที่ EmployeeManager ต้องการ
                 const employeeData = {
