@@ -1420,8 +1420,8 @@
 
                 // ✅ Validate ก่อนเปิด Modal ค้นหาพนักงาน
                 document.getElementById('employeeSearchModal').addEventListener('show.bs.modal', (event) => {
-                    const department = document.getElementById('Department')?.value;
-                    const position = document.getElementById('Position')?.value;
+                    const department = document.getElementById('departmentSelect')?.value;
+                    const position = document.getElementById('positionSelect')?.value;
 
                     if (!department || !position) {
                         event.preventDefault();
