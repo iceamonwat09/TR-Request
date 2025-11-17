@@ -190,7 +190,7 @@
                                                 </div>
 
                                                 <!-- ค่าคอมแมนวิทยากร -->
-                                                <div class="col-md-6">
+                                                <div class="col-md-6" style="display: none;">
                                                     <label class="form-label fw-bold">💼 ค่าคอมแมนวิทยากร (บาท)</label>
                                                     <input name="InstructorCommission" id="InstructorCommission" class="form-control form-control-lg budget-input-inhouse" type="number" step="0.01" min="0" value="0" style="border-radius: 10px;" />
                                                 </div>
@@ -1416,6 +1416,18 @@
 
                 document.getElementById('addEmployeeBtn').addEventListener('click', () => {
                     this.addEmployeeToTable();
+                });
+
+                // ✅ Validate ก่อนเปิด Modal ค้นหาพนักงาน
+                document.getElementById('employeeSearchModal').addEventListener('show.bs.modal', (event) => {
+                    const department = document.getElementById('Department')?.value;
+                    const position = document.getElementById('Position')?.value;
+
+                    if (!department || !position) {
+                        event.preventDefault();
+                        alert('⚠️ กรุณาเลือก ฝ่าย และ ตำแหน่ง ก่อนค้นหาพนักงาน');
+                        return false;
+                    }
                 });
 
                 document.getElementById('employeeSearchModal').addEventListener('hidden.bs.modal', () => {
