@@ -11,5 +11,6 @@ namespace TrainingRequestApp.Models
         public DbSet<Employee> Employees { get; set; }
         public DbSet<TrainingRequest> TrainingRequests { get; set; }
         public DbSet<TrainingParticipant> TrainingParticipants { get; set; }
+        public DbSet<TrainingRequestCost> TrainingRequestCosts { get; set; }
     }
 }
