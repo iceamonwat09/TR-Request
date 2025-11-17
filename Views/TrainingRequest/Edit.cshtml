@@ -623,15 +623,15 @@
                                         </div>
 
                                         <div class="card-body p-0">
-                                            <!-- ⚠️ คำเตือนข้อมูลอาจไม่เป็นปัจจุบัน -->
+                                            <!-- ⚠️ ปุ่มแจ้งเตือนข้อมูลอาจไม่เป็นปัจจุบัน -->
                                             @if (Model.Employees != null && Model.Employees.Any())
                                             {
-                                                <div class="alert alert-info mb-0 mx-3 mt-3" role="alert" id="outdatedWarning" style="border-radius: 10px;">
-                                                    <i class="fas fa-info-circle me-2"></i>
-                                                    <strong>หมายเหตุ:</strong>
-                                                    ข้อมูลยอดคงเหลือคำนวณ ณ วันที่
-                                                    <strong>@Model.CreatedDate.ToString("dd/MM/yyyy HH:mm")</strong>
-                                                    <span class="text-muted">(อาจไม่เป็นปัจจุบัน หากมีฟอร์มอื่นอนุมัติหลังจากนั้น คลิกปุ่ม "คำนวณใหม่" เพื่ออัพเดต)</span>
+                                                <div class="text-center mx-3 mt-3 mb-2" id="outdatedWarningContainer">
+                                                    <button type="button" class="btn btn-info" id="outdatedWarning">
+                                                        <i class="fas fa-info-circle me-1"></i>
+                                                        ข้อมูลคงเหลือ ณ วันที่ @Model.CreatedDate.ToString("dd/MM/yyyy HH:mm")
+                                                        <span class="ms-1">(อาจไม่เป็นปัจจุบัน)</span>
+                                                    </button>
                                                 </div>
                                             }
                                             <div class="table-responsive">
@@ -2130,10 +2130,10 @@
             this.departmentQhours = currentDepartmentQhours;
             this.updateDepartmentQuotaDisplay();
 
-            // 5. ซ่อนคำเตือน
-            const warning = document.getElementById('outdatedWarning');
-            if (warning) {
-                warning.style.display = 'none';
+            // 5. ซ่อนปุ่มคำเตือน
+            const warningContainer = document.getElementById('outdatedWarningContainer');
+            if (warningContainer) {
+                warningContainer.style.display = 'none';
             }
 
             // 6. แสดงข้อความสำเร็จ
