@@ -38,7 +38,7 @@ SELECT TOP 10
     tre.RemainingCost
 FROM [HRDSYSTEM].[dbo].[TrainingRequestEmployees] tre
 INNER JOIN [HRDSYSTEM].[dbo].[TrainingRequests] tr
-    ON tre.TrainingRequestId = tr.TrainingRequestId
+    ON tre.TrainingRequestId = tr.Id
 ORDER BY tr.CreatedDate DESC;
 GO
 
@@ -56,7 +56,7 @@ SELECT
     SUM(tre.CurrentTrainingHours) AS TotalHours
 FROM [HRDSYSTEM].[dbo].[TrainingRequests] tr
 INNER JOIN [HRDSYSTEM].[dbo].[TrainingRequestEmployees] tre
-    ON tr.TrainingRequestId = tre.TrainingRequestId
+    ON tr.Id = tre.TrainingRequestId
 WHERE tr.TrainingType = 'PUBLIC'
 GROUP BY tr.DocNo, tr.TrainingTitle, tr.Department, tr.TrainingType, tr.Status
 HAVING COUNT(tre.EmployeeCode) >= 2
@@ -83,7 +83,7 @@ SELECT
     tre.Notes
 FROM [HRDSYSTEM].[dbo].[TrainingRequestEmployees] tre
 INNER JOIN [HRDSYSTEM].[dbo].[TrainingRequests] tr
-    ON tre.TrainingRequestId = tr.TrainingRequestId
+    ON tre.TrainingRequestId = tr.Id
 WHERE tr.DocNo = @DocNo
 ORDER BY tre.EmployeeCode;
 GO
@@ -114,7 +114,7 @@ SELECT
     SUM(tre.CurrentTrainingCost) AS TotalCostUsed
 FROM [HRDSYSTEM].[dbo].[TrainingRequests] tr
 INNER JOIN [HRDSYSTEM].[dbo].[TrainingRequestEmployees] tre
-    ON tr.TrainingRequestId = tre.TrainingRequestId
+    ON tr.Id = tre.TrainingRequestId
 WHERE tr.Department = @Department
     AND YEAR(tr.TrainingDate) = @Year
     AND tr.Status IN ('APPROVED', 'RESCHEDULED', 'COMPLETE')
@@ -140,7 +140,7 @@ LEFT JOIN [HRDSYSTEM].[dbo].[TrainingRequests] tr
     AND tr.Status IN ('APPROVED', 'RESCHEDULED', 'COMPLETE')
     AND tr.TrainingType = 'PUBLIC'
 LEFT JOIN [HRDSYSTEM].[dbo].[TrainingRequestEmployees] tre
-    ON tr.TrainingRequestId = tre.TrainingRequestId
+    ON tr.Id = tre.TrainingRequestId
 GROUP BY md.DepartmentName, md.Qhours, md.Quota
 ORDER BY md.DepartmentName;
 GO
@@ -158,7 +158,7 @@ SELECT
     COUNT(CASE WHEN tre.RemainingCost IS NULL THEN 1 END) AS NullRemainingCost
 FROM [HRDSYSTEM].[dbo].[TrainingRequests] tr
 INNER JOIN [HRDSYSTEM].[dbo].[TrainingRequestEmployees] tre
-    ON tr.TrainingRequestId = tre.TrainingRequestId
+    ON tr.Id = tre.TrainingRequestId
 GROUP BY tr.DocNo, tr.TrainingTitle, tr.Department, tr.CreatedDate
 HAVING COUNT(CASE WHEN tre.RemainingHours IS NULL THEN 1 END) > 0
     OR COUNT(CASE WHEN tre.RemainingCost IS NULL THEN 1 END) > 0
@@ -179,7 +179,7 @@ SELECT
     tre.RemainingHours
 FROM [HRDSYSTEM].[dbo].[TrainingRequestEmployees] tre
 INNER JOIN [HRDSYSTEM].[dbo].[TrainingRequests] tr
-    ON tre.TrainingRequestId = tr.TrainingRequestId
+    ON tre.TrainingRequestId = tr.Id
 WHERE (tre.RemainingCost < 0 OR tre.RemainingHours < 0)
     AND tre.RemainingCost IS NOT NULL
 ORDER BY tr.CreatedDate DESC;
@@ -213,7 +213,7 @@ SELECT
     @DeptUsedHours = ISNULL(SUM(tre.CurrentTrainingHours), 0)
 FROM [HRDSYSTEM].[dbo].[TrainingRequests] tr
 INNER JOIN [HRDSYSTEM].[dbo].[TrainingRequestEmployees] tre
-    ON tr.TrainingRequestId = tre.TrainingRequestId
+    ON tr.Id = tre.TrainingRequestId
 WHERE tr.Department = @TestDept
     AND YEAR(tr.TrainingDate) = YEAR(GETDATE())
     AND tr.Status IN ('APPROVED', 'RESCHEDULED', 'COMPLETE')
@@ -238,7 +238,7 @@ WITH EmployeeAccumulated AS (
         ) AS AccumulatedHoursBefore
     FROM [HRDSYSTEM].[dbo].[TrainingRequestEmployees] tre
     INNER JOIN [HRDSYSTEM].[dbo].[TrainingRequests] tr
-        ON tre.TrainingRequestId = tr.TrainingRequestId
+        ON tre.TrainingRequestId = tr.Id
     WHERE tr.DocNo = @TestDocNo
 )
 SELECT

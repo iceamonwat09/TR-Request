@@ -2040,12 +2040,37 @@
             return;
         }
 
-        try {
-            // 1. ดึงข้อมูลโควต้าฝ่ายปัจจุบันจาก API
-            console.log('📡 Fetching current quota for department:', department);
-            const response = await fetch(`/api/TrainingRequest/GetEmployeeData?empCode=0000000`);
-            const data = await response.json();
+        // ตรวจสอบว่ามีพนักงานในตารางหรือไม่
+        if (!this.employees || this.employees.length === 0) {
+            alert('ไม่มีพนักงานในตาราง ไม่สามารถคำนวณใหม่ได้');
+            return;
+        }
 
+        try {
+            // 1. ใช้รหัสพนักงานคนแรกในตารางเรียก API
+            const firstEmployeeCode = this.employees[0].empCode;
+            console.log('📡 Fetching current quota using employee:', firstEmployeeCode);
+
+            // 2. สร้าง URL พร้อม query parameters
+            const params = new URLSearchParams();
+            params.append('department', department);
+            params.append('trainingType', trainingType);
+
+            const url = `/api/employee/search/${firstEmployeeCode}?${params.toString()}`;
+            console.log('🔗 Request URL:', url);
+
+            // 3. เรียก API
+            const response = await fetch(url);
+
+            // 4. ตรวจสอบ response ก่อน parse JSON
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ไม่สามารถดึงข้อมูลได้`);
+            }
+
+            const data = await response.json();
+            console.log('📡 Response data:', data);
+
+            // 5. ตรวจสอบข้อมูล
             if (!data || !data.department || data.department !== department) {
                 alert('ไม่สามารถดึงข้อมูลโควต้าฝ่ายได้');
                 return;
