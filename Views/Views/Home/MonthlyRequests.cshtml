@@ -1,0 +1,535 @@
+﻿@{
+    ViewData["Title"] = "ข้อมูลการขออบรม - เดือนนี้";
+}
+
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>@ViewData["Title"]</title>
+
+    <!-- Bootstrap 5 & Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .container-fluid {
+            padding: 30px;
+        }
+
+        .card {
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+            border: none;
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.6s ease;
+        }
+
+            .card.show {
+                opacity: 1;
+                transform: translateY(0);
+            }
+
+        .card-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 20px 20px 0 0 !important;
+            padding: 25px;
+            border: none;
+        }
+
+            .card-header h3 {
+                margin: 0;
+                font-weight: 600;
+                display: flex;
+                align-items: center;
+                gap: 12px;
+            }
+
+        .filter-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 25px;
+        }
+
+        .form-control, .form-select {
+            border-radius: 10px;
+            border: 2px solid #e0e0e0;
+            padding: 10px 15px;
+            transition: all 0.3s ease;
+        }
+
+            .form-control:focus, .form-select:focus {
+                border-color: #667eea;
+                box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+            }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 10px;
+            padding: 10px 25px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+            .btn-primary:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+            }
+
+        .btn-secondary {
+            border-radius: 10px;
+            padding: 10px 25px;
+            font-weight: 600;
+        }
+
+        .table-container {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            overflow-x: auto;
+        }
+
+        table.dataTable {
+            border-collapse: separate !important;
+            border-spacing: 0;
+        }
+
+            table.dataTable thead th {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                font-weight: 600;
+                border: none;
+                padding: 15px;
+                text-align: center;
+                white-space: nowrap;
+            }
+
+                table.dataTable thead th:first-child {
+                    border-radius: 10px 0 0 0;
+                }
+
+                table.dataTable thead th:last-child {
+                    border-radius: 0 10px 0 0;
+                }
+
+            table.dataTable tbody td {
+                padding: 12px;
+                vertical-align: middle;
+                border-bottom: 1px solid #f0f0f0;
+            }
+
+            table.dataTable tbody tr:hover {
+                background: #f8f9ff;
+                transition: all 0.2s ease;
+            }
+
+        .badge {
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 12px;
+        }
+
+        .action-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border: none;
+            transition: all 0.3s ease;
+            margin: 0 3px;
+        }
+
+            .action-btn:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            }
+
+        .btn-edit {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+
+        .btn-report {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+        }
+
+        .btn-workflow {
+            background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+            color: white;
+        }
+
+        .count-badge {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+            color: white;
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-weight: 700;
+            display: inline-block;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 15px rgba(250, 112, 154, 0.3);
+        }
+
+        .back-btn {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1000;
+            background: white;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+        }
+
+            .back-btn:hover {
+                transform: scale(1.1);
+                box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+            }
+
+        .loading-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+        }
+
+            .loading-overlay.active {
+                display: flex;
+            }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #667eea;
+            border-radius: 50%;
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner" id="spinnerElement"></div>
+    </div>
+
+    <!-- Back Button -->
+    <a href="@Url.Action("Index", "Home")" class="back-btn" title="กลับหน้าหลัก">
+        <i class="fas fa-arrow-left text-primary"></i>
+    </a>
+
+    <div class="container-fluid">
+        <div class="card" id="mainCard">
+            <div class="card-header">
+                <h3>
+                    <i class="fas fa-clipboard-list"></i>
+                    ข้อมูลการขออบรม - เดือนนี้
+                </h3>
+            </div>
+            <div class="card-body">
+                <!-- Filter Section -->
+                <div class="filter-section">
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold">
+                                <i class="fas fa-calendar-alt"></i> วันที่เริ่มต้น
+                            </label>
+                            <input type="date" id="startDate" class="form-control" />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold">
+                                <i class="fas fa-calendar-check"></i> วันที่สิ้นสุด
+                            </label>
+                            <input type="date" id="endDate" class="form-control" />
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label fw-bold">
+                                <i class="fas fa-hashtag"></i> เลขที่เอกสาร
+                            </label>
+                            <input type="text" id="docNo" class="form-control" placeholder="DocNo">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label fw-bold">
+                                <i class="fas fa-building"></i> บริษัท
+                            </label>
+                            <input type="text" id="company" class="form-control" placeholder="Company">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label fw-bold">
+                                <i class="fas fa-info-circle"></i> สถานะ
+                            </label>
+                            <select id="status" class="form-select">
+                                <option value="">ทั้งหมด</option>
+                                <option value="Pending">Pending</option>
+                                <option value="Approved">Approved</option>
+                                <option value="Rejected">Rejected</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-12 text-end">
+                            <button class="btn btn-secondary" onclick="resetFilters()">
+                                <i class="fas fa-redo"></i> รีเซ็ต
+                            </button>
+                            <button class="btn btn-primary" onclick="loadData()">
+                                <i class="fas fa-search"></i> ค้นหา
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Count Badge -->
+                <div class="text-center">
+                    <span class="count-badge">
+                        <i class="fas fa-list-ol"></i> จำนวนทั้งหมด: <span id="totalCount">0</span> รายการ
+                    </span>
+                </div>
+
+                <!-- Data Table -->
+                <div class="table-container">
+                    <table id="trainingTable" class="table table-hover" style="width:100%">
+                        <thead>
+                            <tr>
+                                <th>ลำดับ</th>
+                                <th>เลขที่เอกสาร</th>
+                                <th>บริษัท</th>
+                                <th>วันที่เริ่ม</th>
+                                <th>หัวข้อการอบรม</th>
+                                <th>ผู้สร้าง</th>
+                                <th>สถานะ</th>
+                                <th>จำนวนผู้เข้าร่วม</th>
+                                <th>การจัดการ</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody">
+                            <!-- Data will be loaded via AJAX -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+
+    <script>
+        let dataTable;
+        let rotationAngle = 0;
+
+        // Animation สำหรับ spinner ด้วย JavaScript แทน CSS keyframes
+        function animateSpinner() {
+            const spinner = document.getElementById('spinnerElement');
+            if (spinner) {
+                rotationAngle += 5;
+                spinner.style.transform = 'rotate(' + rotationAngle + 'deg)';
+                requestAnimationFrame(animateSpinner);
+            }
+        }
+
+        $(document).ready(function() {
+            // เริ่ม animation
+            animateSpinner();
+
+            // Fade in card
+            setTimeout(function() {
+                $('#mainCard').addClass('show');
+            }, 100);
+
+            const now = new Date();
+            const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+            const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+            $('#startDate').val(formatDate(firstDay));
+            $('#endDate').val(formatDate(lastDay));
+
+            loadData();
+        });
+
+        function formatDate(date) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        function showLoading() {
+            $('#loadingOverlay').addClass('active');
+        }
+
+        function hideLoading() {
+            $('#loadingOverlay').removeClass('active');
+        }
+
+        function loadData() {
+            const startDate = $('#startDate').val();
+            const endDate = $('#endDate').val();
+            const docNo = $('#docNo').val();
+            const company = $('#company').val();
+            const status = $('#status').val();
+
+            showLoading();
+
+            $.ajax({
+                url: '@Url.Action("GetMonthlyRequests", "TrainingRequest")',
+                type: 'GET',
+                data: {
+                    startDate: startDate,
+                    endDate: endDate,
+                    docNo: docNo,
+                    company: company,
+                    status: status
+                },
+                success: function(response) {
+                    hideLoading();
+                    if (response.success) {
+                        $('#totalCount').text(response.count);
+                        renderTable(response.data);
+                    } else {
+                        alert('เกิดข้อผิดพลาด: ' + response.message);
+                    }
+                },
+                error: function(xhr) {
+                    hideLoading();
+                    alert('ไม่สามารถโหลดข้อมูลได้');
+                    console.error(xhr);
+                }
+            });
+        }
+
+        function renderTable(data) {
+            if (dataTable) {
+                dataTable.destroy();
+            }
+
+            const tbody = $('#tableBody');
+            tbody.empty();
+
+            if (data.length === 0) {
+                tbody.append(`
+                    <tr>
+                        <td colspan="9" class="text-center text-muted py-5">
+                            <i class="fas fa-inbox fa-3x mb-3"></i>
+                            <h5>ไม่พบข้อมูล</h5>
+                        </td>
+                    </tr>
+                `);
+                return;
+            }
+
+            data.forEach((item, index) => {
+                const statusBadge = getStatusBadge(item.status);
+                const startDateDisplay = item.startDate ? new Date(item.startDate).toLocaleDateString('th-TH') : '-';
+
+                tbody.append(`
+                    <tr>
+                        <td class="text-center">${index + 1}</td>
+                        <td><strong>${item.docNo}</strong></td>
+                        <td>${item.company}</td>
+                        <td class="text-center">${startDateDisplay}</td>
+                        <td>${item.seminarTitle}</td>
+                        <td>${item.createdBy}</td>
+                        <td class="text-center">${statusBadge}</td>
+                        <td class="text-center">
+                            <span class="badge bg-info">${item.participantCount} คน</span>
+                        </td>
+                        <td class="text-center">
+                            <button class="action-btn btn-edit"
+                                    onclick="editRequest('${item.docNo}')"
+                                    title="แก้ไข">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="action-btn btn-report"
+                                    onclick="viewReport(${item.id})"
+                                    title="รายงาน">
+                                <i class="fas fa-file-alt"></i>
+                            </button>
+                            <button class="action-btn btn-workflow"
+                                    onclick="viewWorkflow(${item.id})"
+                                    title="Flow การอนุมัติ">
+                                <i class="fas fa-project-diagram"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `);
+            });
+
+            dataTable = $('#trainingTable').DataTable({
+                language: {
+                    url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/th.json'
+                },
+                order: [[1, 'desc']],
+                pageLength: 25,
+                responsive: true
+            });
+        }
+
+        function getStatusBadge(status) {
+            switch(status) {
+                case 'Pending':
+                    return '<span class="badge bg-warning text-dark">รออนุมัติ</span>';
+                case 'Approved':
+                    return '<span class="badge bg-success">อนุมัติแล้ว</span>';
+                case 'Rejected':
+                    return '<span class="badge bg-danger">ไม่อนุมัติ</span>';
+                default:
+                    return '<span class="badge bg-secondary">' + status + '</span>';
+            }
+        }
+
+        function resetFilters() {
+            const now = new Date();
+            const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+            const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+            $('#startDate').val(formatDate(firstDay));
+            $('#endDate').val(formatDate(lastDay));
+            $('#docNo').val('');
+            $('#company').val('');
+            $('#status').val('');
+
+            loadData();
+        }
+
+        function editRequest(docNo) {
+            window.location.href = '@Url.Action("Edit", "TrainingRequest")?docNo=' + encodeURIComponent(docNo);
+        }
+
+        function viewReport(id) {
+            window.location.href = '@Url.Action("Details", "TrainingRequest")/' + id;
+        }
+
+        function viewWorkflow(id) {
+            alert('Flow การอนุมัติสำหรับ ID: ' + id + '\n(ฟีเจอร์นี้จะพัฒนาต่อ)');
+        }
+    </script>
+</body>
+</html>
