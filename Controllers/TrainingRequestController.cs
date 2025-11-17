@@ -50,6 +50,10 @@ namespace TrainingRequestApp.Controllers
                 Console.WriteLine($"Company: {formData.Company}");
                 Console.WriteLine($"TrainingType: {formData.TrainingType}");
 
+                // ✅ ดึง Email ของผู้ใช้จาก Session
+                string userEmail = HttpContext.Session.GetString("UserEmail") ?? "System";
+                Console.WriteLine($"✅ CreatedBy: {userEmail}");
+
                 string connectionString = _configuration.GetConnectionString("DefaultConnection");
 
                 using (SqlConnection conn = new SqlConnection(connectionString))
@@ -72,8 +76,8 @@ namespace TrainingRequestApp.Controllers
                             string docNo = await GenerateDocNo(conn, transaction, formData.TrainingType);
                             Console.WriteLine($"✅ Generated DocNo: {docNo}");
 
-                            // 2. Insert ข้อมูลหลัก
-                            int trainingRequestId = await InsertTrainingRequest(conn, transaction, formData, docNo);
+                            // 2. Insert ข้อมูลหลัก (ส่ง Email ไปด้วย)
+                            int trainingRequestId = await InsertTrainingRequest(conn, transaction, formData, docNo, userEmail);
                             Console.WriteLine($"✅ TrainingRequestId: {trainingRequestId}");
 
                             // 3. Insert รายชื่อพนักงาน (ใช้ trainingRequestId แทน docNo)
@@ -243,6 +247,10 @@ namespace TrainingRequestApp.Controllers
             {
                 Console.WriteLine($"🔵 UpdateTrainingRequest called for DocNo: {docNo}");
 
+                // ✅ ดึง Email ของผู้ใช้จาก Session
+                string userEmail = HttpContext.Session.GetString("UserEmail") ?? "System";
+                Console.WriteLine($"✅ UpdatedBy: {userEmail}");
+
                 string connectionString = _configuration.GetConnectionString("DefaultConnection");
 
                 using (SqlConnection conn = new SqlConnection(connectionString))
@@ -254,8 +262,8 @@ namespace TrainingRequestApp.Controllers
                     {
                         try
                         {
-                            // 1. Update main training request data
-                            await UpdateTrainingRequestData(conn, transaction, formData, docNo);
+                            // 1. Update main training request data (ส่ง Email ไปด้วย)
+                            await UpdateTrainingRequestData(conn, transaction, formData, docNo, userEmail);
                             Console.WriteLine($"✅ Training Request Updated: {docNo}");
 
                             // 2. Get TrainingRequestId for employee updates
@@ -513,7 +521,7 @@ namespace TrainingRequestApp.Controllers
         }
 
         private async Task<int> InsertTrainingRequest(SqlConnection conn, SqlTransaction transaction,
-            TrainingRequestFormData formData, string docNo)
+            TrainingRequestFormData formData, string docNo, string createdBy)
         {
             string query = @"
                 INSERT INTO [HRDSYSTEM].[dbo].[TrainingRequests] (
@@ -521,7 +529,7 @@ namespace TrainingRequestApp.Controllers
                     [StartDate], [EndDate], [SeminarTitle], [TrainingLocation], [Instructor],
                     [RegistrationCost], [InstructorFee], [EquipmentCost], [FoodCost], [OtherCost], [OtherCostDescription],
                     [TotalCost], [CostPerPerson],[PerPersonTrainingHours], [TrainingObjective], [OtherObjective],
-                    [URLSource], [AdditionalNotes], [ExpectedOutcome], 
+                    [URLSource], [AdditionalNotes], [ExpectedOutcome],
                     [Status], [CreatedDate], [CreatedBy], [IsActive],[TotalPeople],
                     [SectionManagerId], [DepartmentManagerId], [ManagingDirectorId]
                 )
@@ -531,7 +539,7 @@ namespace TrainingRequestApp.Controllers
                     @RegistrationCost, @InstructorFee, @EquipmentCost, @FoodCost, @OtherCost, @OtherCostDescription,
                     @TotalCost, @CostPerPerson,@PerPersonTrainingHours, @TrainingObjective, @OtherObjective,
                     @URLSource, @AdditionalNotes, @ExpectedOutcome,
-                    'Pending', GETDATE(), 'System', 1,@TotalPeople,
+                    'Pending', GETDATE(), @CreatedBy, 1,@TotalPeople,
                     @SectionManagerId, @DepartmentManagerId, @ManagingDirectorId
                 );
                 SELECT CAST(SCOPE_IDENTITY() AS INT);";
@@ -568,6 +576,9 @@ namespace TrainingRequestApp.Controllers
                 cmd.Parameters.AddWithValue("@AdditionalNotes", formData.AdditionalNotes ?? (object)DBNull.Value);
                 cmd.Parameters.AddWithValue("@ExpectedOutcome", formData.ExpectedOutcome ?? (object)DBNull.Value);
                 cmd.Parameters.AddWithValue("@TotalPeople", formData.ParticipantCount ?? (object)DBNull.Value);
+
+                // ✅ CreatedBy - ใช้ Email ของผู้สร้างจาก Session
+                cmd.Parameters.AddWithValue("@CreatedBy", createdBy);
 
                 // ✅ เพิ่มใหม่ - Approvers
                 cmd.Parameters.AddWithValue("@SectionManagerId", formData.SectionManagerId ?? (object)DBNull.Value);
@@ -717,7 +728,7 @@ namespace TrainingRequestApp.Controllers
         }
 
         private async Task UpdateTrainingRequestData(SqlConnection conn, SqlTransaction transaction,
-            TrainingRequestFormData formData, string docNo)
+            TrainingRequestFormData formData, string docNo, string updatedBy)
         {
             string query = @"
                 UPDATE [HRDSYSTEM].[dbo].[TrainingRequests]
@@ -759,7 +770,9 @@ namespace TrainingRequestApp.Controllers
                     [ManagingDirectorId] = @ManagingDirectorId,
                     [Status_ManagingDirector] = @Status_ManagingDirector,
                     [Comment_ManagingDirector] = @Comment_ManagingDirector,
-                    [ApproveInfo_ManagingDirector] = @ApproveInfo_ManagingDirector
+                    [ApproveInfo_ManagingDirector] = @ApproveInfo_ManagingDirector,
+                    [UpdatedBy] = @UpdatedBy,
+                    [UpdatedDate] = GETDATE()
                 WHERE [DocNo] = @DocNo AND [IsActive] = 1";
 
             using (SqlCommand cmd = new SqlCommand(query, conn, transaction))
@@ -807,6 +820,9 @@ namespace TrainingRequestApp.Controllers
                 cmd.Parameters.AddWithValue("@Status_ManagingDirector", formData.Status_ManagingDirector ?? (object)DBNull.Value);
                 cmd.Parameters.AddWithValue("@Comment_ManagingDirector", formData.Comment_ManagingDirector ?? (object)DBNull.Value);
                 cmd.Parameters.AddWithValue("@ApproveInfo_ManagingDirector", formData.ApproveInfo_ManagingDirector ?? (object)DBNull.Value);
+
+                // ✅ UpdatedBy - ใช้ Email ของผู้แก้ไขจาก Session
+                cmd.Parameters.AddWithValue("@UpdatedBy", updatedBy);
 
                 await cmd.ExecuteNonQueryAsync();
             }
