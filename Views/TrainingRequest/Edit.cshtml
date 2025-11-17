@@ -623,8 +623,8 @@
                                         </div>
 
                                         <div class="card-body p-0">
-                                            <!-- ⚠️ ปุ่มแจ้งเตือนข้อมูลอาจไม่เป็นปัจจุบัน -->
-                                            @if (Model.Employees != null && Model.Employees.Any())
+                                            <!-- ⚠️ ปุ่มแจ้งเตือนข้อมูลอาจไม่เป็นปัจจุบัน (เฉพาะ PUBLIC training) -->
+                                            @if (Model.Employees != null && Model.Employees.Any() && Model.TrainingType?.ToUpper() == "PUBLIC")
                                             {
                                                 <div class="text-center mx-3 mt-3 mb-2" id="outdatedWarningContainer">
                                                     <button type="button" class="btn btn-info" id="outdatedWarning">
@@ -2071,15 +2071,22 @@
             console.log('📡 Response data:', data);
 
             // 5. ตรวจสอบข้อมูล
-            if (!data || !data.department || data.department !== department) {
-                alert('ไม่สามารถดึงข้อมูลโควต้าฝ่ายได้');
+            if (!data || !data.success || !data.employee) {
+                alert('ไม่สามารถดึงข้อมูลพนักงานได้');
                 return;
             }
 
-            const currentDepartmentQuota = data.departmentQuota || 0;
-            const currentDepartmentQhours = data.departmentQhours || 0;
-            const currentYearCost = data.currentYearCost || 0;
-            const currentYearHours = data.currentYearHours || 0;
+            const emp = data.employee;
+
+            if (!emp.department || emp.department !== department) {
+                alert(`ข้อมูลฝ่ายไม่ตรงกัน: คาดหวัง "${department}" แต่ได้ "${emp.department}"`);
+                return;
+            }
+
+            const currentDepartmentQuota = emp.departmentQuota || 0;
+            const currentDepartmentQhours = emp.departmentQhours || 0;
+            const currentYearCost = emp.currentYearCost || 0;
+            const currentYearHours = emp.currentYearHours || 0;
 
             console.log('✅ Current quota fetched:', {
                 quota: currentDepartmentQuota,
