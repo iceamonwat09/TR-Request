@@ -591,12 +591,14 @@ namespace TrainingRequestApp.Controllers
                 INSERT INTO [HRDSYSTEM].[dbo].[TrainingRequestEmployees] (
                     [TrainingRequestId], [EmployeeCode], [EmployeeName], [Position], [Level], [Department],
                     [PreviousTrainingHours], [PreviousTrainingCost],
-                    [CurrentTrainingHours], [CurrentTrainingCost], [Notes]
+                    [CurrentTrainingHours], [CurrentTrainingCost],
+                    [RemainingHours], [RemainingCost], [Notes]
                 )
                 VALUES (
                     @TrainingRequestId, @EmployeeCode, @EmployeeName, @Position, @Level, @Department,
                     @PreviousTrainingHours, @PreviousTrainingCost,
-                    @CurrentTrainingHours, @CurrentTrainingCost, @Notes
+                    @CurrentTrainingHours, @CurrentTrainingCost,
+                    @RemainingHours, @RemainingCost, @Notes
                 )";
 
             foreach (var emp in employees)
@@ -613,6 +615,8 @@ namespace TrainingRequestApp.Controllers
                     cmd.Parameters.AddWithValue("@PreviousTrainingCost", emp.currentYearCost);
                     cmd.Parameters.AddWithValue("@CurrentTrainingHours", emp.thisTimeHours);
                     cmd.Parameters.AddWithValue("@CurrentTrainingCost", emp.thisTimeCost);
+                    cmd.Parameters.AddWithValue("@RemainingHours", emp.remainingHours);
+                    cmd.Parameters.AddWithValue("@RemainingCost", emp.remainingCost);
                     cmd.Parameters.AddWithValue("@Notes", emp.notes ?? (object)DBNull.Value);
 
                     await cmd.ExecuteNonQueryAsync();
@@ -677,7 +681,8 @@ namespace TrainingRequestApp.Controllers
                 SELECT
                     EmployeeCode, EmployeeName, Position, Level, Department,
                     PreviousTrainingHours, PreviousTrainingCost,
-                    CurrentTrainingHours, CurrentTrainingCost, Notes
+                    CurrentTrainingHours, CurrentTrainingCost,
+                    RemainingHours, RemainingCost, Notes
                 FROM [HRDSYSTEM].[dbo].[TrainingRequestEmployees]
                 WHERE TrainingRequestId = @TrainingRequestId";
 
@@ -700,6 +705,8 @@ namespace TrainingRequestApp.Controllers
                             PreviousTrainingCost = reader["PreviousTrainingCost"] != DBNull.Value ? (decimal?)reader.GetDecimal(reader.GetOrdinal("PreviousTrainingCost")) : null,
                             CurrentTrainingHours = reader["CurrentTrainingHours"] != DBNull.Value ? (int?)reader.GetInt32(reader.GetOrdinal("CurrentTrainingHours")) : null,
                             CurrentTrainingCost = reader["CurrentTrainingCost"] != DBNull.Value ? (decimal?)reader.GetDecimal(reader.GetOrdinal("CurrentTrainingCost")) : null,
+                            RemainingHours = reader["RemainingHours"] != DBNull.Value ? (int?)reader.GetInt32(reader.GetOrdinal("RemainingHours")) : null,
+                            RemainingCost = reader["RemainingCost"] != DBNull.Value ? (decimal?)reader.GetDecimal(reader.GetOrdinal("RemainingCost")) : null,
                             Notes = reader["Notes"]?.ToString()
                         });
                     }
@@ -1374,6 +1381,8 @@ namespace TrainingRequestApp.Controllers
         public decimal currentYearCost { get; set; }
         public int thisTimeHours { get; set; }
         public decimal thisTimeCost { get; set; }
+        public int remainingHours { get; set; }
+        public decimal remainingCost { get; set; }
         public string? notes { get; set; }
     }
 
