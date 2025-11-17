@@ -2054,21 +2054,36 @@
             return;
         }
 
+        // ตรวจสอบว่ามีพนักงานในรายการหรือไม่
+        if (!this.employees || this.employees.length === 0) {
+            alert('ไม่มีพนักงานในรายการ ไม่สามารถคำนวณใหม่ได้');
+            return;
+        }
+
         try {
-            // 1. ดึงข้อมูลโควต้าฝ่ายปัจจุบันจาก API
+            // 1. ดึงข้อมูลโควต้าฝ่ายปัจจุบันจาก API (ใช้พนักงานคนแรก)
+            const firstEmployee = this.employees[0];
             console.log('📡 Fetching current quota for department:', department);
-            const response = await fetch(`/api/TrainingRequest/GetEmployeeData?empCode=0000000`);
+            console.log('   Using employee:', firstEmployee.empCode);
+
+            const url = `/api/employee/search/${firstEmployee.empCode}?department=${encodeURIComponent(department)}&trainingType=${trainingType}`;
+            const response = await fetch(url);
+
+            if (!response.ok) {
+                throw new Error(`API returned ${response.status}`);
+            }
+
             const data = await response.json();
 
-            if (!data || !data.department || data.department !== department) {
+            if (!data.success || !data.employee) {
                 alert('ไม่สามารถดึงข้อมูลโควต้าฝ่ายได้');
                 return;
             }
 
-            const currentDepartmentQuota = data.departmentQuota || 0;
-            const currentDepartmentQhours = data.departmentQhours || 0;
-            const currentYearCost = data.currentYearCost || 0;
-            const currentYearHours = data.currentYearHours || 0;
+            const currentDepartmentQuota = data.employee.departmentQuota || 0;
+            const currentDepartmentQhours = data.employee.departmentQhours || 0;
+            const currentYearCost = data.employee.currentYearCost || 0;
+            const currentYearHours = data.employee.currentYearHours || 0;
 
             console.log('✅ Current quota fetched:', {
                 quota: currentDepartmentQuota,
@@ -2300,8 +2315,44 @@
                 totalCost: employeeManager.totalCostUsedInForm,
                 totalHours: employeeManager.totalHoursUsedInForm
             });
+
+            // ✅ ดึงโควต้าฝ่ายจาก API (ใช้พนักงานคนแรก)
+            await loadDepartmentQuota(employees[0]);
         } else {
             console.log('ℹ️ No existing employees');
+        }
+    }
+
+    // ✅ ดึงโควต้าฝ่ายจาก API
+    async function loadDepartmentQuota(firstEmployee) {
+        try {
+            const department = '@Html.Raw(Model.Department)';
+            const trainingType = '@Model.TrainingType';
+            const employeeCode = firstEmployee.employeeCode;
+
+            console.log('🔍 Fetching department quota...');
+            console.log('   Employee Code:', employeeCode);
+            console.log('   Department:', department);
+            console.log('   Training Type:', trainingType);
+
+            const url = `/api/employee/search/${employeeCode}?department=${encodeURIComponent(department)}&trainingType=${encodeURIComponent(trainingType)}`;
+            const response = await fetch(url);
+
+            if (response.ok) {
+                const data = await response.json();
+                if (data.success && data.employee) {
+                    employeeManager.departmentQuota = data.employee.departmentQuota || 0;
+                    employeeManager.departmentQhours = data.employee.departmentQhours || 0;
+                    employeeManager.updateDepartmentQuotaDisplay();
+
+                    console.log('✅ Department quota loaded:', {
+                        departmentQuota: employeeManager.departmentQuota,
+                        departmentQhours: employeeManager.departmentQhours
+                    });
+                }
+            }
+        } catch (error) {
+            console.error('❌ Error loading department quota:', error);
         }
     }
 
