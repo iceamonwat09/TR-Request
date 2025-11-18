@@ -1328,15 +1328,8 @@
         // ====================================================================
         // 0. Load Departments and Positions - เมื่อโหลดหน้าเสร็จ
         // ====================================================================
-        document.addEventListener('DOMContentLoaded', async function() {
-            console.log('🚀 Page loaded!');
-            await loadDepartmentsAndPositions();
-
-            // รอให้ DOM พร้อม แล้วค่อย initialize
-            setTimeout(() => {
-                initializeBudgetCalculation();
-            }, 100);
-        });
+        // ✅ REMOVED: ย้ายไปรวมกับ DOMContentLoaded listener ด้านล่าง (บรรทัด ~2243)
+        // เพื่อป้องกัน race condition และลดการเรียก API ซ้ำซ้อน
 
         async function loadDepartmentsAndPositions() {
             try {
@@ -2241,10 +2234,20 @@
 
     // ✅ โหลด Departments เมื่อเปิดหน้า
     document.addEventListener('DOMContentLoaded', async function() {
+        console.log('🚀 Page loaded!');
+
+        // ✅ 1. โหลด Departments และ Positions options
         await loadDepartments();
 
-        // ✅ โหลดข้อมูลที่มีอยู่แล้วจาก Model
+        // ✅ 2. โหลดข้อมูลที่มีอยู่แล้วจาก Model (pre-populate)
         await loadExistingData();
+
+        // ✅ 3. Initialize budget calculation
+        setTimeout(() => {
+            initializeBudgetCalculation();
+        }, 100);
+
+        console.log('✅ Page initialization completed');
     });
 
     // ===============================================
@@ -2411,32 +2414,50 @@
 
     // Set Department และ Position dropdown
     async function setDepartmentAndPosition() {
-        // Decode HTML entities (แก้ปัญหา &amp; เป็น &)
         const department = '@Html.Raw(Model.Department)';
         const position = '@Html.Raw(Model.Position)';
 
         if (department) {
-            console.log('🔧 Setting Department (decoded):', department);
+            console.log('🔧 Setting Department:', department);
 
-            // Set department value
             const departmentSelect = document.getElementById('departmentSelect');
             if (departmentSelect) {
+                // ✅ ตรวจสอบว่ามี option หรือไม่
+                const departmentOption = Array.from(departmentSelect.options).find(opt => opt.value === department);
+                if (!departmentOption) {
+                    console.warn('⚠️ Department option not found:', department);
+                    return;
+                }
+
                 departmentSelect.value = department;
+                console.log('✅ Department set:', department);
 
-                console.log('✅ Department dropdown value set:', departmentSelect.value);
+                // ✅ Trigger change event to load positions
+                const changeEvent = new Event('change');
+                departmentSelect.dispatchEvent(changeEvent);
 
-                // Trigger change event to load positions
-                departmentSelect.dispatchEvent(new Event('change'));
-
-                // รอให้โหลด positions เสร็จ แล้วค่อย set position
+                // ✅ รอให้โหลด positions เสร็จ (รอจาก event listener)
                 if (position) {
-                    setTimeout(() => {
-                        const positionSelect = document.getElementById('positionSelect');
-                        if (positionSelect) {
-                            positionSelect.value = position;
-                            console.log('✅ Position set:', position);
-                        }
-                    }, 500);
+                    // รอ positions โหลดเสร็จด้วย Promise
+                    await new Promise(resolve => {
+                        let attempts = 0;
+                        const checkInterval = setInterval(() => {
+                            const positionSelect = document.getElementById('positionSelect');
+                            const hasOptions = positionSelect && positionSelect.options.length > 1; // มากกว่า 1 คือมี options แล้ว
+
+                            if (hasOptions || attempts > 20) { // รอสูงสุด 2 วินาที (20 x 100ms)
+                                clearInterval(checkInterval);
+                                if (hasOptions) {
+                                    positionSelect.value = position;
+                                    console.log('✅ Position set:', position);
+                                } else {
+                                    console.warn('⚠️ Positions not loaded in time');
+                                }
+                                resolve();
+                            }
+                            attempts++;
+                        }, 100);
+                    });
                 }
             }
         }
@@ -2447,33 +2468,44 @@
         const ccEmail = '@Html.Raw(Model.CCEmail)';
 
         if (ccEmail) {
-            console.log('🔧 Setting CCEmail (raw):', ccEmail);
+            console.log('🔧 Setting CCEmail:', ccEmail);
 
-            // รอให้ Select2 initialize เสร็จก่อน
-            setTimeout(() => {
-                // แยก email โดยใช้ทั้ง comma และ semicolon
-                const emails = ccEmail.split(/[,;]/).map(e => e.trim()).filter(e => e);
-
-                console.log('📧 Parsed emails:', emails, 'Count:', emails.length);
-
-                if (emails.length > 0) {
-                    // สร้าง options และ select
+            // ✅ รอให้ Select2 initialize เสร็จก่อน
+            await new Promise(resolve => {
+                let attempts = 0;
+                const checkInterval = setInterval(() => {
                     const $select = $('#ccEmailSelect');
+                    const isSelect2Initialized = $select.data('select2') !== undefined;
 
-                    emails.forEach(email => {
-                        // สร้าง option ถ้ายังไม่มี
-                        if ($select.find(`option[value="${email}"]`).length === 0) {
-                            const newOption = new Option(email, email, true, true);
-                            $select.append(newOption);
+                    if (isSelect2Initialized || attempts > 30) { // รอสูงสุด 3 วินาที
+                        clearInterval(checkInterval);
+
+                        if (isSelect2Initialized) {
+                            // แยก email โดยใช้ทั้ง comma และ semicolon
+                            const emails = ccEmail.split(/[,;]/).map(e => e.trim()).filter(e => e);
+                            console.log('📧 Parsed emails:', emails);
+
+                            if (emails.length > 0) {
+                                emails.forEach(email => {
+                                    // สร้าง option ถ้ายังไม่มี
+                                    if ($select.find(`option[value="${email}"]`).length === 0) {
+                                        const newOption = new Option(email, email, true, true);
+                                        $select.append(newOption);
+                                    }
+                                });
+
+                                // Select the emails
+                                $select.val(emails).trigger('change');
+                                console.log('✅ CCEmail set:', emails);
+                            }
+                        } else {
+                            console.warn('⚠️ CCEmail Select2 not initialized in time');
                         }
-                    });
-
-                    // Select the emails
-                    $select.val(emails).trigger('change');
-
-                    console.log('✅ CCEmail set successfully:', emails);
-                }
-            }, 1000);
+                        resolve();
+                    }
+                    attempts++;
+                }, 100);
+            });
         }
     }
 
@@ -2484,52 +2516,60 @@
         const managingDirectorId = '@Html.Raw(Model.ManagingDirectorId)';
 
         console.log('🔧 Setting Approvers...');
-        console.log('  Section Manager ID:', sectionManagerId);
-        console.log('  Department Manager ID:', departmentManagerId);
-        console.log('  Managing Director ID:', managingDirectorId);
 
-        // รอให้ Select2 initialize เสร็จก่อน
-        setTimeout(async () => {
-            // Set Section Manager
-            if (sectionManagerId) {
-                $('#sectionManagerIdHidden').val(sectionManagerId);
+        // ✅ รอให้ Select2 ทั้งหมด initialize เสร็จก่อน
+        await new Promise(resolve => {
+            let attempts = 0;
+            const checkInterval = setInterval(() => {
+                const isSection = $('#sectionManagerSelect').data('select2') !== undefined;
+                const isDept = $('#departmentManagerSelect').data('select2') !== undefined;
+                const isDirector = $('#managingDirectorSelect').data('select2') !== undefined;
+                const allReady = isSection && isDept && isDirector;
 
-                // สร้าง option และแสดงใน Select2
-                const $select = $('#sectionManagerSelect');
-                if ($select.find(`option[value="${sectionManagerId}"]`).length === 0) {
-                    const newOption = new Option(sectionManagerId, sectionManagerId, true, true);
-                    $select.append(newOption).trigger('change');
+                if (allReady || attempts > 30) { // รอสูงสุด 3 วินาที
+                    clearInterval(checkInterval);
+
+                    if (allReady) {
+                        // Set Section Manager
+                        if (sectionManagerId) {
+                            $('#sectionManagerIdHidden').val(sectionManagerId);
+                            const $select = $('#sectionManagerSelect');
+                            if ($select.find(`option[value="${sectionManagerId}"]`).length === 0) {
+                                const newOption = new Option(sectionManagerId, sectionManagerId, true, true);
+                                $select.append(newOption).trigger('change');
+                            }
+                            console.log('✅ SectionManager set:', sectionManagerId);
+                        }
+
+                        // Set Department Manager
+                        if (departmentManagerId) {
+                            $('#departmentManagerIdHidden').val(departmentManagerId);
+                            const $select = $('#departmentManagerSelect');
+                            if ($select.find(`option[value="${departmentManagerId}"]`).length === 0) {
+                                const newOption = new Option(departmentManagerId, departmentManagerId, true, true);
+                                $select.append(newOption).trigger('change');
+                            }
+                            console.log('✅ DepartmentManager set:', departmentManagerId);
+                        }
+
+                        // Set Managing Director
+                        if (managingDirectorId) {
+                            $('#managingDirectorIdHidden').val(managingDirectorId);
+                            const $select = $('#managingDirectorSelect');
+                            if ($select.find(`option[value="${managingDirectorId}"]`).length === 0) {
+                                const newOption = new Option(managingDirectorId, managingDirectorId, true, true);
+                                $select.append(newOption).trigger('change');
+                            }
+                            console.log('✅ ManagingDirector set:', managingDirectorId);
+                        }
+                    } else {
+                        console.warn('⚠️ Approvers Select2 not initialized in time');
+                    }
+                    resolve();
                 }
-
-                console.log('✅ SectionManager set:', sectionManagerId);
-            }
-
-            // Set Department Manager
-            if (departmentManagerId) {
-                $('#departmentManagerIdHidden').val(departmentManagerId);
-
-                const $select = $('#departmentManagerSelect');
-                if ($select.find(`option[value="${departmentManagerId}"]`).length === 0) {
-                    const newOption = new Option(departmentManagerId, departmentManagerId, true, true);
-                    $select.append(newOption).trigger('change');
-                }
-
-                console.log('✅ DepartmentManager set:', departmentManagerId);
-            }
-
-            // Set Managing Director
-            if (managingDirectorId) {
-                $('#managingDirectorIdHidden').val(managingDirectorId);
-
-                const $select = $('#managingDirectorSelect');
-                if ($select.find(`option[value="${managingDirectorId}"]`).length === 0) {
-                    const newOption = new Option(managingDirectorId, managingDirectorId, true, true);
-                    $select.append(newOption).trigger('change');
-                }
-
-                console.log('✅ ManagingDirector set:', managingDirectorId);
-            }
-        }, 1500);
+                attempts++;
+            }, 100);
+        });
     }
 
     // ===============================================
