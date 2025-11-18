@@ -2236,13 +2236,17 @@
     document.addEventListener('DOMContentLoaded', async function() {
         console.log('🚀 Page loaded!');
 
-        // ✅ 1. โหลด Departments และ Positions options
+        // ✅ 1. โหลด Departments options
         await loadDepartments();
 
-        // ✅ 2. โหลดข้อมูลที่มีอยู่แล้วจาก Model (pre-populate)
+        // ✅ 2. Bind event listeners สำหรับ Department → Position cascading
+        //    (ต้อง bind ก่อน setDepartmentAndPosition() เพื่อให้ event ทำงาน)
+        bindDepartmentPositionListeners();
+
+        // ✅ 3. โหลดข้อมูลที่มีอยู่แล้วจาก Model (pre-populate)
         await loadExistingData();
 
-        // ✅ 3. Initialize budget calculation
+        // ✅ 4. Initialize budget calculation
         setTimeout(() => {
             initializeBudgetCalculation();
         }, 100);
@@ -2256,19 +2260,28 @@
     async function loadExistingData() {
         console.log('🔄 Loading existing data from Model...');
 
-        // 1. Load Employees from Model
-        await loadExistingEmployees();
+        // ✅ Set flag เพื่อป้องกัน reset approvers ซ้ำซ้อน
+        isLoadingExistingData = true;
 
-        // 2. Set Department and Position values
-        await setDepartmentAndPosition();
+        try {
+            // 1. Load Employees from Model
+            await loadExistingEmployees();
 
-        // 3. Set CCEmail values
-        await setCCEmail();
+            // 2. Set Department and Position values
+            await setDepartmentAndPosition();
 
-        // 4. Set Approvers values
-        await setApprovers();
+            // 3. Set CCEmail values
+            await setCCEmail();
 
-        console.log('✅ Existing data loaded');
+            // 4. Set Approvers values
+            await setApprovers();
+
+            console.log('✅ Existing data loaded');
+        } finally {
+            // ✅ รีเซ็ต flag หลังโหลดเสร็จ
+            isLoadingExistingData = false;
+            console.log('✅ Pre-populate completed, event listeners now active');
+        }
     }
 
     // โหลดข้อมูลพนักงานจาก Model.Employees
@@ -2825,78 +2838,92 @@
         }
     }
 
-    // ✅ Event: เมื่อเลือก Department ให้โหลด Position และ reset ผู้อนุมัติ
-    document.getElementById('departmentSelect').addEventListener('change', async function() {
-        const department = this.value;
-        const positionSelect = document.getElementById('positionSelect');
+    // ✅ Global flag: ป้องกัน reset approvers ตอน pre-populate ข้อมูล
+    let isLoadingExistingData = false;
 
-        // ✅ Reset Section Manager และ Department Manager
-        $('#sectionManagerSelect').val(null).trigger('change');
-        $('#departmentManagerSelect').val(null).trigger('change');
-        $('#sectionManagerIdHidden').val('');
-        $('#departmentManagerIdHidden').val('');
-        console.log('🔄 Reset Section Manager และ Department Manager');
+    // ✅ ฟังก์ชัน Bind Event Listeners สำหรับ Department และ Position
+    function bindDepartmentPositionListeners() {
+        console.log('🔧 Binding Department and Position event listeners...');
 
-        // ถ้าไม่เลือกฝ่าย ให้ disable Position dropdown
-        if (!department) {
-            positionSelect.disabled = true;
-            positionSelect.innerHTML = '<option value="">-- เลือกฝ่ายก่อน --</option>';
-            return;
-        }
+        // Event: เมื่อเลือก Department ให้โหลด Position และ reset ผู้อนุมัติ
+        document.getElementById('departmentSelect').addEventListener('change', async function() {
+            const department = this.value;
+            const positionSelect = document.getElementById('positionSelect');
 
-        try {
-            // แสดง Loading
-            positionSelect.innerHTML = '<option value="">กำลังโหลด...</option>';
-            positionSelect.disabled = true;
-
-            // โหลด Positions ตาม Department ที่เลือก
-            const response = await fetch(`/api/employees/positions?department=${encodeURIComponent(department)}`);
-
-            if (!response.ok) {
-                throw new Error('Failed to load positions');
+            // ✅ ข้าม reset approvers ถ้ากำลัง pre-populate ข้อมูล
+            if (!isLoadingExistingData) {
+                $('#sectionManagerSelect').val(null).trigger('change');
+                $('#departmentManagerSelect').val(null).trigger('change');
+                $('#sectionManagerIdHidden').val('');
+                $('#departmentManagerIdHidden').val('');
+                console.log('🔄 Reset approvers (Department changed)');
             }
 
-            const positions = await response.json();
-
-            // เคลียร์และเพิ่ม options ใหม่
-            positionSelect.innerHTML = '<option value="">-- เลือกตำแหน่ง --</option>';
-
-            if (positions.length === 0) {
-                positionSelect.innerHTML = '<option value="">-- ไม่มีตำแหน่งในฝ่ายนี้ --</option>';
+            // ถ้าไม่เลือกฝ่าย ให้ disable Position dropdown
+            if (!department) {
                 positionSelect.disabled = true;
-                console.warn('⚠️ ไม่พบตำแหน่งในฝ่าย:', department);
+                positionSelect.innerHTML = '<option value="">-- เลือกฝ่ายก่อน --</option>';
                 return;
             }
 
-            positions.forEach(pos => {
-                const option = document.createElement('option');
-                option.value = pos;
-                option.textContent = pos;
-                positionSelect.appendChild(option);
-            });
+            try {
+                // แสดง Loading
+                positionSelect.innerHTML = '<option value="">กำลังโหลด...</option>';
+                positionSelect.disabled = true;
 
-            // เปิดใช้งาน dropdown
-            positionSelect.disabled = false;
+                // โหลด Positions ตาม Department ที่เลือก
+                const response = await fetch(`/api/employees/positions?department=${encodeURIComponent(department)}`);
 
-            console.log('✅ โหลด Positions สำเร็จ:', positions.length, 'รายการ');
+                if (!response.ok) {
+                    throw new Error('Failed to load positions');
+                }
 
-        } catch (error) {
-            console.error('❌ Error loading positions:', error);
-            positionSelect.innerHTML = '<option value="">-- เกิดข้อผิดพลาด --</option>';
-            positionSelect.disabled = true;
-            alert('⚠️ ไม่สามารถโหลดข้อมูลตำแหน่งได้ กรุณาลองใหม่อีกครั้ง');
-        }
-    });
+                const positions = await response.json();
 
-    // ✅ Event: เมื่อเลือก Position ให้ reset ผู้อนุมัติ
-    document.getElementById('positionSelect').addEventListener('change', function() {
-        // ✅ Reset Section Manager และ Department Manager
-        $('#sectionManagerSelect').val(null).trigger('change');
-        $('#departmentManagerSelect').val(null).trigger('change');
-        $('#sectionManagerIdHidden').val('');
-        $('#departmentManagerIdHidden').val('');
-        console.log('🔄 Reset Section Manager และ Department Manager (Position changed)');
-    });
+                // เคลียร์และเพิ่ม options ใหม่
+                positionSelect.innerHTML = '<option value="">-- เลือกตำแหน่ง --</option>';
+
+                if (positions.length === 0) {
+                    positionSelect.innerHTML = '<option value="">-- ไม่มีตำแหน่งในฝ่ายนี้ --</option>';
+                    positionSelect.disabled = true;
+                    console.warn('⚠️ ไม่พบตำแหน่งในฝ่าย:', department);
+                    return;
+                }
+
+                positions.forEach(pos => {
+                    const option = document.createElement('option');
+                    option.value = pos;
+                    option.textContent = pos;
+                    positionSelect.appendChild(option);
+                });
+
+                // เปิดใช้งาน dropdown
+                positionSelect.disabled = false;
+
+                console.log('✅ โหลด Positions สำเร็จ:', positions.length, 'รายการ');
+
+            } catch (error) {
+                console.error('❌ Error loading positions:', error);
+                positionSelect.innerHTML = '<option value="">-- เกิดข้อผิดพลาด --</option>';
+                positionSelect.disabled = true;
+                alert('⚠️ ไม่สามารถโหลดข้อมูลตำแหน่งได้ กรุณาลองใหม่อีกครั้ง');
+            }
+        });
+
+        // Event: เมื่อเลือก Position ให้ reset ผู้อนุมัติ
+        document.getElementById('positionSelect').addEventListener('change', function() {
+            // ✅ ข้าม reset approvers ถ้ากำลัง pre-populate ข้อมูล
+            if (!isLoadingExistingData) {
+                $('#sectionManagerSelect').val(null).trigger('change');
+                $('#departmentManagerSelect').val(null).trigger('change');
+                $('#sectionManagerIdHidden').val('');
+                $('#departmentManagerIdHidden').val('');
+                console.log('🔄 Reset approvers (Position changed)');
+            }
+        });
+
+        console.log('✅ Event listeners bound successfully');
+    }
 
     // ====================================================================
     // Step 2: Form Submit Handler (ป้องกันการทำงานซ้ำ)
