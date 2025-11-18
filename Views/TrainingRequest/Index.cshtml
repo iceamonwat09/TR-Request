@@ -60,11 +60,38 @@
                                                     case "Pending":
                                                         <span class="badge bg-warning text-dark">Pending</span>
                                                         break;
+                                                    case "WAITING_FOR_SECTION_MANAGER":
+                                                        <span class="badge bg-primary">WAITING_FOR_SECTION_MANAGER</span>
+                                                        break;
+                                                    case "WAITING_FOR_DEPARTMENT_MANAGER":
+                                                        <span class="badge bg-primary">WAITING_FOR_DEPARTMENT_MANAGER</span>
+                                                        break;
+                                                    case "WAITING_FOR_HRD_ADMIN":
+                                                        <span class="badge bg-info text-dark">WAITING_FOR_HRD_ADMIN</span>
+                                                        break;
+                                                    case "WAITING_FOR_HRD_CONFIRMATION":
+                                                        <span class="badge bg-info text-dark">WAITING_FOR_HRD_CONFIRMATION</span>
+                                                        break;
+                                                    case "WAITING_FOR_MANAGING_DIRECTOR":
+                                                        <span class="badge bg-dark">WAITING_FOR_MANAGING_DIRECTOR</span>
+                                                        break;
                                                     case "Approved":
+                                                    case "APPROVED":
                                                         <span class="badge bg-success">Approved</span>
                                                         break;
                                                     case "Rejected":
+                                                    case "REJECTED":
                                                         <span class="badge bg-danger">Rejected</span>
+                                                        break;
+                                                    case "Revise":
+                                                        <span class="badge bg-warning">Revise</span>
+                                                        break;
+                                                    case "Complete":
+                                                    case "COMPLETE":
+                                                        <span class="badge bg-success"><i class="fas fa-check-circle"></i> Complete</span>
+                                                        break;
+                                                    case "RESCHEDULED":
+                                                        <span class="badge bg-secondary">RESCHEDULED</span>
                                                         break;
                                                     default:
                                                         <span class="badge bg-secondary">@request.Status</span>

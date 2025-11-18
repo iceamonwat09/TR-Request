@@ -497,12 +497,29 @@
             switch(status) {
                 case 'Pending':
                     return '<span class="badge bg-warning text-dark">' + status + '</span>';
+                case 'WAITING_FOR_SECTION_MANAGER':
+                    return '<span class="badge bg-primary">' + status + '</span>';
+                case 'WAITING_FOR_DEPARTMENT_MANAGER':
+                    return '<span class="badge bg-primary">' + status + '</span>';
+                case 'WAITING_FOR_HRD_ADMIN':
+                    return '<span class="badge bg-info text-dark">' + status + '</span>';
+                case 'WAITING_FOR_HRD_CONFIRMATION':
+                    return '<span class="badge bg-info text-dark">' + status + '</span>';
+                case 'WAITING_FOR_MANAGING_DIRECTOR':
+                    return '<span class="badge bg-dark">' + status + '</span>';
                 case 'Approved':
+                case 'APPROVED':
                     return '<span class="badge bg-success">' + status + '</span>';
                 case 'Rejected':
+                case 'REJECTED':
                     return '<span class="badge bg-danger">' + status + '</span>';
                 case 'Revise':
-                    return '<span class="badge bg-info">' + status + '</span>';
+                    return '<span class="badge bg-warning">' + status + '</span>';
+                case 'Complete':
+                case 'COMPLETE':
+                    return '<span class="badge bg-success"><i class="fas fa-check-circle"></i> ' + status + '</span>';
+                case 'RESCHEDULED':
+                    return '<span class="badge bg-secondary">' + status + '</span>';
                 default:
                     return '<span class="badge bg-secondary">' + status + '</span>';
             }
