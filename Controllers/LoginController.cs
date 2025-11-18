@@ -144,10 +144,8 @@ namespace TrainingRequestApp.Controllers
                                         });
                                     }
 
-                                    // ✅ Redirect ไปตามสิทธิ์ของผู้ใช้
-                                    return permissions.Contains("Admin")
-                                        ? RedirectToAction("Index", "Home")
-                                        : RedirectToAction("UserDashboard", "Dashboard");
+                                    // ✅ Redirect ไป Home/Index (แสดงเมนูตาม Role)
+                                    return RedirectToAction("Index", "Home");
                                 }
                                 else
                                 {
