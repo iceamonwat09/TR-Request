@@ -80,7 +80,7 @@ namespace TrainingRequestApp.Controllers
                             COUNT(*) AS TotalRequests
                         FROM [TrainingRequests]
                         WHERE StartDate >= @StartDate AND StartDate <= @EndDate
-                          AND Status IN ('APPROVED', 'COMPLETE')
+                          AND Status IN ('APPROVED', 'COMPLETE', 'RESCHEDULED')
                           AND IsActive = 1"
                         + (string.IsNullOrEmpty(department) ? "" : " AND Department = @Department");
 
@@ -127,7 +127,7 @@ namespace TrainingRequestApp.Controllers
                     string requestsQuery = @"
                         SELECT
                             COUNT(*) AS TotalRequests,
-                            SUM(CASE WHEN Status IN ('APPROVED', 'COMPLETE') THEN 1 ELSE 0 END) AS ApprovedCount
+                            SUM(CASE WHEN Status IN ('APPROVED', 'COMPLETE', 'RESCHEDULED') THEN 1 ELSE 0 END) AS ApprovedCount
                         FROM [TrainingRequests]
                         WHERE StartDate >= @StartDate AND StartDate <= @EndDate
                           AND IsActive = 1"
@@ -184,7 +184,7 @@ namespace TrainingRequestApp.Controllers
         }
 
         /// <summary>
-        /// API: ดึงข้อมูลงบประมาณแต่ละฝ่าย (Bar Chart)
+        /// API: ดึงข้อมูลงบประมาณแต่ละฝ่าย (Bar Chart) พร้อมยอดรออนุมัติ
         /// GET: /Home/GetCostByDepartment?year=2025
         /// </summary>
         [HttpGet]
@@ -205,11 +205,12 @@ namespace TrainingRequestApp.Controllers
                     string query = @"
                         SELECT
                             qc.Department,
-                            ISNULL(SUM(tr.TotalCost), 0) AS TotalUsed,
+                            ISNULL(SUM(CASE WHEN tr.Status IN ('APPROVED', 'COMPLETE', 'RESCHEDULED') THEN tr.TotalCost ELSE 0 END), 0) AS TotalUsed,
+                            ISNULL(SUM(CASE WHEN tr.Status NOT IN ('APPROVED', 'COMPLETE', 'RESCHEDULED') THEN tr.TotalCost ELSE 0 END), 0) AS PendingAmount,
                             qc.Cost AS Quota,
-                            (qc.Cost - ISNULL(SUM(tr.TotalCost), 0)) AS Remaining,
+                            (qc.Cost - ISNULL(SUM(CASE WHEN tr.Status IN ('APPROVED', 'COMPLETE', 'RESCHEDULED') THEN tr.TotalCost ELSE 0 END), 0)) AS Remaining,
                             CASE
-                                WHEN qc.Cost > 0 THEN (ISNULL(SUM(tr.TotalCost), 0) / qc.Cost * 100)
+                                WHEN qc.Cost > 0 THEN (ISNULL(SUM(CASE WHEN tr.Status IN ('APPROVED', 'COMPLETE', 'RESCHEDULED') THEN tr.TotalCost ELSE 0 END), 0) / qc.Cost * 100)
                                 ELSE 0
                             END AS UsagePercent
                         FROM [TrainingRequest_Cost] qc
@@ -217,7 +218,6 @@ namespace TrainingRequestApp.Controllers
                             ON tr.Department = qc.Department
                             AND tr.StartDate >= @StartDate
                             AND tr.StartDate <= @EndDate
-                            AND tr.Status IN ('APPROVED', 'COMPLETE')
                             AND tr.IsActive = 1
                         WHERE qc.Year = @Year
                         GROUP BY qc.Department, qc.Cost
@@ -239,6 +239,7 @@ namespace TrainingRequestApp.Controllers
                                 {
                                     department = reader["Department"].ToString(),
                                     totalUsed = reader.GetDecimal(reader.GetOrdinal("TotalUsed")),
+                                    pendingAmount = reader.GetDecimal(reader.GetOrdinal("PendingAmount")),
                                     quota = reader.GetDecimal(reader.GetOrdinal("Quota")),
                                     remaining = reader.GetDecimal(reader.GetOrdinal("Remaining")),
                                     usagePercent = Math.Round(reader.GetDecimal(reader.GetOrdinal("UsagePercent")), 1)
@@ -401,6 +402,142 @@ namespace TrainingRequestApp.Controllers
             catch (Exception ex)
             {
                 Console.WriteLine($"❌ Error in GetMonthlyTrend: {ex.Message}");
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// API: ดึงข้อมูลเปรียบเทียบ Training Type (Public vs In House)
+        /// GET: /Home/GetCostByTrainingType?year=2025
+        /// </summary>
+        [HttpGet]
+        public async Task<IActionResult> GetCostByTrainingType(int? year, DateTime? startDate, DateTime? endDate, string? department)
+        {
+            try
+            {
+                int selectedYear = year ?? DateTime.Now.Year;
+                DateTime dateStart = startDate ?? new DateTime(selectedYear, 1, 1);
+                DateTime dateEnd = endDate ?? new DateTime(selectedYear, 12, 31);
+
+                string connectionString = _configuration.GetConnectionString("DefaultConnection");
+
+                using (SqlConnection conn = new SqlConnection(connectionString))
+                {
+                    await conn.OpenAsync();
+
+                    // Query สำหรับ Public Training
+                    string publicQuery = @"
+                        SELECT
+                            COUNT(*) AS TotalRequests,
+                            ISNULL(SUM(TotalCost), 0) AS TotalCost,
+                            ISNULL(SUM(RegistrationCost), 0) AS RegistrationCost
+                        FROM [TrainingRequests]
+                        WHERE TrainingType = 'Public'
+                          AND StartDate >= @StartDate AND StartDate <= @EndDate
+                          AND Status IN ('APPROVED', 'COMPLETE', 'RESCHEDULED')
+                          AND IsActive = 1"
+                        + (string.IsNullOrEmpty(department) ? "" : " AND Department = @Department");
+
+                    int publicCount = 0;
+                    decimal publicTotalCost = 0;
+                    decimal publicRegistrationCost = 0;
+
+                    using (SqlCommand cmd = new SqlCommand(publicQuery, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@StartDate", dateStart);
+                        cmd.Parameters.AddWithValue("@EndDate", dateEnd);
+                        if (!string.IsNullOrEmpty(department))
+                            cmd.Parameters.AddWithValue("@Department", department);
+
+                        using (var reader = await cmd.ExecuteReaderAsync())
+                        {
+                            if (await reader.ReadAsync())
+                            {
+                                publicCount = reader.GetInt32(0);
+                                publicTotalCost = reader.GetDecimal(1);
+                                publicRegistrationCost = reader.GetDecimal(2);
+                            }
+                        }
+                    }
+
+                    // Query สำหรับ In House Training
+                    string inHouseQuery = @"
+                        SELECT
+                            COUNT(*) AS TotalRequests,
+                            ISNULL(SUM(TotalCost), 0) AS TotalCost,
+                            ISNULL(SUM(RegistrationCost), 0) AS RegistrationCost,
+                            ISNULL(SUM(InstructorFee), 0) AS InstructorFee,
+                            ISNULL(SUM(EquipmentCost), 0) AS EquipmentCost,
+                            ISNULL(SUM(FoodCost), 0) AS FoodCost,
+                            ISNULL(SUM(OtherCost), 0) AS OtherCost
+                        FROM [TrainingRequests]
+                        WHERE TrainingType = 'In House'
+                          AND StartDate >= @StartDate AND StartDate <= @EndDate
+                          AND Status IN ('APPROVED', 'COMPLETE', 'RESCHEDULED')
+                          AND IsActive = 1"
+                        + (string.IsNullOrEmpty(department) ? "" : " AND Department = @Department");
+
+                    int inHouseCount = 0;
+                    decimal inHouseTotalCost = 0;
+                    decimal inHouseRegistrationCost = 0;
+                    decimal inHouseInstructorFee = 0;
+                    decimal inHouseEquipmentCost = 0;
+                    decimal inHouseFoodCost = 0;
+                    decimal inHouseOtherCost = 0;
+
+                    using (SqlCommand cmd = new SqlCommand(inHouseQuery, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@StartDate", dateStart);
+                        cmd.Parameters.AddWithValue("@EndDate", dateEnd);
+                        if (!string.IsNullOrEmpty(department))
+                            cmd.Parameters.AddWithValue("@Department", department);
+
+                        using (var reader = await cmd.ExecuteReaderAsync())
+                        {
+                            if (await reader.ReadAsync())
+                            {
+                                inHouseCount = reader.GetInt32(0);
+                                inHouseTotalCost = reader.GetDecimal(1);
+                                inHouseRegistrationCost = reader.GetDecimal(2);
+                                inHouseInstructorFee = reader.GetDecimal(3);
+                                inHouseEquipmentCost = reader.GetDecimal(4);
+                                inHouseFoodCost = reader.GetDecimal(5);
+                                inHouseOtherCost = reader.GetDecimal(6);
+                            }
+                        }
+                    }
+
+                    return Json(new
+                    {
+                        success = true,
+                        data = new
+                        {
+                            publicTraining = new
+                            {
+                                count = publicCount,
+                                totalCost = publicTotalCost,
+                                registrationCost = publicRegistrationCost
+                            },
+                            inHouseTraining = new
+                            {
+                                count = inHouseCount,
+                                totalCost = inHouseTotalCost,
+                                costBreakdown = new
+                                {
+                                    registrationCost = inHouseRegistrationCost,
+                                    instructorFee = inHouseInstructorFee,
+                                    equipmentCost = inHouseEquipmentCost,
+                                    foodCost = inHouseFoodCost,
+                                    otherCost = inHouseOtherCost
+                                }
+                            }
+                        }
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Error in GetCostByTrainingType: {ex.Message}");
                 return Json(new { success = false, message = ex.Message });
             }
         }

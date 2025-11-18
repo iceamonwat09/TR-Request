@@ -17,6 +17,7 @@
 
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
 
     <style>
         body {
@@ -339,6 +340,7 @@
                     <i class="fas fa-chart-pie kpi-icon text-warning"></i>
                     <div class="kpi-value" id="kpiBudgetUsage">0%</div>
                     <div class="kpi-label">การใช้งบประมาณ</div>
+                    <div class="kpi-trend" id="kpiBudgetTotal" style="font-size: 0.85rem; color: #6c757d;"></div>
                     <div class="kpi-trend" id="kpiBudgetStatus"></div>
                 </div>
             </div>
@@ -376,12 +378,18 @@
             </div>
         </div>
 
-        <!-- Charts Row 2 -->
+        <!-- Charts Row 2 - Training Type Comparison -->
         <div class="row g-3 mb-4">
-            <div class="col-12">
+            <div class="col-lg-6">
                 <div class="chart-card">
-                    <h5><i class="fa fa-chart-line text-info"></i> Trend การขออบรมรายเดือน</h5>
-                    <canvas id="monthlyTrendChart"></canvas>
+                    <h5><i class="fa fa-graduation-cap text-info"></i> เปรียบเทียบ Public vs In House Training</h5>
+                    <canvas id="trainingTypeChart"></canvas>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="chart-card">
+                    <h5><i class="fa fa-money-check-alt text-success"></i> รายละเอียดค่าใช้จ่าย In House Training</h5>
+                    <canvas id="inHouseCostBreakdownChart"></canvas>
                 </div>
             </div>
         </div>
@@ -405,7 +413,8 @@
         let charts = {
             costByDepartment: null,
             statusDistribution: null,
-            monthlyTrend: null
+            trainingType: null,
+            inHouseCostBreakdown: null
         };
 
         // ====================================================================
@@ -447,7 +456,7 @@
                     loadKPIData(),
                     loadCostByDepartment(),
                     loadStatusDistribution(),
-                    loadMonthlyTrend()
+                    loadTrainingTypeComparison()
                 ]);
             } catch (error) {
                 console.error('Error loading dashboard:', error);
@@ -473,6 +482,7 @@
 
                 // Budget Usage
                 document.getElementById('kpiBudgetUsage').textContent = data.budgetUsagePercent + '%';
+                document.getElementById('kpiBudgetTotal').textContent = `งบทั้งหมด: ${data.totalQuotaFormatted} บาท`;
                 const budgetStatus = document.getElementById('kpiBudgetStatus');
                 if (data.budgetUsagePercent > 100) {
                     budgetStatus.textContent = `เกินงบ ${data.remainingFormatted} บาท`;
@@ -505,6 +515,7 @@
             if (result.success) {
                 const labels = result.data.map(d => d.department);
                 const used = result.data.map(d => d.totalUsed);
+                const pending = result.data.map(d => d.pendingAmount);
                 const quotas = result.data.map(d => d.quota);
                 const percentages = result.data.map(d => d.usagePercent);
 
@@ -520,28 +531,33 @@
                         labels: labels,
                         datasets: [
                             {
-                                label: 'ใช้ไปแล้ว (บาท)',
+                                label: 'อนุมัติแล้ว (บาท)',
                                 data: used,
                                 backgroundColor: percentages.map(p =>
-                                    p > 100 ? 'rgba(220, 53, 69, 0.7)' :
-                                    p > 80 ? 'rgba(255, 193, 7, 0.7)' :
-                                    'rgba(40, 167, 69, 0.7)'
+                                    p > 100 ? 'rgba(239, 154, 154, 0.8)' :
+                                    p > 80 ? 'rgba(255, 213, 153, 0.8)' :
+                                    'rgba(165, 214, 167, 0.8)'
                                 ),
-                                borderColor: percentages.map(p =>
-                                    p > 100 ? 'rgb(220, 53, 69)' :
-                                    p > 80 ? 'rgb(255, 193, 7)' :
-                                    'rgb(40, 167, 69)'
-                                ),
-                                borderWidth: 2
+                                borderWidth: 0,
+                                stack: 'stack1'
+                            },
+                            {
+                                label: 'รออนุมัติ (บาท)',
+                                data: pending,
+                                backgroundColor: 'rgba(187, 222, 251, 0.8)',
+                                borderWidth: 0,
+                                stack: 'stack1'
                             },
                             {
                                 label: 'โควต้า (บาท)',
                                 data: quotas,
                                 type: 'line',
-                                borderColor: 'rgb(102, 126, 234)',
+                                borderColor: 'rgba(121, 134, 203, 1)',
+                                backgroundColor: 'rgba(121, 134, 203, 0.1)',
                                 borderWidth: 2,
                                 fill: false,
-                                pointRadius: 5
+                                pointRadius: 5,
+                                pointBackgroundColor: 'rgba(121, 134, 203, 1)'
                             }
                         ]
                     },
@@ -563,14 +579,32 @@
                                         return '';
                                     }
                                 }
+                            },
+                            datalabels: {
+                                color: '#444',
+                                anchor: 'end',
+                                align: 'top',
+                                formatter: function(value, context) {
+                                    if (context.datasetIndex === 2) return ''; // ไม่แสดงบน line
+                                    if (value === 0) return '';
+                                    return value.toLocaleString();
+                                },
+                                font: {
+                                    size: 10,
+                                    weight: 'bold'
+                                }
                             }
                         },
                         scales: {
+                            x: {
+                                stacked: true
+                            },
                             y: {
+                                stacked: true,
                                 beginAtZero: true,
                                 ticks: {
                                     callback: function(value) {
-                                        return value.toLocaleString() + ' บาท';
+                                        return value.toLocaleString() + ' ฿';
                                     }
                                 }
                             }
@@ -599,11 +633,12 @@
                 const labels = result.data.map(d => d.status);
                 const counts = result.data.map(d => d.count);
                 const colors = labels.map(status => {
-                    if (status.includes('APPROVED') || status.includes('COMPLETE')) return 'rgba(40, 167, 69, 0.7)';
-                    if (status.includes('REJECTED')) return 'rgba(220, 53, 69, 0.7)';
-                    if (status.includes('WAITING') || status.includes('Pending')) return 'rgba(255, 193, 7, 0.7)';
-                    if (status.includes('Revise')) return 'rgba(255, 152, 0, 0.7)';
-                    return 'rgba(108, 117, 125, 0.7)';
+                    if (status.includes('APPROVED') || status.includes('COMPLETE')) return 'rgba(165, 214, 167, 0.85)';
+                    if (status.includes('REJECTED')) return 'rgba(239, 154, 154, 0.85)';
+                    if (status.includes('WAITING') || status.includes('Pending')) return 'rgba(255, 224, 130, 0.85)';
+                    if (status.includes('Revise')) return 'rgba(255, 183, 77, 0.85)';
+                    if (status.includes('RESCHEDULED')) return 'rgba(179, 229, 252, 0.85)';
+                    return 'rgba(189, 189, 189, 0.85)';
                 });
 
                 // Destroy existing chart
@@ -629,7 +664,14 @@
                         plugins: {
                             legend: {
                                 display: true,
-                                position: 'bottom'
+                                position: 'bottom',
+                                labels: {
+                                    boxWidth: 12,
+                                    padding: 10,
+                                    font: {
+                                        size: 10
+                                    }
+                                }
                             },
                             tooltip: {
                                 callbacks: {
@@ -640,6 +682,19 @@
                                         const percent = ((value / total) * 100).toFixed(1);
                                         return `${label}: ${value} (${percent}%)`;
                                     }
+                                }
+                            },
+                            datalabels: {
+                                color: '#fff',
+                                font: {
+                                    size: 11,
+                                    weight: 'bold'
+                                },
+                                formatter: function(value, context) {
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percent = ((value / total) * 100).toFixed(0);
+                                    if (percent < 5) return ''; // ไม่แสดงถ้าน้อยกว่า 5%
+                                    return percent + '%';
                                 }
                             }
                         },
@@ -656,43 +711,39 @@
         }
 
         // ====================================================================
-        // Load Monthly Trend Chart
+        // Load Training Type Comparison Charts
         // ====================================================================
-        async function loadMonthlyTrend() {
+        async function loadTrainingTypeComparison() {
             const params = new URLSearchParams(currentFilters);
-            const response = await fetch(`/Home/GetMonthlyTrend?${params}`);
+            const response = await fetch(`/Home/GetCostByTrainingType?${params}`);
             const result = await response.json();
 
             if (result.success) {
                 const data = result.data;
 
-                // Destroy existing chart
-                if (charts.monthlyTrend) {
-                    charts.monthlyTrend.destroy();
+                // Chart 1: Public vs In House Comparison (Bar Chart)
+                if (charts.trainingType) {
+                    charts.trainingType.destroy();
                 }
 
-                const ctx = document.getElementById('monthlyTrendChart').getContext('2d');
-                charts.monthlyTrend = new Chart(ctx, {
-                    type: 'line',
+                const ctx1 = document.getElementById('trainingTypeChart').getContext('2d');
+                charts.trainingType = new Chart(ctx1, {
+                    type: 'bar',
                     data: {
-                        labels: data.months,
+                        labels: ['Public Training', 'In House Training'],
                         datasets: [
                             {
                                 label: 'จำนวนคำขอ',
-                                data: data.requests,
-                                borderColor: 'rgb(102, 126, 234)',
-                                backgroundColor: 'rgba(102, 126, 234, 0.1)',
-                                tension: 0.4,
-                                fill: true,
+                                data: [data.publicTraining.count, data.inHouseTraining.count],
+                                backgroundColor: 'rgba(144, 202, 249, 0.8)',
+                                borderWidth: 0,
                                 yAxisID: 'y'
                             },
                             {
-                                label: 'ค่าใช้จ่าย (บาท)',
-                                data: data.costs,
-                                borderColor: 'rgb(40, 167, 69)',
-                                backgroundColor: 'rgba(40, 167, 69, 0.1)',
-                                tension: 0.4,
-                                fill: true,
+                                label: 'ค่าใช้จ่ายรวม (บาท)',
+                                data: [data.publicTraining.totalCost, data.inHouseTraining.totalCost],
+                                backgroundColor: 'rgba(165, 214, 167, 0.8)',
+                                borderWidth: 0,
                                 yAxisID: 'y1'
                             }
                         ]
@@ -700,14 +751,22 @@
                     options: {
                         responsive: true,
                         maintainAspectRatio: true,
-                        interaction: {
-                            mode: 'index',
-                            intersect: false
-                        },
                         plugins: {
                             legend: {
                                 display: true,
                                 position: 'top'
+                            },
+                            datalabels: {
+                                color: '#444',
+                                anchor: 'end',
+                                align: 'top',
+                                formatter: function(value) {
+                                    return value.toLocaleString();
+                                },
+                                font: {
+                                    size: 11,
+                                    weight: 'bold'
+                                }
                             }
                         },
                         scales: {
@@ -715,6 +774,7 @@
                                 type: 'linear',
                                 display: true,
                                 position: 'left',
+                                beginAtZero: true,
                                 title: {
                                     display: true,
                                     text: 'จำนวนคำขอ'
@@ -724,6 +784,7 @@
                                 type: 'linear',
                                 display: true,
                                 position: 'right',
+                                beginAtZero: true,
                                 title: {
                                     display: true,
                                     text: 'ค่าใช้จ่าย (บาท)'
@@ -733,7 +794,73 @@
                                 },
                                 ticks: {
                                     callback: function(value) {
-                                        return value.toLocaleString();
+                                        return value.toLocaleString() + ' ฿';
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+
+                // Chart 2: In House Cost Breakdown (Horizontal Bar Chart)
+                if (charts.inHouseCostBreakdown) {
+                    charts.inHouseCostBreakdown.destroy();
+                }
+
+                const ctx2 = document.getElementById('inHouseCostBreakdownChart').getContext('2d');
+                const breakdown = data.inHouseTraining.costBreakdown;
+
+                charts.inHouseCostBreakdown = new Chart(ctx2, {
+                    type: 'bar',
+                    data: {
+                        labels: ['ค่าลงทะเบียน', 'ค่าวิทยากร', 'ค่าอุปกรณ์', 'ค่าอาหาร', 'ค่าใช้จ่ายอื่นๆ'],
+                        datasets: [{
+                            label: 'จำนวนเงิน (บาท)',
+                            data: [
+                                breakdown.registrationCost,
+                                breakdown.instructorFee,
+                                breakdown.equipmentCost,
+                                breakdown.foodCost,
+                                breakdown.otherCost
+                            ],
+                            backgroundColor: [
+                                'rgba(144, 202, 249, 0.8)',
+                                'rgba(165, 214, 167, 0.8)',
+                                'rgba(255, 224, 130, 0.8)',
+                                'rgba(255, 183, 77, 0.8)',
+                                'rgba(206, 147, 216, 0.8)'
+                            ],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        indexAxis: 'y',
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        plugins: {
+                            legend: {
+                                display: false
+                            },
+                            datalabels: {
+                                color: '#444',
+                                anchor: 'end',
+                                align: 'right',
+                                formatter: function(value) {
+                                    if (value === 0) return '';
+                                    return value.toLocaleString() + ' ฿';
+                                },
+                                font: {
+                                    size: 10,
+                                    weight: 'bold'
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: function(value) {
+                                        return value.toLocaleString() + ' ฿';
                                     }
                                 }
                             }
