@@ -1,4 +1,4 @@
-﻿@using Microsoft.AspNetCore.Http
+@using Microsoft.AspNetCore.Http
 @{
     var userEmail = Context.Session.GetString("UserEmail") ?? "Guest";
     var userRole = Context.Session.GetString("UserRole") ?? "User";
@@ -9,19 +9,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard</title>
+    <title>Training Request Analytics Dashboard</title>
 
-    <!-- ✅ Load Bootstrap 5 & FontAwesome -->
+    <!-- Bootstrap 5 & FontAwesome -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+
     <style>
         body {
-            background-color: #f8f9fa;
-            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
 
-        /* ✅ Sidebar */
+        /* Sidebar */
         .sidebar {
             width: 240px;
             height: 100vh;
@@ -30,13 +35,10 @@
             position: fixed;
             top: 0;
             left: 0;
-            padding-top: 60px;
+            padding-top: 20px;
             transition: all 0.3s ease-in-out;
-            overflow: hidden;
-        }
-
-        .sidebar.hide {
-            width: 60px;
+            overflow-y: auto;
+            z-index: 1000;
         }
 
         .sidebar .nav-link {
@@ -45,12 +47,12 @@
             display: flex;
             align-items: center;
             transition: all 0.3s ease-in-out;
-            font-size: 16px;
+            font-size: 15px;
             font-weight: 500;
         }
 
         .sidebar .nav-link.active {
-            background: #007bff;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             border-radius: 5px;
         }
@@ -63,164 +65,901 @@
 
         .sidebar .nav-link:hover {
             background: #edf0f5;
-            color: #007bff;
+            color: #667eea;
         }
 
-        /* ✅ Main Content */
+        /* Main Content */
         .content {
             margin-left: 240px;
             padding: 20px;
             transition: all 0.3s ease-in-out;
         }
 
-        .content.full {
-            margin-left: 60px;
+        /* Dashboard Header */
+        .dashboard-header {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1);
         }
 
-        /* ✅ Dashboard Card */
-        .dashboard-card {
-            border-radius: 12px;
+        /* KPI Cards */
+        .kpi-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
             box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1);
             transition: transform 0.3s ease-in-out;
-            text-align: center;
-            padding: 20px;
+            height: 100%;
         }
 
-        .dashboard-card:hover {
+        .kpi-card:hover {
             transform: translateY(-5px);
         }
 
-        .card-icon {
-            font-size: 2rem;
+        .kpi-icon {
+            font-size: 2.5rem;
             margin-bottom: 10px;
         }
 
-        .logout-btn {
-            text-decoration: none;
-            color: white;
-            background: #dc3545;
-            padding: 10px 15px;
+        .kpi-value {
+            font-size: 2rem;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+
+        .kpi-label {
+            color: #6c757d;
+            font-size: 0.95rem;
+        }
+
+        .kpi-trend {
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .kpi-trend.up {
+            color: #28a745;
+        }
+
+        .kpi-trend.down {
+            color: #dc3545;
+        }
+
+        /* Chart Cards */
+        .chart-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .chart-card h5 {
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        /* Filter Section */
+        .filter-section {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .filter-section label {
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #495057;
+        }
+
+        .form-control, .form-select {
             border-radius: 8px;
-            transition: 0.3s;
+            border: 2px solid #e0e0e0;
+            transition: all 0.3s ease;
         }
 
-        .logout-btn:hover {
-            background: #bb2d3b;
+        .form-control:focus, .form-select:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
         }
 
-        /* ✅ Responsive */
-        (max-width: 768px) {
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 8px;
+            padding: 10px 25px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            border-radius: 8px;
+            padding: 10px 25px;
+            font-weight: 600;
+        }
+
+        /* Loading Spinner */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+
+        .loading-overlay.active {
+            display: flex;
+        }
+
+        .spinner {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #667eea;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            animation: spin 1s linear infinite;
+        }
+
+        @@keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Responsive */
+        @@media (max-width: 768px) {
             .sidebar {
-                width: 60px;
-            }
-
-            .sidebar.hide {
                 width: 0;
+                overflow: hidden;
             }
 
             .content {
-                margin-left: 60px;
+                margin-left: 0;
             }
 
-            .content.full {
-                margin-left: 0;
+            .kpi-card {
+                margin-bottom: 15px;
             }
         }
     </style>
 </head>
 <body>
 
-    <!-- ✅ Sidebar -->
-    <nav class="sidebar" id="sidebar">
-        <a href="#" class="nav-link active"><i class="fa fa-home"></i> <span>Dashboard</span></a>
-        <a href="/TrainingRequest/Create" class="nav-link">
-            <i class="fa fa-plus-circle"></i> <span>สร้างหลักสูตร +</span>
-        </a>
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+    </div>
 
+    <!-- Sidebar -->
+    <nav class="sidebar" id="sidebar">
+        <div class="px-3 mb-4">
+            <h5 class="fw-bold text-center" style="color: #667eea;">TR System</h5>
+        </div>
+        <a href="#" class="nav-link active"><i class="fa fa-chart-line"></i> <span>Dashboard</span></a>
+        <a href="/TrainingRequest/Create" class="nav-link">
+            <i class="fa fa-plus-circle"></i> <span>สร้างหลักสูตร</span>
+        </a>
         <a href="@Url.Action("MonthlyRequests", "Home")" class="nav-link">
             <i class="fa fa-list-alt"></i> <span>ข้อมูลการขออบรม</span>
         </a>
-
-        @* เฉพาะ System Admin และ Admin เท่านั้น *@
         @if (isAdmin)
         {
             <a href="@Url.Action("Index", "QuotaManagement")" class="nav-link">
-                <i class="fa fa-calendar-check"></i> <span>การจัดการโควต้าประจำปี</span>
+                <i class="fa fa-calendar-check"></i> <span>จัดการโควต้า</span>
             </a>
-            <a href="#" class="nav-link"><i class="fa fa-chart-bar"></i> <span>รายงาน</span></a>
-            <a href="#" class="nav-link"><i class="fa fa-cogs"></i> <span>ระบบ</span></a>
         }
+        <hr class="mx-3">
+        <a href="/Login/Logout" class="nav-link text-danger">
+            <i class="fa fa-sign-out-alt"></i> <span>Logout</span>
+        </a>
     </nav>
 
-    <!-- ✅ Main Content -->
+    <!-- Main Content -->
     <div class="content" id="main-content">
-        <!-- Header -->
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <button class="btn btn-light" id="toggle-btn"><i class="fa fa-bars"></i></button>
-            <div class="user-nav">
-                <span class="text-muted">Hello, <strong>@userEmail</strong> <span class="badge bg-primary">@userRole</span></span>
-                <a href="/Login/Logout" class="logout-btn ms-3"><i class="fa fa-sign-out-alt"></i> Logout</a>
+
+        <!-- Dashboard Header -->
+        <div class="dashboard-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h3 class="fw-bold mb-1"><i class="fa fa-chart-pie text-primary"></i> Training Request Analytics</h3>
+                    <p class="text-muted mb-0">Real-time Dashboard - <span id="currentDateTime"></span></p>
+                </div>
+                <div class="text-end">
+                    <span class="text-muted">User: <strong>@userEmail</strong></span><br>
+                    <span class="badge bg-primary">@userRole</span>
+                </div>
             </div>
         </div>
 
-        <!-- Dashboard Title -->
-        <h2 class="fw-bold"><i class="fa fa-home"></i>Training Request Dashboard</h2>
+        <!-- Filter Section (Admin Only) -->
+        @if (isAdmin)
+        {
+            <div class="filter-section">
+                <h6 class="fw-bold mb-3"><i class="fa fa-filter"></i> Filter & Analysis</h6>
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label for="filterYear">ปี</label>
+                        <select class="form-select" id="filterYear">
+                            <option value="2025" selected>2025</option>
+                            <option value="2024">2024</option>
+                            <option value="2023">2023</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="filterStartDate">วันที่เริ่มต้น</label>
+                        <input type="date" class="form-control" id="filterStartDate">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="filterEndDate">วันที่สิ้นสุด</label>
+                        <input type="date" class="form-control" id="filterEndDate">
+                    </div>
+                    <div class="col-md-3">
+                        <label>&nbsp;</label>
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-primary" onclick="applyFilters()">
+                                <i class="fa fa-search"></i> Apply Filters
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-2">
+                    <button class="btn btn-sm btn-secondary" onclick="resetFilters()">
+                        <i class="fa fa-redo"></i> Reset
+                    </button>
+                    <span class="text-muted ms-3" id="filterStatus">Showing: All Data</span>
+                </div>
+            </div>
+        }
 
-        <!-- Dashboard Cards -->
-        <div class="row mt-4">
+        <!-- KPI Cards -->
+        <div class="row g-3 mb-4">
             <div class="col-md-6 col-lg-3">
-                <div class="card dashboard-card">
-                    <div class="card-body">
-                        <i class="fas fa-money-bill-wave card-icon text-success"></i>
-                        <h5 class="fw-bold">64756</h5>
-                        <p class="text-muted">ค่าใช้จ่าย</p>
-                    </div>
+                <div class="kpi-card">
+                    <i class="fas fa-money-bill-wave kpi-icon text-success"></i>
+                    <div class="kpi-value" id="kpiTotalCost">0</div>
+                    <div class="kpi-label">ค่าใช้จ่ายทั้งหมด (บาท)</div>
+                    <div class="kpi-trend up" id="kpiCostTrend"></div>
                 </div>
             </div>
             <div class="col-md-6 col-lg-3">
-                <div class="card dashboard-card">
-                    <div class="card-body">
-                        <i class="fas fa-file-alt card-icon text-danger"></i>
-                        <h5 class="fw-bold">0</h5>
-                        <p class="text-muted">รายการที่ขออบรม</p>
-                    </div>
+                <div class="kpi-card">
+                    <i class="fas fa-chart-pie kpi-icon text-warning"></i>
+                    <div class="kpi-value" id="kpiBudgetUsage">0%</div>
+                    <div class="kpi-label">การใช้งบประมาณ</div>
+                    <div class="kpi-trend" id="kpiBudgetTotal" style="font-size: 0.85rem; color: #6c757d;"></div>
+                    <div class="kpi-trend" id="kpiBudgetStatus"></div>
                 </div>
             </div>
             <div class="col-md-6 col-lg-3">
-                <div class="card dashboard-card">
-                    <div class="card-body">
-                        <i class="fas fa-calendar-check card-icon text-primary"></i>
-                        <h5 class="fw-bold">68</h5>
-                        <p class="text-muted">รายการที่อบรมแล้ว</p>
-                    </div>
+                <div class="kpi-card">
+                    <i class="fas fa-file-alt kpi-icon text-primary"></i>
+                    <div class="kpi-value" id="kpiTotalRequests">0</div>
+                    <div class="kpi-label">จำนวนคำขอทั้งหมด</div>
+                    <div class="kpi-trend" id="kpiRequestsTrend"></div>
                 </div>
             </div>
             <div class="col-md-6 col-lg-3">
-                <div class="card dashboard-card">
-                    <div class="card-body">
-                        <i class="fas fa-clock card-icon text-info"></i>
-                        <h5 class="fw-bold">284</h5>
-                        <p class="text-muted">รายการที่รออบรม</p>
-                    </div>
+                <div class="kpi-card">
+                    <i class="fas fa-check-circle kpi-icon text-info"></i>
+                    <div class="kpi-value" id="kpiApprovalRate">0%</div>
+                    <div class="kpi-label">อัตราการอนุมัติ</div>
+                    <div class="kpi-trend up" id="kpiApprovalTrend"></div>
                 </div>
             </div>
         </div>
+
+        <!-- Charts Row 1 -->
+        <div class="row g-3 mb-4">
+            <div class="col-lg-8">
+                <div class="chart-card">
+                    <h5><i class="fa fa-chart-bar text-primary"></i> งบประมาณแต่ละฝ่าย vs โควต้า</h5>
+                    <canvas id="costByDepartmentChart"></canvas>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <div class="chart-card">
+                    <h5><i class="fa fa-chart-pie text-success"></i> สถานะเอกสาร</h5>
+                    <canvas id="statusDistributionChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Row 2 - Training Type Comparison -->
+        <div class="row g-3 mb-4">
+            <div class="col-lg-6">
+                <div class="chart-card">
+                    <h5><i class="fa fa-graduation-cap text-info"></i> งบประมาณแต่ละฝ่าย: Public vs In House</h5>
+                    <canvas id="trainingTypeChart"></canvas>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="chart-card">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="mb-0"><i class="fa fa-money-check-alt text-success"></i> รายละเอียดค่าใช้จ่าย In House Training</h5>
+                        <select class="form-select form-select-sm" id="inHouseDepartmentFilter" style="width: auto;" onchange="loadInHouseCostBreakdown()">
+                            <option value="">ทุกฝ่าย</option>
+                        </select>
+                    </div>
+                    <canvas id="inHouseCostBreakdownChart"></canvas>
+                </div>
+            </div>
+        </div>
+
     </div>
 
-    <!-- ✅ JavaScript -->
-    <script>
-        const toggleBtn = document.getElementById("toggle-btn");
-        const sidebar = document.getElementById("sidebar");
-        const mainContent = document.getElementById("main-content");
-
-        toggleBtn.addEventListener("click", () => {
-            sidebar.classList.toggle("hide");
-            mainContent.classList.toggle("full");
-        });
-    </script>
-
-    <!-- ✅ Load Bootstrap JS -->
+    <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // ====================================================================
+        // Global Variables
+        // ====================================================================
+        let currentFilters = {
+            year: new Date().getFullYear(),
+            startDate: null,
+            endDate: null,
+            department: null
+        };
+
+        let charts = {
+            costByDepartment: null,
+            statusDistribution: null,
+            trainingType: null,
+            inHouseCostBreakdown: null
+        };
+
+        // ====================================================================
+        // Initialize Dashboard
+        // ====================================================================
+        document.addEventListener('DOMContentLoaded', function() {
+            updateDateTime();
+            setInterval(updateDateTime, 1000);
+
+            // Set default dates
+            const year = new Date().getFullYear();
+            document.getElementById('filterStartDate').value = `${year}-01-01`;
+            document.getElementById('filterEndDate').value = `${year}-12-31`;
+
+            // Load initial data
+            loadDashboard();
+        });
+
+        function updateDateTime() {
+            const now = new Date();
+            const options = {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            };
+            document.getElementById('currentDateTime').textContent = now.toLocaleDateString('th-TH', options);
+        }
+
+        // ====================================================================
+        // Load Dashboard Data
+        // ====================================================================
+        async function loadDashboard() {
+            showLoading();
+            try {
+                await Promise.all([
+                    loadKPIData(),
+                    loadCostByDepartment(),
+                    loadStatusDistribution(),
+                    loadTrainingTypeByDepartment(),
+                    loadInHouseCostBreakdown()
+                ]);
+
+                // Populate department filter for In House breakdown
+                await populateDepartmentFilter();
+            } catch (error) {
+                console.error('Error loading dashboard:', error);
+                alert('เกิดข้อผิดพลาดในการโหลดข้อมูล');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // ====================================================================
+        // Load KPI Cards Data
+        // ====================================================================
+        async function loadKPIData() {
+            const params = new URLSearchParams(currentFilters);
+            const response = await fetch(`/Home/GetDashboardSummary?${params}`);
+            const result = await response.json();
+
+            if (result.success) {
+                const data = result.data;
+
+                // Total Cost
+                document.getElementById('kpiTotalCost').textContent = data.totalCostFormatted;
+
+                // Budget Usage
+                document.getElementById('kpiBudgetUsage').textContent = data.budgetUsagePercent + '%';
+                document.getElementById('kpiBudgetTotal').textContent = `งบทั้งหมด: ${data.totalQuotaFormatted} บาท`;
+                const budgetStatus = document.getElementById('kpiBudgetStatus');
+                if (data.budgetUsagePercent > 100) {
+                    budgetStatus.textContent = `เกินงบ ${data.remainingFormatted} บาท`;
+                    budgetStatus.className = 'kpi-trend down';
+                } else if (data.budgetUsagePercent > 80) {
+                    budgetStatus.textContent = `ใกล้เกินงบ (คงเหลือ ${data.remainingFormatted})`;
+                    budgetStatus.className = 'kpi-trend';
+                    budgetStatus.style.color = '#ffc107';
+                } else {
+                    budgetStatus.textContent = `คงเหลือ ${data.remainingFormatted} บาท`;
+                    budgetStatus.className = 'kpi-trend up';
+                }
+
+                // Total Requests
+                document.getElementById('kpiTotalRequests').textContent = data.totalRequests;
+
+                // Approval Rate
+                document.getElementById('kpiApprovalRate').textContent = data.approvalRate + '%';
+            }
+        }
+
+        // ====================================================================
+        // Load Cost By Department Chart
+        // ====================================================================
+        async function loadCostByDepartment() {
+            const params = new URLSearchParams(currentFilters);
+            const response = await fetch(`/Home/GetCostByDepartment?${params}`);
+            const result = await response.json();
+
+            if (result.success) {
+                const labels = result.data.map(d => d.department);
+                const used = result.data.map(d => d.totalUsed);
+                const pending = result.data.map(d => d.pendingAmount);
+                const quotas = result.data.map(d => d.quota);
+                const percentages = result.data.map(d => d.usagePercent);
+
+                // Destroy existing chart
+                if (charts.costByDepartment) {
+                    charts.costByDepartment.destroy();
+                }
+
+                const ctx = document.getElementById('costByDepartmentChart').getContext('2d');
+                charts.costByDepartment = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            {
+                                label: 'อนุมัติแล้ว (บาท)',
+                                data: used,
+                                backgroundColor: percentages.map(p =>
+                                    p > 100 ? 'rgba(239, 154, 154, 0.8)' :
+                                    p > 80 ? 'rgba(255, 213, 153, 0.8)' :
+                                    'rgba(165, 214, 167, 0.8)'
+                                ),
+                                borderWidth: 0,
+                                stack: 'stack1'
+                            },
+                            {
+                                label: 'รออนุมัติ (บาท)',
+                                data: pending,
+                                backgroundColor: 'rgba(187, 222, 251, 0.8)',
+                                borderWidth: 0,
+                                stack: 'stack1'
+                            },
+                            {
+                                label: 'โควต้า (บาท)',
+                                data: quotas,
+                                type: 'line',
+                                borderColor: 'rgba(121, 134, 203, 1)',
+                                backgroundColor: 'rgba(121, 134, 203, 0.1)',
+                                borderWidth: 2,
+                                fill: false,
+                                pointRadius: 5,
+                                pointBackgroundColor: 'rgba(121, 134, 203, 1)'
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        plugins: {
+                            legend: {
+                                display: true,
+                                position: 'top'
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    afterLabel: function(context) {
+                                        if (context.datasetIndex === 0) {
+                                            const percent = percentages[context.dataIndex];
+                                            return `การใช้งบ: ${percent}%`;
+                                        }
+                                        return '';
+                                    }
+                                }
+                            },
+                            datalabels: {
+                                color: '#444',
+                                anchor: 'end',
+                                align: 'top',
+                                formatter: function(value, context) {
+                                    if (context.datasetIndex === 2) return ''; // ไม่แสดงบน line
+                                    if (value === 0) return '';
+                                    return value.toLocaleString();
+                                },
+                                font: {
+                                    size: 10,
+                                    weight: 'bold'
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                stacked: true
+                            },
+                            y: {
+                                stacked: true,
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: function(value) {
+                                        return value.toLocaleString() + ' ฿';
+                                    }
+                                }
+                            }
+                        },
+                        onClick: (event, elements) => {
+                            if (elements.length > 0) {
+                                const department = labels[elements[0].index];
+                                alert(`กรองข้อมูลฝ่าย: ${department}\n(Feature ยังไม่เปิดใช้งาน)`);
+                                // TODO: Implement cross-filtering
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        // ====================================================================
+        // Load Status Distribution Chart
+        // ====================================================================
+        async function loadStatusDistribution() {
+            const params = new URLSearchParams(currentFilters);
+            const response = await fetch(`/Home/GetStatusDistribution?${params}`);
+            const result = await response.json();
+
+            if (result.success) {
+                const labels = result.data.map(d => d.status);
+                const counts = result.data.map(d => d.count);
+                const colors = labels.map(status => {
+                    if (status.includes('APPROVED') || status.includes('COMPLETE')) return 'rgba(165, 214, 167, 0.85)';
+                    if (status.includes('REJECTED')) return 'rgba(239, 154, 154, 0.85)';
+                    if (status.includes('WAITING') || status.includes('Pending')) return 'rgba(255, 224, 130, 0.85)';
+                    if (status.includes('Revise')) return 'rgba(255, 183, 77, 0.85)';
+                    if (status.includes('RESCHEDULED')) return 'rgba(179, 229, 252, 0.85)';
+                    return 'rgba(189, 189, 189, 0.85)';
+                });
+
+                // Destroy existing chart
+                if (charts.statusDistribution) {
+                    charts.statusDistribution.destroy();
+                }
+
+                const ctx = document.getElementById('statusDistributionChart').getContext('2d');
+                charts.statusDistribution = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            data: counts,
+                            backgroundColor: colors,
+                            borderWidth: 2,
+                            borderColor: '#fff'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        plugins: {
+                            legend: {
+                                display: true,
+                                position: 'bottom',
+                                labels: {
+                                    boxWidth: 12,
+                                    padding: 10,
+                                    font: {
+                                        size: 10
+                                    }
+                                }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const label = context.label || '';
+                                        const value = context.parsed || 0;
+                                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                        const percent = ((value / total) * 100).toFixed(1);
+                                        return `${label}: ${value} (${percent}%)`;
+                                    }
+                                }
+                            },
+                            datalabels: {
+                                color: '#fff',
+                                font: {
+                                    size: 11,
+                                    weight: 'bold'
+                                },
+                                formatter: function(value, context) {
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percent = ((value / total) * 100).toFixed(0);
+                                    if (percent < 5) return ''; // ไม่แสดงถ้าน้อยกว่า 5%
+                                    return percent + '%';
+                                }
+                            }
+                        },
+                        onClick: (event, elements) => {
+                            if (elements.length > 0) {
+                                const status = labels[elements[0].index];
+                                alert(`กรองข้อมูลสถานะ: ${status}\n(Feature ยังไม่เปิดใช้งาน)`);
+                                // TODO: Implement cross-filtering
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        // ====================================================================
+        // Load Training Type by Department (Stacked Bar Chart)
+        // ====================================================================
+        async function loadTrainingTypeByDepartment() {
+            const params = new URLSearchParams(currentFilters);
+            const response = await fetch(`/Home/GetCostByDepartmentAndType?${params}`);
+            const result = await response.json();
+
+            if (result.success) {
+                const labels = result.data.map(d => d.department);
+                const publicCosts = result.data.map(d => d.publicCost);
+                const inHouseCosts = result.data.map(d => d.inHouseCost);
+
+                // Destroy existing chart
+                if (charts.trainingType) {
+                    charts.trainingType.destroy();
+                }
+
+                const ctx = document.getElementById('trainingTypeChart').getContext('2d');
+                charts.trainingType = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            {
+                                label: 'Public Training',
+                                data: publicCosts,
+                                backgroundColor: 'rgba(144, 202, 249, 0.8)',
+                                borderWidth: 0,
+                                stack: 'stack1'
+                            },
+                            {
+                                label: 'In House Training',
+                                data: inHouseCosts,
+                                backgroundColor: 'rgba(165, 214, 167, 0.8)',
+                                borderWidth: 0,
+                                stack: 'stack1'
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        plugins: {
+                            legend: {
+                                display: true,
+                                position: 'top'
+                            },
+                            datalabels: {
+                                color: '#444',
+                                anchor: 'center',
+                                align: 'center',
+                                formatter: function(value) {
+                                    if (value === 0) return '';
+                                    return value.toLocaleString();
+                                },
+                                font: {
+                                    size: 10,
+                                    weight: 'bold'
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                stacked: true
+                            },
+                            y: {
+                                stacked: true,
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: function(value) {
+                                        return value.toLocaleString() + ' ฿';
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        // ====================================================================
+        // Load In House Cost Breakdown (Horizontal Bar Chart with Department Filter)
+        // ====================================================================
+        async function loadInHouseCostBreakdown() {
+            const department = document.getElementById('inHouseDepartmentFilter')?.value || '';
+            const params = new URLSearchParams({
+                ...currentFilters,
+                department: department
+            });
+
+            const response = await fetch(`/Home/GetCostByTrainingType?${params}`);
+            const result = await response.json();
+
+            if (result.success) {
+                const breakdown = result.data.inHouseTraining.costBreakdown;
+
+                // Destroy existing chart
+                if (charts.inHouseCostBreakdown) {
+                    charts.inHouseCostBreakdown.destroy();
+                }
+
+                const ctx = document.getElementById('inHouseCostBreakdownChart').getContext('2d');
+                charts.inHouseCostBreakdown = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['ค่าลงทะเบียน', 'ค่าวิทยากร', 'ค่าอุปกรณ์', 'ค่าอาหาร', 'ค่าใช้จ่ายอื่นๆ'],
+                        datasets: [{
+                            label: 'จำนวนเงิน (บาท)',
+                            data: [
+                                breakdown.registrationCost,
+                                breakdown.instructorFee,
+                                breakdown.equipmentCost,
+                                breakdown.foodCost,
+                                breakdown.otherCost
+                            ],
+                            backgroundColor: [
+                                'rgba(144, 202, 249, 0.8)',
+                                'rgba(165, 214, 167, 0.8)',
+                                'rgba(255, 224, 130, 0.8)',
+                                'rgba(255, 183, 77, 0.8)',
+                                'rgba(206, 147, 216, 0.8)'
+                            ],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        indexAxis: 'y',
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        plugins: {
+                            legend: {
+                                display: false
+                            },
+                            datalabels: {
+                                color: '#444',
+                                anchor: 'end',
+                                align: 'right',
+                                formatter: function(value) {
+                                    if (value === 0) return '';
+                                    return value.toLocaleString() + ' ฿';
+                                },
+                                font: {
+                                    size: 10,
+                                    weight: 'bold'
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: function(value) {
+                                        return value.toLocaleString() + ' ฿';
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        // ====================================================================
+        // Populate Department Filter
+        // ====================================================================
+        async function populateDepartmentFilter() {
+            const params = new URLSearchParams(currentFilters);
+            const response = await fetch(`/Home/GetCostByDepartmentAndType?${params}`);
+            const result = await response.json();
+
+            if (result.success) {
+                const select = document.getElementById('inHouseDepartmentFilter');
+                const currentValue = select.value;
+
+                // Clear existing options except "ทุกฝ่าย"
+                select.innerHTML = '<option value="">ทุกฝ่าย</option>';
+
+                // Add department options
+                result.data.forEach(item => {
+                    const option = document.createElement('option');
+                    option.value = item.department;
+                    option.textContent = item.department;
+                    select.appendChild(option);
+                });
+
+                // Restore selected value if exists
+                if (currentValue) {
+                    select.value = currentValue;
+                }
+            }
+        }
+
+        // ====================================================================
+        // Filter Functions
+        // ====================================================================
+        function applyFilters() {
+            const year = document.getElementById('filterYear').value;
+            const startDate = document.getElementById('filterStartDate').value;
+            const endDate = document.getElementById('filterEndDate').value;
+
+            currentFilters = {
+                year: parseInt(year),
+                startDate: startDate,
+                endDate: endDate
+            };
+
+            document.getElementById('filterStatus').textContent =
+                `Showing: ${startDate} to ${endDate}`;
+
+            loadDashboard();
+        }
+
+        function resetFilters() {
+            const year = new Date().getFullYear();
+            document.getElementById('filterYear').value = year;
+            document.getElementById('filterStartDate').value = `${year}-01-01`;
+            document.getElementById('filterEndDate').value = `${year}-12-31`;
+
+            currentFilters = {
+                year: year,
+                startDate: null,
+                endDate: null
+            };
+
+            document.getElementById('filterStatus').textContent = 'Showing: All Data';
+
+            loadDashboard();
+        }
+
+        // ====================================================================
+        // Loading Functions
+        // ====================================================================
+        function showLoading() {
+            document.getElementById('loadingOverlay').classList.add('active');
+        }
+
+        function hideLoading() {
+            document.getElementById('loadingOverlay').classList.remove('active');
+        }
+    </script>
 
 </body>
 </html>
