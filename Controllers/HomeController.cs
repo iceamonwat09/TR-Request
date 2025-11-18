@@ -407,6 +407,74 @@ namespace TrainingRequestApp.Controllers
         }
 
         /// <summary>
+        /// API: ดึงข้อมูลงบประมาณแยกตามฝ่ายและประเภท (Public vs In House)
+        /// GET: /Home/GetCostByDepartmentAndType?year=2025
+        /// </summary>
+        [HttpGet]
+        public async Task<IActionResult> GetCostByDepartmentAndType(int? year, DateTime? startDate, DateTime? endDate)
+        {
+            try
+            {
+                int selectedYear = year ?? DateTime.Now.Year;
+                DateTime dateStart = startDate ?? new DateTime(selectedYear, 1, 1);
+                DateTime dateEnd = endDate ?? new DateTime(selectedYear, 12, 31);
+
+                string connectionString = _configuration.GetConnectionString("DefaultConnection");
+
+                using (SqlConnection conn = new SqlConnection(connectionString))
+                {
+                    await conn.OpenAsync();
+
+                    string query = @"
+                        SELECT
+                            qc.Department,
+                            ISNULL(SUM(CASE WHEN tr.TrainingType = 'Public' AND tr.Status IN ('APPROVED', 'COMPLETE', 'RESCHEDULED') THEN tr.TotalCost ELSE 0 END), 0) AS PublicCost,
+                            ISNULL(SUM(CASE WHEN tr.TrainingType = 'In House' AND tr.Status IN ('APPROVED', 'COMPLETE', 'RESCHEDULED') THEN tr.TotalCost ELSE 0 END), 0) AS InHouseCost,
+                            ISNULL(SUM(CASE WHEN tr.Status IN ('APPROVED', 'COMPLETE', 'RESCHEDULED') THEN tr.TotalCost ELSE 0 END), 0) AS TotalCost
+                        FROM [TrainingRequest_Cost] qc
+                        LEFT JOIN [TrainingRequests] tr
+                            ON tr.Department = qc.Department
+                            AND tr.StartDate >= @StartDate
+                            AND tr.StartDate <= @EndDate
+                            AND tr.IsActive = 1
+                        WHERE qc.Year = @Year
+                        GROUP BY qc.Department
+                        ORDER BY qc.Department";
+
+                    var result = new List<object>();
+
+                    using (SqlCommand cmd = new SqlCommand(query, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@Year", selectedYear.ToString());
+                        cmd.Parameters.AddWithValue("@StartDate", dateStart);
+                        cmd.Parameters.AddWithValue("@EndDate", dateEnd);
+
+                        using (var reader = await cmd.ExecuteReaderAsync())
+                        {
+                            while (await reader.ReadAsync())
+                            {
+                                result.Add(new
+                                {
+                                    department = reader["Department"].ToString(),
+                                    publicCost = reader.GetDecimal(reader.GetOrdinal("PublicCost")),
+                                    inHouseCost = reader.GetDecimal(reader.GetOrdinal("InHouseCost")),
+                                    totalCost = reader.GetDecimal(reader.GetOrdinal("TotalCost"))
+                                });
+                            }
+                        }
+                    }
+
+                    return Json(new { success = true, data = result });
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Error in GetCostByDepartmentAndType: {ex.Message}");
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        /// <summary>
         /// API: ดึงข้อมูลเปรียบเทียบ Training Type (Public vs In House)
         /// GET: /Home/GetCostByTrainingType?year=2025
         /// </summary>

@@ -382,13 +382,18 @@
         <div class="row g-3 mb-4">
             <div class="col-lg-6">
                 <div class="chart-card">
-                    <h5><i class="fa fa-graduation-cap text-info"></i> เปรียบเทียบ Public vs In House Training</h5>
+                    <h5><i class="fa fa-graduation-cap text-info"></i> งบประมาณแต่ละฝ่าย: Public vs In House</h5>
                     <canvas id="trainingTypeChart"></canvas>
                 </div>
             </div>
             <div class="col-lg-6">
                 <div class="chart-card">
-                    <h5><i class="fa fa-money-check-alt text-success"></i> รายละเอียดค่าใช้จ่าย In House Training</h5>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="mb-0"><i class="fa fa-money-check-alt text-success"></i> รายละเอียดค่าใช้จ่าย In House Training</h5>
+                        <select class="form-select form-select-sm" id="inHouseDepartmentFilter" style="width: auto;" onchange="loadInHouseCostBreakdown()">
+                            <option value="">ทุกฝ่าย</option>
+                        </select>
+                    </div>
                     <canvas id="inHouseCostBreakdownChart"></canvas>
                 </div>
             </div>
@@ -456,8 +461,12 @@
                     loadKPIData(),
                     loadCostByDepartment(),
                     loadStatusDistribution(),
-                    loadTrainingTypeComparison()
+                    loadTrainingTypeByDepartment(),
+                    loadInHouseCostBreakdown()
                 ]);
+
+                // Populate department filter for In House breakdown
+                await populateDepartmentFilter();
             } catch (error) {
                 console.error('Error loading dashboard:', error);
                 alert('เกิดข้อผิดพลาดในการโหลดข้อมูล');
@@ -711,40 +720,42 @@
         }
 
         // ====================================================================
-        // Load Training Type Comparison Charts
+        // Load Training Type by Department (Stacked Bar Chart)
         // ====================================================================
-        async function loadTrainingTypeComparison() {
+        async function loadTrainingTypeByDepartment() {
             const params = new URLSearchParams(currentFilters);
-            const response = await fetch(`/Home/GetCostByTrainingType?${params}`);
+            const response = await fetch(`/Home/GetCostByDepartmentAndType?${params}`);
             const result = await response.json();
 
             if (result.success) {
-                const data = result.data;
+                const labels = result.data.map(d => d.department);
+                const publicCosts = result.data.map(d => d.publicCost);
+                const inHouseCosts = result.data.map(d => d.inHouseCost);
 
-                // Chart 1: Public vs In House Comparison (Bar Chart)
+                // Destroy existing chart
                 if (charts.trainingType) {
                     charts.trainingType.destroy();
                 }
 
-                const ctx1 = document.getElementById('trainingTypeChart').getContext('2d');
-                charts.trainingType = new Chart(ctx1, {
+                const ctx = document.getElementById('trainingTypeChart').getContext('2d');
+                charts.trainingType = new Chart(ctx, {
                     type: 'bar',
                     data: {
-                        labels: ['Public Training', 'In House Training'],
+                        labels: labels,
                         datasets: [
                             {
-                                label: 'จำนวนคำขอ',
-                                data: [data.publicTraining.count, data.inHouseTraining.count],
+                                label: 'Public Training',
+                                data: publicCosts,
                                 backgroundColor: 'rgba(144, 202, 249, 0.8)',
                                 borderWidth: 0,
-                                yAxisID: 'y'
+                                stack: 'stack1'
                             },
                             {
-                                label: 'ค่าใช้จ่ายรวม (บาท)',
-                                data: [data.publicTraining.totalCost, data.inHouseTraining.totalCost],
+                                label: 'In House Training',
+                                data: inHouseCosts,
                                 backgroundColor: 'rgba(165, 214, 167, 0.8)',
                                 borderWidth: 0,
-                                yAxisID: 'y1'
+                                stack: 'stack1'
                             }
                         ]
                     },
@@ -758,40 +769,25 @@
                             },
                             datalabels: {
                                 color: '#444',
-                                anchor: 'end',
-                                align: 'top',
+                                anchor: 'center',
+                                align: 'center',
                                 formatter: function(value) {
+                                    if (value === 0) return '';
                                     return value.toLocaleString();
                                 },
                                 font: {
-                                    size: 11,
+                                    size: 10,
                                     weight: 'bold'
                                 }
                             }
                         },
                         scales: {
-                            y: {
-                                type: 'linear',
-                                display: true,
-                                position: 'left',
-                                beginAtZero: true,
-                                title: {
-                                    display: true,
-                                    text: 'จำนวนคำขอ'
-                                }
+                            x: {
+                                stacked: true
                             },
-                            y1: {
-                                type: 'linear',
-                                display: true,
-                                position: 'right',
+                            y: {
+                                stacked: true,
                                 beginAtZero: true,
-                                title: {
-                                    display: true,
-                                    text: 'ค่าใช้จ่าย (บาท)'
-                                },
-                                grid: {
-                                    drawOnChartArea: false
-                                },
                                 ticks: {
                                     callback: function(value) {
                                         return value.toLocaleString() + ' ฿';
@@ -801,16 +797,32 @@
                         }
                     }
                 });
+            }
+        }
 
-                // Chart 2: In House Cost Breakdown (Horizontal Bar Chart)
+        // ====================================================================
+        // Load In House Cost Breakdown (Horizontal Bar Chart with Department Filter)
+        // ====================================================================
+        async function loadInHouseCostBreakdown() {
+            const department = document.getElementById('inHouseDepartmentFilter')?.value || '';
+            const params = new URLSearchParams({
+                ...currentFilters,
+                department: department
+            });
+
+            const response = await fetch(`/Home/GetCostByTrainingType?${params}`);
+            const result = await response.json();
+
+            if (result.success) {
+                const breakdown = result.data.inHouseTraining.costBreakdown;
+
+                // Destroy existing chart
                 if (charts.inHouseCostBreakdown) {
                     charts.inHouseCostBreakdown.destroy();
                 }
 
-                const ctx2 = document.getElementById('inHouseCostBreakdownChart').getContext('2d');
-                const breakdown = data.inHouseTraining.costBreakdown;
-
-                charts.inHouseCostBreakdown = new Chart(ctx2, {
+                const ctx = document.getElementById('inHouseCostBreakdownChart').getContext('2d');
+                charts.inHouseCostBreakdown = new Chart(ctx, {
                     type: 'bar',
                     data: {
                         labels: ['ค่าลงทะเบียน', 'ค่าวิทยากร', 'ค่าอุปกรณ์', 'ค่าอาหาร', 'ค่าใช้จ่ายอื่นๆ'],
@@ -867,6 +879,36 @@
                         }
                     }
                 });
+            }
+        }
+
+        // ====================================================================
+        // Populate Department Filter
+        // ====================================================================
+        async function populateDepartmentFilter() {
+            const params = new URLSearchParams(currentFilters);
+            const response = await fetch(`/Home/GetCostByDepartmentAndType?${params}`);
+            const result = await response.json();
+
+            if (result.success) {
+                const select = document.getElementById('inHouseDepartmentFilter');
+                const currentValue = select.value;
+
+                // Clear existing options except "ทุกฝ่าย"
+                select.innerHTML = '<option value="">ทุกฝ่าย</option>';
+
+                // Add department options
+                result.data.forEach(item => {
+                    const option = document.createElement('option');
+                    option.value = item.department;
+                    option.textContent = item.department;
+                    select.appendChild(option);
+                });
+
+                // Restore selected value if exists
+                if (currentValue) {
+                    select.value = currentValue;
+                }
             }
         }
 
