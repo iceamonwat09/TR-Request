@@ -66,8 +66,8 @@ namespace TrainingRequestApp.Controllers
                 {
                     connection.Open();
 
-                    // ✅ ค้นหาผู้ใช้จากตาราง Employees ตาม VB.NET
-                    string query = "SELECT UserID, Name, lastname, Status, UPassword, account_permissions, Company FROM Employees WHERE UserID = @UserID";
+                    // ✅ ค้นหาผู้ใช้จากตาราง Employees ตาม VB.NET (เพิ่ม Email)
+                    string query = "SELECT UserID, Name, lastname, Status, UPassword, account_permissions, Company, Email FROM Employees WHERE UserID = @UserID";
                     using (SqlCommand command = new SqlCommand(query, connection))
                     {
                         command.Parameters.AddWithValue("@UserID", model.UserID);
@@ -80,7 +80,7 @@ namespace TrainingRequestApp.Controllers
                             return View("Login", model);
                         }
 
-                        // ✅ อ่านค่าจากตาราง Employees ตาม VB.NET
+                        // ✅ อ่านค่าจากตาราง Employees ตาม VB.NET (รวม Email)
                         string userID = reader["UserID"].ToString();
                         string firstName = reader["Name"].ToString();
                         string lastName = reader["lastname"].ToString();
@@ -88,7 +88,11 @@ namespace TrainingRequestApp.Controllers
                         string storedPassword = reader["UPassword"].ToString();
                         string permissions = reader["account_permissions"].ToString();
                         string company = reader["Company"].ToString();
-                        
+                        string email = reader["Email"]?.ToString() ?? "";
+
+                        // ✅ ถ้าไม่มี Email ใช้ชื่อ-นามสกุลแทน
+                        string displayName = !string.IsNullOrWhiteSpace(email) ? email : firstName + " " + lastName;
+
                         // ✅ เก็บชื่อและนามสกุลใน PEmail
                         model.PEmail = firstName + " " + lastName;
 
@@ -100,6 +104,8 @@ namespace TrainingRequestApp.Controllers
                         Console.WriteLine("   - Password Input: " + model.Password);
                         Console.WriteLine("   - DB UserID: " + userID);
                         Console.WriteLine("   - DB Name: " + firstName + " " + lastName);
+                        Console.WriteLine("   - DB Email: " + (string.IsNullOrWhiteSpace(email) ? "NULL/EMPTY" : email));
+                        Console.WriteLine("   - Display Name: " + displayName);
                         Console.WriteLine("   - DB Status: " + status);
                         Console.WriteLine("   - DB UPassword: " + (string.IsNullOrEmpty(storedPassword) ? "NULL/EMPTY" : "EXISTS"));
                         Console.WriteLine("   - DB Permissions: " + permissions);
@@ -117,10 +123,10 @@ namespace TrainingRequestApp.Controllers
                                 if (encryptedInputPassword == storedPassword.Trim())
                                 {
                                     // รหัสผ่านถูกต้อง เข้าสู่ระบบสำเร็จ
-                                    Console.WriteLine("🟢 Login Successful: " + model.UserID + " (" + firstName + " " + lastName + ")");
-                                    
-                                    // ✅ ตั้งค่า Session
-                                    HttpContext.Session.SetString("UserEmail", firstName + " " + lastName);
+                                    Console.WriteLine("🟢 Login Successful: " + model.UserID + " (" + displayName + ")");
+
+                                    // ✅ ตั้งค่า Session (ใช้ Email จริงๆ)
+                                    HttpContext.Session.SetString("UserEmail", displayName);
                                     HttpContext.Session.SetString("UserRole", permissions);
                                     HttpContext.Session.SetString("UserId", userID);
                                     HttpContext.Session.SetString("Company", company);
@@ -129,7 +135,7 @@ namespace TrainingRequestApp.Controllers
                                     if (model.RememberMe)
                                     {
                                         Console.WriteLine("🟢 Remember Me Enabled");
-                                        Response.Cookies.Append("UserEmail", firstName + " " + lastName, new CookieOptions
+                                        Response.Cookies.Append("UserEmail", displayName, new CookieOptions
                                         {
                                             Expires = DateTime.Now.AddDays(30),
                                             HttpOnly = true,
@@ -138,10 +144,8 @@ namespace TrainingRequestApp.Controllers
                                         });
                                     }
 
-                                    // ✅ Redirect ไปตามสิทธิ์ของผู้ใช้
-                                    return permissions.Contains("Admin")
-                                        ? RedirectToAction("Index", "Home")
-                                        : RedirectToAction("UserDashboard", "Dashboard");
+                                    // ✅ Redirect ไป Home/Index (แสดงเมนูตาม Role)
+                                    return RedirectToAction("Index", "Home");
                                 }
                                 else
                                 {

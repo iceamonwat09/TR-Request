@@ -493,13 +493,16 @@
         }
 
         function getStatusBadge(status) {
+            // ✅ แสดงสถานะตามที่เก็บในฐานข้อมูลจริง (ไม่แปลงเป็นภาษาไทย)
             switch(status) {
                 case 'Pending':
-                    return '<span class="badge bg-warning text-dark">รออนุมัติ</span>';
+                    return '<span class="badge bg-warning text-dark">' + status + '</span>';
                 case 'Approved':
-                    return '<span class="badge bg-success">อนุมัติแล้ว</span>';
+                    return '<span class="badge bg-success">' + status + '</span>';
                 case 'Rejected':
-                    return '<span class="badge bg-danger">ไม่อนุมัติ</span>';
+                    return '<span class="badge bg-danger">' + status + '</span>';
+                case 'Revise':
+                    return '<span class="badge bg-info">' + status + '</span>';
                 default:
                     return '<span class="badge bg-secondary">' + status + '</span>';
             }
