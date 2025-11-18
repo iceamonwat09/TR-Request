@@ -1,15 +1,35 @@
 @model TrainingRequestApp.Models.TrainingRequestEditViewModel
+@using Microsoft.AspNetCore.Http
+@{
+    var userEmail = Context.Session.GetString("UserEmail") ?? "Guest";
+    var userRole = Context.Session.GetString("UserRole") ?? "User";
+    bool isAdmin = userRole.Contains("Admin"); // System Admin หรือ Admin
+    bool canEdit = isAdmin || Model.Status == "Revise"; // Admin แก้ไขได้ทั้งหมด หรือ User แก้ไขได้ถ้า Status = "Revise"
+}
 <div class="container-fluid py-4" style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); min-height: 100vh;">
     <div class="container">
         <div class="row justify-content-center">
             <div class="col-lg-11">
+                @* แสดง Alert ถ้า User ไม่สามารถแก้ไขได้ *@
+                @if (!canEdit)
+                {
+                    <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                        <strong><i class="fa fa-exclamation-triangle"></i> โหมดอ่านอย่างเดียว</strong><br>
+                        คุณไม่สามารถแก้ไขเอกสารนี้ได้ เนื่องจากสถานะเอกสารไม่ใช่ "Revise" (ปัจจุบัน: @Model.Status)
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                }
                 <div class="card shadow-lg border-0" style="border-radius: 15px;">
                     <div class="card-header bg-primary py-4 position-relative" style="border-radius: 15px 15px 0 0;">
                         <div class="position-absolute top-0 end-0 p-3">
                             <span class="badge bg-light text-primary fs-6">เลขที่เอกสาร: @Model.DocNo</span>
+                            @if (!canEdit)
+                            {
+                                <span class="badge bg-warning text-dark fs-6 ms-2"><i class="fa fa-lock"></i> Read-only</span>
+                            }
                         </div>
                         <h2 class="mb-0 text-white fw-bold text-center">
-                            📝 แก้ไขคำร้องขออบรม
+                            📝 @(canEdit ? "แก้ไขคำร้องขออบรม" : "ดูคำร้องขออบรม")
                         </h2>
                     </div>
 
@@ -782,9 +802,18 @@
 
                                 <!-- ปุ่มบันทึก -->
                                 <div class="text-center mt-5">
-                                    <button type="submit" class="btn btn-primary btn-lg text-white px-5 py-3 fw-bold" style="border-radius: 25px; box-shadow: 0 4px 15px rgba(13, 110, 253, 0.3);">
-                                        💾 อัพเดทข้อมูล
-                                    </button>
+                                    @if (canEdit)
+                                    {
+                                        <button type="submit" class="btn btn-primary btn-lg text-white px-5 py-3 fw-bold" style="border-radius: 25px; box-shadow: 0 4px 15px rgba(13, 110, 253, 0.3);">
+                                            💾 อัพเดทข้อมูล
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        <a href="/Home/MonthlyRequests" class="btn btn-secondary btn-lg px-5 py-3 fw-bold" style="border-radius: 25px;">
+                                            <i class="fa fa-arrow-left me-2"></i>กลับ
+                                        </a>
+                                    }
                                 </div>
                             </div>
                         </form>
@@ -1029,6 +1058,30 @@
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
 <script>
+        // ====================================================================
+        // 🔒 Read-only Mode - Disable ฟิลด์ทั้งหมดถ้า User ไม่สามารถแก้ไขได้
+        // ====================================================================
+        const canEdit = @(canEdit.ToString().ToLower());
+
+        if (!canEdit) {
+            console.log('🔒 Read-only Mode: Disabling all form fields');
+
+            // Disable input, select, textarea ทั้งหมด (ยกเว้น readonly อยู่แล้ว)
+            document.querySelectorAll('input:not([readonly]), select:not([readonly]), textarea:not([readonly])').forEach(el => {
+                el.disabled = true;
+                el.style.cursor = 'not-allowed';
+            });
+
+            // Disable buttons (ยกเว้นปุ่มกลับ)
+            document.querySelectorAll('button:not([data-bs-dismiss])').forEach(btn => {
+                if (!btn.closest('.alert') && !btn.classList.contains('btn-secondary')) {
+                    btn.disabled = true;
+                    btn.style.cursor = 'not-allowed';
+                }
+            });
+
+            console.log('✅ All fields disabled for read-only mode');
+        }
 
         // ====================================================================
         // 🔄 Reset ค่าช่องที่ไม่ได้เลือกเป็น 0 และ Disable (แก้ไขแล้ว)

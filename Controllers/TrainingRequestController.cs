@@ -979,6 +979,11 @@ namespace TrainingRequestApp.Controllers
         {
             try
             {
+                // ✅ ดึง UserRole และ UserEmail จาก Session
+                string userEmail = HttpContext.Session.GetString("UserEmail") ?? "System";
+                string userRole = HttpContext.Session.GetString("UserRole") ?? "User";
+                bool isAdmin = userRole.Contains("Admin"); // System Admin หรือ Admin
+
                 string connectionString = _configuration.GetConnectionString("DefaultConnection");
                 var requests = new List<dynamic>();
 
@@ -991,7 +996,7 @@ namespace TrainingRequestApp.Controllers
                     DateTime filterEnd = endDate ?? filterStart.AddMonths(1).AddDays(-1);
 
                     string query = @"
-                SELECT 
+                SELECT
                     tr.Id,
                     tr.DocNo,
                     tr.Company,
@@ -1003,6 +1008,17 @@ namespace TrainingRequestApp.Controllers
                     (SELECT COUNT(*) FROM TrainingRequestEmployees WHERE TrainingRequestId = tr.Id) AS ParticipantCount
                 FROM TrainingRequests tr
                 WHERE CAST(tr.CreatedDate AS DATE) BETWEEN @StartDate AND @EndDate";
+
+                    // ✅ User เห็นเฉพาะข้อมูลที่ตัวเองสร้าง
+                    if (!isAdmin)
+                    {
+                        query += " AND tr.CreatedBy = @UserEmail";
+                        Console.WriteLine($"🔒 User filter: CreatedBy = {userEmail}");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"✅ Admin: Show all data");
+                    }
 
                     // เพิ่มเงื่อนไขการกรอง
                     if (!string.IsNullOrEmpty(docNo))
@@ -1020,6 +1036,10 @@ namespace TrainingRequestApp.Controllers
                     {
                         cmd.Parameters.AddWithValue("@StartDate", filterStart);
                         cmd.Parameters.AddWithValue("@EndDate", filterEnd);
+
+                        // ✅ เพิ่ม parameter UserEmail สำหรับ User
+                        if (!isAdmin)
+                            cmd.Parameters.AddWithValue("@UserEmail", userEmail);
 
                         if (!string.IsNullOrEmpty(docNo))
                             cmd.Parameters.AddWithValue("@DocNo", "%" + docNo + "%");
