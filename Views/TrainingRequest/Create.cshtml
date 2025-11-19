@@ -2563,38 +2563,40 @@
                 console.log('🔄 Loading HRD Approvers...');
 
                 // ดึง HRD Admin (UserID = 7777777)
-                const hrdAdminResponse = await fetch('/api/employees/search?q=&userIdFilter=7777777');
-                if (hrdAdminResponse.ok) {
-                    const hrdAdminData = await hrdAdminResponse.json();
-                    if (hrdAdminData && hrdAdminData.length > 0) {
-                        const hrdAdmin = hrdAdminData[0];
-                        $('#hrdAdminDisplay').val(hrdAdmin.email || hrdAdmin.name || 'ไม่พบข้อมูล');
-                        $('#hrdAdminIdHidden').val(hrdAdmin.email || '');
-                        console.log('✅ HRD Admin loaded:', hrdAdmin.email);
-                    } else {
-                        $('#hrdAdminDisplay').val('ไม่พบข้อมูล HRD Admin');
-                        console.warn('⚠️ HRD Admin not found');
-                    }
+                const hrdAdminResponse = await fetch('/api/employees/by-userid?userId=7777777');
+                const hrdAdminData = await hrdAdminResponse.json();
+
+                if (hrdAdminData.success) {
+                    const displayText = `${hrdAdminData.fullName} (${hrdAdminData.email})`;
+                    $('#hrdAdminDisplay').val(displayText);
+                    $('#hrdAdminIdHidden').val(hrdAdminData.email);
+                    console.log('✅ HRD Admin loaded:', hrdAdminData.email);
+                } else {
+                    $('#hrdAdminDisplay').val('ไม่พบข้อมูล HRD Admin (UserID: 7777777)');
+                    $('#hrdAdminIdHidden').val('');
+                    console.warn('⚠️ HRD Admin not found:', hrdAdminData.message);
                 }
 
                 // ดึง HRD Confirmation (UserID = 8888888)
-                const hrdConfirmationResponse = await fetch('/api/employees/search?q=&userIdFilter=8888888');
-                if (hrdConfirmationResponse.ok) {
-                    const hrdConfirmationData = await hrdConfirmationResponse.json();
-                    if (hrdConfirmationData && hrdConfirmationData.length > 0) {
-                        const hrdConfirmation = hrdConfirmationData[0];
-                        $('#hrdConfirmationDisplay').val(hrdConfirmation.email || hrdConfirmation.name || 'ไม่พบข้อมูล');
-                        $('#hrdConfirmationIdHidden').val(hrdConfirmation.email || '');
-                        console.log('✅ HRD Confirmation loaded:', hrdConfirmation.email);
-                    } else {
-                        $('#hrdConfirmationDisplay').val('ไม่พบข้อมูล HRD Confirmation');
-                        console.warn('⚠️ HRD Confirmation not found');
-                    }
+                const hrdConfirmationResponse = await fetch('/api/employees/by-userid?userId=8888888');
+                const hrdConfirmationData = await hrdConfirmationResponse.json();
+
+                if (hrdConfirmationData.success) {
+                    const displayText = `${hrdConfirmationData.fullName} (${hrdConfirmationData.email})`;
+                    $('#hrdConfirmationDisplay').val(displayText);
+                    $('#hrdConfirmationIdHidden').val(hrdConfirmationData.email);
+                    console.log('✅ HRD Confirmation loaded:', hrdConfirmationData.email);
+                } else {
+                    $('#hrdConfirmationDisplay').val('ไม่พบข้อมูล HRD Confirmation (UserID: 8888888)');
+                    $('#hrdConfirmationIdHidden').val('');
+                    console.warn('⚠️ HRD Confirmation not found:', hrdConfirmationData.message);
                 }
             } catch (error) {
                 console.error('❌ Error loading HRD Approvers:', error);
                 $('#hrdAdminDisplay').val('เกิดข้อผิดพลาดในการโหลด');
                 $('#hrdConfirmationDisplay').val('เกิดข้อผิดพลาดในการโหลด');
+                $('#hrdAdminIdHidden').val('');
+                $('#hrdConfirmationIdHidden').val('');
             }
         }
 

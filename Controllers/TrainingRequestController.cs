@@ -487,6 +487,67 @@ namespace TrainingRequestApp.Controllers
             }
         }
 
+        [HttpGet("api/employees/by-userid")]
+        public async Task<IActionResult> GetEmployeeByUserId(string userId)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(userId))
+                {
+                    return Json(new { success = false, message = "UserId is required" });
+                }
+
+                string connectionString = _configuration.GetConnectionString("DefaultConnection");
+                using (SqlConnection conn = new SqlConnection(connectionString))
+                {
+                    await conn.OpenAsync();
+
+                    string query = @"
+                        SELECT TOP 1
+                            UserID,
+                            CONCAT(Prefix, Name, ' ', Lastname) as FullName,
+                            Email,
+                            Level,
+                            Department,
+                            Position
+                        FROM [HRDSYSTEM].[dbo].[Employees]
+                        WHERE UserID = @UserId";
+
+                    using (SqlCommand cmd = new SqlCommand(query, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@UserId", userId);
+
+                        using (var reader = await cmd.ExecuteReaderAsync())
+                        {
+                            if (await reader.ReadAsync())
+                            {
+                                var result = new
+                                {
+                                    success = true,
+                                    userId = reader["UserID"].ToString(),
+                                    fullName = reader["FullName"].ToString(),
+                                    email = reader["Email"].ToString(),
+                                    level = reader["Level"]?.ToString(),
+                                    department = reader["Department"]?.ToString(),
+                                    position = reader["Position"]?.ToString()
+                                };
+                                return Json(result);
+                            }
+                            else
+                            {
+                                return Json(new { success = false, message = $"ไม่พบข้อมูล Employee สำหรับ UserID: {userId}" });
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ GetEmployeeByUserId Error: {ex.Message}");
+                return Json(new { success = false, message = "เกิดข้อผิดพลาดในการดึงข้อมูล Employee" });
+            }
+        }
+
         // ====================================================================
         // Helper Methods
         // ====================================================================
