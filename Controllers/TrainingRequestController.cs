@@ -154,6 +154,8 @@ namespace TrainingRequestApp.Controllers
                             URLSource, AdditionalNotes, ExpectedOutcome, TotalPeople,
                             SectionManagerId, Status_SectionManager, Comment_SectionManager, ApproveInfo_SectionManager,
                             DepartmentManagerId, Status_DepartmentManager, Comment_DepartmentManager, ApproveInfo_DepartmentManager,
+                            HRDAdminId, Status_HRDAdmin, Comment_HRDAdmin, ApproveInfo_HRDAdmin,
+                            HRDConfirmationId, Status_HRDConfirmation, Comment_HRDConfirmation, ApproveInfo_HRDConfirmation,
                             ManagingDirectorId, Status_ManagingDirector, Comment_ManagingDirector, ApproveInfo_ManagingDirector,
                             Status, CreatedDate, CreatedBy
                         FROM [HRDSYSTEM].[dbo].[TrainingRequests]
@@ -205,6 +207,14 @@ namespace TrainingRequestApp.Controllers
                                     Status_DepartmentManager = reader["Status_DepartmentManager"]?.ToString(),
                                     Comment_DepartmentManager = reader["Comment_DepartmentManager"]?.ToString(),
                                     ApproveInfo_DepartmentManager = reader["ApproveInfo_DepartmentManager"]?.ToString(),
+                                    HRDAdminId = reader["HRDAdminId"]?.ToString(),
+                                    Status_HRDAdmin = reader["Status_HRDAdmin"]?.ToString(),
+                                    Comment_HRDAdmin = reader["Comment_HRDAdmin"]?.ToString(),
+                                    ApproveInfo_HRDAdmin = reader["ApproveInfo_HRDAdmin"]?.ToString(),
+                                    HRDConfirmationId = reader["HRDConfirmationId"]?.ToString(),
+                                    Status_HRDConfirmation = reader["Status_HRDConfirmation"]?.ToString(),
+                                    Comment_HRDConfirmation = reader["Comment_HRDConfirmation"]?.ToString(),
+                                    ApproveInfo_HRDConfirmation = reader["ApproveInfo_HRDConfirmation"]?.ToString(),
                                     ManagingDirectorId = reader["ManagingDirectorId"]?.ToString(),
                                     Status_ManagingDirector = reader["Status_ManagingDirector"]?.ToString(),
                                     Comment_ManagingDirector = reader["Comment_ManagingDirector"]?.ToString(),
@@ -523,6 +533,26 @@ namespace TrainingRequestApp.Controllers
         private async Task<int> InsertTrainingRequest(SqlConnection conn, SqlTransaction transaction,
             TrainingRequestFormData formData, string docNo, string createdBy)
         {
+            // ✅ ดึง Email ของ HRD Admin (UserID = 7777777)
+            string hrdAdminEmail = null;
+            string getHRDAdminQuery = "SELECT TOP 1 Email FROM [HRDSYSTEM].[dbo].[Employees] WHERE UserID = '7777777'";
+            using (SqlCommand cmd = new SqlCommand(getHRDAdminQuery, conn, transaction))
+            {
+                var result = await cmd.ExecuteScalarAsync();
+                hrdAdminEmail = result?.ToString();
+                Console.WriteLine($"✅ HRD Admin Email: {hrdAdminEmail ?? "Not Found"}");
+            }
+
+            // ✅ ดึง Email ของ HRD Confirmation (UserID = 8888888)
+            string hrdConfirmationEmail = null;
+            string getHRDConfirmationQuery = "SELECT TOP 1 Email FROM [HRDSYSTEM].[dbo].[Employees] WHERE UserID = '8888888'";
+            using (SqlCommand cmd = new SqlCommand(getHRDConfirmationQuery, conn, transaction))
+            {
+                var result = await cmd.ExecuteScalarAsync();
+                hrdConfirmationEmail = result?.ToString();
+                Console.WriteLine($"✅ HRD Confirmation Email: {hrdConfirmationEmail ?? "Not Found"}");
+            }
+
             string query = @"
                 INSERT INTO [HRDSYSTEM].[dbo].[TrainingRequests] (
                     [DocNo], [Company], [TrainingType], [Factory], [CCEmail], [Department],[Position],
@@ -531,7 +561,8 @@ namespace TrainingRequestApp.Controllers
                     [TotalCost], [CostPerPerson],[PerPersonTrainingHours], [TrainingObjective], [OtherObjective],
                     [URLSource], [AdditionalNotes], [ExpectedOutcome],
                     [Status], [CreatedDate], [CreatedBy], [IsActive],[TotalPeople],
-                    [SectionManagerId], [DepartmentManagerId], [ManagingDirectorId]
+                    [SectionManagerId], [DepartmentManagerId], [HRDAdminId], [Status_HRDAdmin],
+                    [HRDConfirmationId], [Status_HRDConfirmation], [ManagingDirectorId]
                 )
                 VALUES (
                     @DocNo, @Company, @TrainingType, @Factory, @CCEmail, @Department,@Position,
@@ -540,7 +571,8 @@ namespace TrainingRequestApp.Controllers
                     @TotalCost, @CostPerPerson,@PerPersonTrainingHours, @TrainingObjective, @OtherObjective,
                     @URLSource, @AdditionalNotes, @ExpectedOutcome,
                     'Pending', GETDATE(), @CreatedBy, 1,@TotalPeople,
-                    @SectionManagerId, @DepartmentManagerId, @ManagingDirectorId
+                    @SectionManagerId, @DepartmentManagerId, @HRDAdminId, 'Pending',
+                    @HRDConfirmationId, 'Pending', @ManagingDirectorId
                 );
                 SELECT CAST(SCOPE_IDENTITY() AS INT);";
 
@@ -580,9 +612,11 @@ namespace TrainingRequestApp.Controllers
                 // ✅ CreatedBy - ใช้ Email ของผู้สร้างจาก Session
                 cmd.Parameters.AddWithValue("@CreatedBy", createdBy);
 
-                // ✅ เพิ่มใหม่ - Approvers
+                // ✅ Approvers - 5 levels
                 cmd.Parameters.AddWithValue("@SectionManagerId", formData.SectionManagerId ?? (object)DBNull.Value);
                 cmd.Parameters.AddWithValue("@DepartmentManagerId", formData.DepartmentManagerId ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@HRDAdminId", hrdAdminEmail ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@HRDConfirmationId", hrdConfirmationEmail ?? (object)DBNull.Value);
                 cmd.Parameters.AddWithValue("@ManagingDirectorId", formData.ManagingDirectorId ?? (object)DBNull.Value);
 
                 var result = await cmd.ExecuteScalarAsync();
@@ -767,6 +801,14 @@ namespace TrainingRequestApp.Controllers
                     [Status_DepartmentManager] = @Status_DepartmentManager,
                     [Comment_DepartmentManager] = @Comment_DepartmentManager,
                     [ApproveInfo_DepartmentManager] = @ApproveInfo_DepartmentManager,
+                    [HRDAdminId] = @HRDAdminId,
+                    [Status_HRDAdmin] = @Status_HRDAdmin,
+                    [Comment_HRDAdmin] = @Comment_HRDAdmin,
+                    [ApproveInfo_HRDAdmin] = @ApproveInfo_HRDAdmin,
+                    [HRDConfirmationId] = @HRDConfirmationId,
+                    [Status_HRDConfirmation] = @Status_HRDConfirmation,
+                    [Comment_HRDConfirmation] = @Comment_HRDConfirmation,
+                    [ApproveInfo_HRDConfirmation] = @ApproveInfo_HRDConfirmation,
                     [ManagingDirectorId] = @ManagingDirectorId,
                     [Status_ManagingDirector] = @Status_ManagingDirector,
                     [Comment_ManagingDirector] = @Comment_ManagingDirector,
@@ -815,6 +857,16 @@ namespace TrainingRequestApp.Controllers
                 cmd.Parameters.AddWithValue("@Status_DepartmentManager", formData.Status_DepartmentManager ?? (object)DBNull.Value);
                 cmd.Parameters.AddWithValue("@Comment_DepartmentManager", formData.Comment_DepartmentManager ?? (object)DBNull.Value);
                 cmd.Parameters.AddWithValue("@ApproveInfo_DepartmentManager", formData.ApproveInfo_DepartmentManager ?? (object)DBNull.Value);
+
+                cmd.Parameters.AddWithValue("@HRDAdminId", formData.HRDAdminId ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@Status_HRDAdmin", formData.Status_HRDAdmin ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@Comment_HRDAdmin", formData.Comment_HRDAdmin ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@ApproveInfo_HRDAdmin", formData.ApproveInfo_HRDAdmin ?? (object)DBNull.Value);
+
+                cmd.Parameters.AddWithValue("@HRDConfirmationId", formData.HRDConfirmationId ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@Status_HRDConfirmation", formData.Status_HRDConfirmation ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@Comment_HRDConfirmation", formData.Comment_HRDConfirmation ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@ApproveInfo_HRDConfirmation", formData.ApproveInfo_HRDConfirmation ?? (object)DBNull.Value);
 
                 cmd.Parameters.AddWithValue("@ManagingDirectorId", formData.ManagingDirectorId ?? (object)DBNull.Value);
                 cmd.Parameters.AddWithValue("@Status_ManagingDirector", formData.Status_ManagingDirector ?? (object)DBNull.Value);
@@ -1384,9 +1436,11 @@ namespace TrainingRequestApp.Controllers
         public List<IFormFile>? AttachedFiles { get; set; }
         public string? ParticipantCount { get; set; }
 
-        // ✅ เพิ่มใหม่ - Approvers
+        // ✅ Approvers - 5 levels
         public string? SectionManagerId { get; set; }
         public string? DepartmentManagerId { get; set; }
+        public string? HRDAdminId { get; set; }
+        public string? HRDConfirmationId { get; set; }
         public string? ManagingDirectorId { get; set; }
 
         // ✅ Approval Status and Comments for each level
@@ -1399,6 +1453,16 @@ namespace TrainingRequestApp.Controllers
         public string? Status_DepartmentManager { get; set; }
         public string? Comment_DepartmentManager { get; set; }
         public string? ApproveInfo_DepartmentManager { get; set; }
+
+        // HRD Admin
+        public string? Status_HRDAdmin { get; set; }
+        public string? Comment_HRDAdmin { get; set; }
+        public string? ApproveInfo_HRDAdmin { get; set; }
+
+        // HRD Confirmation
+        public string? Status_HRDConfirmation { get; set; }
+        public string? Comment_HRDConfirmation { get; set; }
+        public string? ApproveInfo_HRDConfirmation { get; set; }
 
         // Managing Director
         public string? Status_ManagingDirector { get; set; }

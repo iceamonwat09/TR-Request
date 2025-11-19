@@ -34,7 +34,7 @@ namespace TrainingRequestApp.Models
         public string? ExpectedOutcome { get; set; }
         public string? ParticipantCount { get; set; }
 
-        // Approvers
+        // Approvers - 5 levels
         public string? SectionManagerId { get; set; }
         public string? Status_SectionManager { get; set; }
         public string? Comment_SectionManager { get; set; }
@@ -44,6 +44,16 @@ namespace TrainingRequestApp.Models
         public string? Status_DepartmentManager { get; set; }
         public string? Comment_DepartmentManager { get; set; }
         public string? ApproveInfo_DepartmentManager { get; set; }
+
+        public string? HRDAdminId { get; set; }
+        public string? Status_HRDAdmin { get; set; }
+        public string? Comment_HRDAdmin { get; set; }
+        public string? ApproveInfo_HRDAdmin { get; set; }
+
+        public string? HRDConfirmationId { get; set; }
+        public string? Status_HRDConfirmation { get; set; }
+        public string? Comment_HRDConfirmation { get; set; }
+        public string? ApproveInfo_HRDConfirmation { get; set; }
 
         public string? ManagingDirectorId { get; set; }
         public string? Status_ManagingDirector { get; set; }
