@@ -458,8 +458,8 @@ namespace TrainingRequestApp.Services
                         TotalCost, StartDate, Status, CreatedBy, CCEmail,
                         SectionManagerId, Status_SectionManager, Comment_SectionManager, ApproveInfo_SectionManager,
                         DepartmentManagerId, Status_DepartmentManager, Comment_DepartmentManager, ApproveInfo_DepartmentManager,
-                        HRDAdminId, Status_HRDAdmin, Comment_HRDAdmin, ApproveInfo_HRDAdmin,
-                        HRDConfirmationId, Status_HRDConfirmation, Comment_HRDConfirmation, ApproveInfo_HRDConfirmation,
+                        HRDAdminid AS HRDAdminId, Status_HRDAdmin, Comment_HRDAdmin, ApproveInfo_HRDAdmin,
+                        HRDConfirmationid AS HRDConfirmationId, Status_HRDConfirmation, Comment_HRDConfirmation, ApproveInfo_HRDConfirmation,
                         ManagingDirectorId, Status_ManagingDirector, Comment_ManagingDirector, ApproveInfo_ManagingDirector,
                         TrainingObjective, ExpectedOutcome
                     FROM [HRDSYSTEM].[dbo].[TrainingRequests]
@@ -585,12 +585,13 @@ namespace TrainingRequestApp.Services
 
                     string query = @"
                         UPDATE [HRDSYSTEM].[dbo].[TrainingRequests]
-                        SET Status = @Status
+                        SET Status = @Status, UpdatedDate = GETDATE(), UpdatedBy = @UpdatedBy
                         WHERE DocNo = @DocNo";
 
                     using (var cmd = new SqlCommand(query, conn))
                     {
                         cmd.Parameters.AddWithValue("@Status", newStatus);
+                        cmd.Parameters.AddWithValue("@UpdatedBy", "SYSTEM");
                         cmd.Parameters.AddWithValue("@DocNo", docNo);
 
                         int rowsAffected = await cmd.ExecuteNonQueryAsync();
@@ -603,6 +604,7 @@ namespace TrainingRequestApp.Services
                 Console.WriteLine($"❌ UpdateMainStatus Error: {ex.Message}");
                 Console.WriteLine($"   DocNo: {docNo}");
                 Console.WriteLine($"   NewStatus: {newStatus}");
+                Console.WriteLine($"   StackTrace: {ex.StackTrace}");
                 throw; // Re-throw เพื่อให้ StartWorkflow catch ได้
             }
         }
