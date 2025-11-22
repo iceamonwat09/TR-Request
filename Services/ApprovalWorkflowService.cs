@@ -196,6 +196,9 @@ namespace TrainingRequestApp.Services
                 // บันทึก History
                 await SaveApprovalHistory(request.Id, docNo, approverRole, userEmail, "APPROVED", comment, previousStatus, nextStatus, ipAddress);
 
+                // ⭐ Refresh request object เพื่อดึงข้อมูลล่าสุดหลัง UPDATE
+                request = await GetTrainingRequest(docNo);
+
                 // ส่ง Email แจ้ง CreatedBy + CCEmail
                 await SendApprovalNotificationEmail(request, approverRole, comment);
 
@@ -205,7 +208,6 @@ namespace TrainingRequestApp.Services
                     string nextApproverEmail = GetNextApproverEmail(request, nextStatus);
                     if (!string.IsNullOrEmpty(nextApproverEmail))
                     {
-                        request.Status = nextStatus; // อัพเดท status ในตัวแปร
                         await SendApprovalRequestEmail(request, nextApproverEmail, nextStatus);
                     }
                 }
@@ -282,6 +284,9 @@ namespace TrainingRequestApp.Services
                 // บันทึก History
                 await SaveApprovalHistory(request.Id, docNo, approverRole, userEmail, "Revise", comment, previousStatus, newStatus, ipAddress);
 
+                // ⭐ Refresh request object เพื่อดึงข้อมูลล่าสุดหลัง UPDATE
+                request = await GetTrainingRequest(docNo);
+
                 // ส่ง Email
                 if (isRevisionAdminCase)
                 {
@@ -346,6 +351,9 @@ namespace TrainingRequestApp.Services
 
                 // บันทึก History
                 await SaveApprovalHistory(request.Id, docNo, approverRole, userEmail, "REJECTED", comment, previousStatus, newStatus, ipAddress);
+
+                // ⭐ Refresh request object เพื่อดึงข้อมูลล่าสุดหลัง UPDATE
+                request = await GetTrainingRequest(docNo);
 
                 // ส่ง Email แจ้ง CreatedBy + CCEmail
                 await SendRejectionEmail(request, approverRole, comment);
