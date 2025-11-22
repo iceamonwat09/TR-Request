@@ -3,19 +3,56 @@
 @{
     var userEmail = Context.Session.GetString("UserEmail") ?? "Guest";
     var userRole = Context.Session.GetString("UserRole") ?? "User";
-    bool isAdmin = userRole.Contains("Admin"); // System Admin หรือ Admin
-    bool canEdit = isAdmin || Model.Status == "Revise"; // Admin แก้ไขได้ทั้งหมด หรือ User แก้ไขได้ถ้า Status = "Revise"
+
+    // ✅ Multi-Mode Logic from Controller
+    string pageMode = ViewBag.PageMode ?? "View"; // Edit, Approve, View, Admin
+    bool canApprove = ViewBag.CanApprove ?? false;
+    string approverRole = ViewBag.ApproverRole ?? "";
+    bool isAdmin = ViewBag.IsAdmin ?? false;
+
+    // กำหนดสิทธิ์การแก้ไข
+    bool canEdit = (pageMode == "Edit" || pageMode == "Admin");
+    bool isApproveMode = (pageMode == "Approve");
+    bool isViewMode = (pageMode == "View");
+
+    // Disable form inputs based on mode
+    string disabledAttr = (isApproveMode || isViewMode) ? "disabled" : "";
+    string readonlyAttr = (isApproveMode || isViewMode) ? "readonly" : "";
 }
 <div class="container-fluid py-4" style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); min-height: 100vh;">
     <div class="container">
         <div class="row justify-content-center">
             <div class="col-lg-11">
-                @* แสดง Alert ถ้า User ไม่สามารถแก้ไขได้ *@
-                @if (!canEdit)
+                @* แสดง Alert ตามโหมด *@
+                @if (isApproveMode)
+                {
+                    <div class="alert alert-info alert-dismissible fade show" role="alert">
+                        <strong><i class="fa fa-check-circle"></i> โหมดอนุมัติ</strong><br>
+                        คุณสามารถอนุมัติ (Approve), ส่งกลับแก้ไข (Revise), หรือไม่อนุมัติ (Reject) เอกสารนี้ได้
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                }
+                else if (isViewMode)
                 {
                     <div class="alert alert-warning alert-dismissible fade show" role="alert">
-                        <strong><i class="fa fa-exclamation-triangle"></i> โหมดอ่านอย่างเดียว</strong><br>
-                        คุณไม่สามารถแก้ไขเอกสารนี้ได้ เนื่องจากสถานะเอกสารไม่ใช่ "Revise" (ปัจจุบัน: @Model.Status)
+                        <strong><i class="fa fa-eye"></i> โหมดอ่านอย่างเดียว</strong><br>
+                        คุณไม่สามารถแก้ไขเอกสารนี้ได้ (สถานะปัจจุบัน: @Model.Status)
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                }
+                else if (pageMode == "Edit")
+                {
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        <strong><i class="fa fa-edit"></i> โหมดแก้ไข</strong><br>
+                        กรุณาแก้ไขเอกสารตามความเห็นของผู้อนุมัติ
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                }
+                else if (pageMode == "Admin")
+                {
+                    <div class="alert alert-primary alert-dismissible fade show" role="alert">
+                        <strong><i class="fa fa-user-shield"></i> โหมดผู้ดูแลระบบ</strong><br>
+                        คุณสามารถแก้ไขและอนุมัติเอกสารนี้ได้
                         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                     </div>
                 }
@@ -23,13 +60,36 @@
                     <div class="card-header bg-primary py-4 position-relative" style="border-radius: 15px 15px 0 0;">
                         <div class="position-absolute top-0 end-0 p-3">
                             <span class="badge bg-light text-primary fs-6">เลขที่เอกสาร: @Model.DocNo</span>
-                            @if (!canEdit)
+                            @if (isApproveMode)
                             {
-                                <span class="badge bg-warning text-dark fs-6 ms-2"><i class="fa fa-lock"></i> Read-only</span>
+                                <span class="badge bg-info fs-6 ms-2"><i class="fa fa-check-circle"></i> Approve Mode</span>
+                            }
+                            else if (isViewMode)
+                            {
+                                <span class="badge bg-warning text-dark fs-6 ms-2"><i class="fa fa-eye"></i> View Only</span>
+                            }
+                            else if (pageMode == "Admin")
+                            {
+                                <span class="badge bg-primary fs-6 ms-2"><i class="fa fa-user-shield"></i> Admin Mode</span>
+                            }
+                            else if (pageMode == "Edit")
+                            {
+                                <span class="badge bg-success fs-6 ms-2"><i class="fa fa-edit"></i> Edit Mode</span>
                             }
                         </div>
                         <h2 class="mb-0 text-white fw-bold text-center">
-                            📝 @(canEdit ? "แก้ไขคำร้องขออบรม" : "ดูคำร้องขออบรม")
+                            @if (isApproveMode)
+                            {
+                                <text>✅ อนุมัติคำร้องขออบรม</text>
+                            }
+                            else if (canEdit)
+                            {
+                                <text>📝 แก้ไขคำร้องขออบรม</text>
+                            }
+                            else
+                            {
+                                <text>👁️ ดูคำร้องขออบรม</text>
+                            }
                         </h2>
                     </div>
 
@@ -850,17 +910,54 @@
                                     </div>
                                 </div>
 
-                                <!-- ปุ่มบันทึก -->
+                                <!-- ✅ ปุ่มแบบ Multi-Mode -->
                                 <div class="text-center mt-5">
-                                    @if (canEdit)
+                                    @if (isApproveMode)
                                     {
+                                        <!-- Approve Mode: แสดงปุ่ม Approve / Revise / Reject + Comment -->
+                                        <div class="approval-section border rounded p-4 mb-4" style="background-color: #f8f9fa;">
+                                            <h5 class="text-center mb-4">💬 ความคิดเห็น (Optional for Approve, Required for Revise/Reject)</h5>
+                                            <textarea id="approvalComment" class="form-control form-control-lg mb-4" rows="4" placeholder="กรุณาระบุความคิดเห็น..."></textarea>
+
+                                            <div class="d-flex justify-content-center gap-3">
+                                                <button type="button" id="btnApprove" class="btn btn-success btn-lg px-5 py-3 fw-bold" style="border-radius: 25px;">
+                                                    ✅ Approve
+                                                </button>
+                                                <button type="button" id="btnRevise" class="btn btn-warning btn-lg px-5 py-3 fw-bold" style="border-radius: 25px;">
+                                                    🔄 Revise
+                                                </button>
+                                                <button type="button" id="btnReject" class="btn btn-danger btn-lg px-5 py-3 fw-bold" style="border-radius: 25px;">
+                                                    ❌ Reject
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <a href="/TrainingRequest/ApprovalFlow?docNo=@Model.DocNo" class="btn btn-info btn-lg px-4 py-2" style="border-radius: 20px;">
+                                            📊 ดู Approval Timeline
+                                        </a>
+                                        <a href="/Home/MonthlyRequests" class="btn btn-secondary btn-lg px-4 py-2 ms-2" style="border-radius: 20px;">
+                                            ← กลับ
+                                        </a>
+                                    }
+                                    else if (canEdit)
+                                    {
+                                        <!-- Edit Mode / Admin Mode: แสดงปุ่ม Save -->
                                         <button type="submit" class="btn btn-primary btn-lg text-white px-5 py-3 fw-bold" style="border-radius: 25px; box-shadow: 0 4px 15px rgba(13, 110, 253, 0.3);">
                                             💾 อัพเดทข้อมูล
                                         </button>
+                                        <a href="/TrainingRequest/ApprovalFlow?docNo=@Model.DocNo" class="btn btn-info btn-lg px-4 py-2 ms-2" style="border-radius: 20px;">
+                                            📊 ดู Approval Timeline
+                                        </a>
+                                        <a href="/Home/MonthlyRequests" class="btn btn-secondary btn-lg px-4 py-2 ms-2" style="border-radius: 20px;">
+                                            ← กลับ
+                                        </a>
                                     }
                                     else
                                     {
-                                        <a href="/Home/MonthlyRequests" class="btn btn-secondary btn-lg px-5 py-3 fw-bold" style="border-radius: 25px;">
+                                        <!-- View Mode: แสดงปุ่ม Back เท่านั้น -->
+                                        <a href="/TrainingRequest/ApprovalFlow?docNo=@Model.DocNo" class="btn btn-info btn-lg px-5 py-3" style="border-radius: 25px;">
+                                            📊 ดู Approval Timeline
+                                        </a>
+                                        <a href="/Home/MonthlyRequests" class="btn btn-secondary btn-lg px-5 py-3 fw-bold ms-2" style="border-radius: 25px;">
                                             <i class="fa fa-arrow-left me-2"></i>กลับ
                                         </a>
                                     }
@@ -873,6 +970,95 @@
         </div>
     </div>
 </div>
+
+@if (isApproveMode)
+{
+    <!-- ✅ JavaScript for Approval Actions -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+    $(document).ready(function() {
+        const docNo = '@Model.DocNo';
+
+        // ป้องกัน double-click
+        let isProcessing = false;
+
+        function handleApprovalAction(action) {
+            if (isProcessing) {
+                alert('กำลังดำเนินการ กรุณารอสักครู่...');
+                return;
+            }
+
+            const comment = $('#approvalComment').val().trim();
+
+            // ตรวจสอบว่า Revise/Reject ต้องมี Comment
+            if ((action === 'Revise' || action === 'Reject') && !comment) {
+                alert(`กรุณาระบุเหตุผลในการ ${action}`);
+                $('#approvalComment').focus();
+                return;
+            }
+
+            // ยืนยันการดำเนินการ
+            const confirmMsg = action === 'Approve'
+                ? 'ต้องการอนุมัติเอกสารนี้ใช่หรือไม่?'
+                : (action === 'Revise'
+                    ? 'ต้องการส่งกลับแก้ไขเอกสารนี้ใช่หรือไม่?'
+                    : 'ต้องการไม่อนุมัติเอกสารนี้ใช่หรือไม่?');
+
+            if (!confirm(confirmMsg)) {
+                return;
+            }
+
+            isProcessing = true;
+
+            // ปิดการใช้งานปุ่มทั้งหมด
+            $('#btnApprove, #btnRevise, #btnReject').prop('disabled', true);
+            const $btn = action === 'Approve' ? $('#btnApprove') : (action === 'Revise' ? $('#btnRevise') : $('#btnReject'));
+            const originalText = $btn.html();
+            $btn.html('<i class="fas fa-spinner fa-spin"></i> กำลังดำเนินการ...');
+
+            $.ajax({
+                url: '/TrainingRequest/Approve',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    docNo: docNo,
+                    action: action,
+                    comment: comment
+                }),
+                success: function(response) {
+                    if (response.success) {
+                        alert(response.message);
+                        window.location.href = '/Home/MonthlyRequests';
+                    } else {
+                        alert(response.message);
+                        isProcessing = false;
+                        $('#btnApprove, #btnRevise, #btnReject').prop('disabled', false);
+                        $btn.html(originalText);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    alert('เกิดข้อผิดพลาด: ' + error);
+                    isProcessing = false;
+                    $('#btnApprove, #btnRevise, #btnReject').prop('disabled', false);
+                    $btn.html(originalText);
+                }
+            });
+        }
+
+        $('#btnApprove').click(function() {
+            handleApprovalAction('Approve');
+        });
+
+        $('#btnRevise').click(function() {
+            handleApprovalAction('Revise');
+        });
+
+        $('#btnReject').click(function() {
+            handleApprovalAction('Reject');
+        });
+    });
+    </script>
+}
 
 <!-- Employee Search Modal -->
 <div class="modal fade" id="employeeSearchModal" tabindex="-1" aria-labelledby="employeeSearchModalLabel" aria-hidden="true">

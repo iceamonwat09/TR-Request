@@ -28,6 +28,7 @@ builder.Services.AddSession(options =>
 builder.Services.AddScoped<IEmployeeService, EmployeeService>();
 builder.Services.AddScoped<ITrainingRequestService, TrainingRequestService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<IApprovalWorkflowService, ApprovalWorkflowService>();
 
 // ✅ เพิ่ม Controllers และ Views
 builder.Services.AddControllersWithViews();

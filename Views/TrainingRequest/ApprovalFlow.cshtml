@@ -1,0 +1,554 @@
+@model TrainingRequestApp.Models.TrainingRequestEditViewModel
+@{
+    ViewData["Title"] = "Approval Workflow Timeline";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<style>
+    .timeline-container {
+        max-width: 1200px;
+        margin: 30px auto;
+        padding: 20px;
+    }
+
+    .doc-info-card {
+        background: #fff;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 30px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .doc-info-card h3 {
+        margin-top: 0;
+        color: #2c3e50;
+        border-bottom: 2px solid #3498db;
+        padding-bottom: 10px;
+    }
+
+    .timeline {
+        position: relative;
+        padding: 20px 0;
+    }
+
+    .timeline::before {
+        content: '';
+        position: absolute;
+        left: 50px;
+        top: 0;
+        bottom: 0;
+        width: 4px;
+        background: #e0e0e0;
+    }
+
+    .timeline-item {
+        position: relative;
+        padding: 20px 0 20px 120px;
+        min-height: 100px;
+    }
+
+    .timeline-marker {
+        position: absolute;
+        left: 35px;
+        top: 25px;
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        border: 4px solid #e0e0e0;
+        background: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        z-index: 10;
+    }
+
+    .timeline-marker.pending {
+        border-color: #f39c12;
+        color: #f39c12;
+    }
+
+    .timeline-marker.approved {
+        border-color: #27ae60;
+        background: #27ae60;
+        color: #fff;
+    }
+
+    .timeline-marker.rejected {
+        border-color: #e74c3c;
+        background: #e74c3c;
+        color: #fff;
+    }
+
+    .timeline-marker.waiting {
+        border-color: #3498db;
+        background: #3498db;
+        color: #fff;
+        animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.6; }
+    }
+
+    .timeline-content {
+        background: #fff;
+        border-radius: 8px;
+        padding: 20px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        border-left: 4px solid #e0e0e0;
+    }
+
+    .timeline-content.pending {
+        border-left-color: #f39c12;
+    }
+
+    .timeline-content.approved {
+        border-left-color: #27ae60;
+    }
+
+    .timeline-content.rejected {
+        border-left-color: #e74c3c;
+    }
+
+    .timeline-content.waiting {
+        border-left-color: #3498db;
+    }
+
+    .timeline-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+    }
+
+    .timeline-title {
+        font-size: 18px;
+        font-weight: bold;
+        color: #2c3e50;
+    }
+
+    .status-badge {
+        padding: 5px 15px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: bold;
+        text-transform: uppercase;
+    }
+
+    .status-badge.pending {
+        background: #f39c12;
+        color: #fff;
+    }
+
+    .status-badge.approved {
+        background: #27ae60;
+        color: #fff;
+    }
+
+    .status-badge.rejected {
+        background: #e74c3c;
+        color: #fff;
+    }
+
+    .status-badge.waiting {
+        background: #3498db;
+        color: #fff;
+    }
+
+    .approver-info {
+        margin-top: 10px;
+        padding: 10px;
+        background: #f8f9fa;
+        border-radius: 5px;
+    }
+
+    .approver-email {
+        color: #3498db;
+        font-weight: 500;
+    }
+
+    .approval-date {
+        color: #7f8c8d;
+        font-size: 14px;
+        margin-top: 5px;
+    }
+
+    .comment-box {
+        margin-top: 10px;
+        padding: 10px;
+        background: #fff3cd;
+        border-left: 3px solid #ffc107;
+        border-radius: 3px;
+    }
+
+    .comment-label {
+        font-weight: bold;
+        color: #856404;
+    }
+
+    .send-email-btn {
+        background: #27ae60;
+        color: #fff;
+        border: none;
+        padding: 12px 30px;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 16px;
+        font-weight: bold;
+        margin: 20px 0;
+    }
+
+    .send-email-btn:hover {
+        background: #229954;
+    }
+
+    .back-btn {
+        background: #95a5a6;
+        color: #fff;
+        border: none;
+        padding: 10px 25px;
+        border-radius: 5px;
+        cursor: pointer;
+        margin-left: 10px;
+    }
+
+    .back-btn:hover {
+        background: #7f8c8d;
+    }
+</style>
+
+<div class="timeline-container">
+    <!-- Document Info Card -->
+    <div class="doc-info-card">
+        <h3>📄 ข้อมูลคำขออบรม</h3>
+        <div class="row">
+            <div class="col-md-6">
+                <p><strong>เลขที่เอกสาร:</strong> @Model.DocNo</p>
+                <p><strong>บริษัท:</strong> @Model.Company</p>
+                <p><strong>หัวข้ออบรม:</strong> @Model.SeminarTitle</p>
+            </div>
+            <div class="col-md-6">
+                <p><strong>วันที่อบรม:</strong> @Model.StartDate?.ToString("dd/MM/yyyy") - @Model.EndDate?.ToString("dd/MM/yyyy")</p>
+                <p><strong>สถานะปัจจุบัน:</strong> <span class="badge badge-info">@Model.Status</span></p>
+                <p><strong>ผู้สร้าง:</strong> @Model.CreatedBy</p>
+            </div>
+        </div>
+
+        @if (Model.Status == "Pending")
+        {
+            <button id="sendEmailBtn" class="send-email-btn">
+                📧 ส่ง Email เริ่มกระบวนการอนุมัติ
+            </button>
+        }
+        <button onclick="window.location.href='/Home/MonthlyRequests'" class="back-btn">
+            ← กลับ
+        </button>
+    </div>
+
+    <!-- Timeline -->
+    <div class="timeline">
+        <!-- Level 1: Section Manager -->
+        @{
+            var sectionStatus = Model.Status_SectionManager ?? "Pending";
+            var sectionClass = GetStatusClass(sectionStatus, Model.Status, "WAITING_FOR_SECTION_MANAGER");
+        }
+        <div class="timeline-item">
+            <div class="timeline-marker @sectionClass">1</div>
+            <div class="timeline-content @sectionClass">
+                <div class="timeline-header">
+                    <div class="timeline-title">🔹 Section Manager</div>
+                    <span class="status-badge @sectionClass">@GetStatusDisplay(sectionStatus, Model.Status, "WAITING_FOR_SECTION_MANAGER")</span>
+                </div>
+                <div class="approver-info">
+                    <div class="approver-email">
+                        @if (!string.IsNullOrEmpty(Model.SectionManagerId))
+                        {
+                            <span>📧 @Model.SectionManagerId</span>
+                        }
+                        else
+                        {
+                            <span class="text-muted">ยังไม่ระบุผู้อนุมัติ</span>
+                        }
+                    </div>
+                    @if (!string.IsNullOrEmpty(Model.ApproveInfo_SectionManager))
+                    {
+                        <div class="approval-date">✅ @Model.ApproveInfo_SectionManager</div>
+                    }
+                </div>
+                @if (!string.IsNullOrEmpty(Model.Comment_SectionManager))
+                {
+                    <div class="comment-box">
+                        <div class="comment-label">💬 ความคิดเห็น:</div>
+                        <div>@Model.Comment_SectionManager</div>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Level 2: Department Manager -->
+        @{
+            var deptStatus = Model.Status_DepartmentManager ?? "Pending";
+            var deptClass = GetStatusClass(deptStatus, Model.Status, "WAITING_FOR_DEPARTMENT_MANAGER");
+        }
+        <div class="timeline-item">
+            <div class="timeline-marker @deptClass">2</div>
+            <div class="timeline-content @deptClass">
+                <div class="timeline-header">
+                    <div class="timeline-title">🔹 Department Manager</div>
+                    <span class="status-badge @deptClass">@GetStatusDisplay(deptStatus, Model.Status, "WAITING_FOR_DEPARTMENT_MANAGER")</span>
+                </div>
+                <div class="approver-info">
+                    <div class="approver-email">
+                        @if (!string.IsNullOrEmpty(Model.DepartmentManagerId))
+                        {
+                            <span>📧 @Model.DepartmentManagerId</span>
+                        }
+                        else
+                        {
+                            <span class="text-muted">ยังไม่ระบุผู้อนุมัติ</span>
+                        }
+                    </div>
+                    @if (!string.IsNullOrEmpty(Model.ApproveInfo_DepartmentManager))
+                    {
+                        <div class="approval-date">✅ @Model.ApproveInfo_DepartmentManager</div>
+                    }
+                </div>
+                @if (!string.IsNullOrEmpty(Model.Comment_DepartmentManager))
+                {
+                    <div class="comment-box">
+                        <div class="comment-label">💬 ความคิดเห็น:</div>
+                        <div>@Model.Comment_DepartmentManager</div>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Level 3: HRD Admin -->
+        @{
+            var hrdAdminStatus = Model.Status_HRDAdmin ?? "Pending";
+            var hrdAdminClass = GetStatusClass(hrdAdminStatus, Model.Status, "WAITING_FOR_HRD_ADMIN");
+        }
+        <div class="timeline-item">
+            <div class="timeline-marker @hrdAdminClass">3</div>
+            <div class="timeline-content @hrdAdminClass">
+                <div class="timeline-header">
+                    <div class="timeline-title">🔹 HRD Admin</div>
+                    <span class="status-badge @hrdAdminClass">@GetStatusDisplay(hrdAdminStatus, Model.Status, "WAITING_FOR_HRD_ADMIN")</span>
+                </div>
+                <div class="approver-info">
+                    <div class="approver-email">
+                        @if (!string.IsNullOrEmpty(Model.HRDAdminId))
+                        {
+                            <span>📧 @Model.HRDAdminId</span>
+                        }
+                        else
+                        {
+                            <span class="text-muted">ยังไม่ระบุผู้อนุมัติ</span>
+                        }
+                    </div>
+                    @if (!string.IsNullOrEmpty(Model.ApproveInfo_HRDAdmin))
+                    {
+                        <div class="approval-date">✅ @Model.ApproveInfo_HRDAdmin</div>
+                    }
+                </div>
+                @if (!string.IsNullOrEmpty(Model.Comment_HRDAdmin))
+                {
+                    <div class="comment-box">
+                        <div class="comment-label">💬 ความคิดเห็น:</div>
+                        <div>@Model.Comment_HRDAdmin</div>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Level 4: HRD Confirmation -->
+        @{
+            var hrdConfirmStatus = Model.Status_HRDConfirmation ?? "Pending";
+            var hrdConfirmClass = GetStatusClass(hrdConfirmStatus, Model.Status, "WAITING_FOR_HRD_CONFIRMATION");
+        }
+        <div class="timeline-item">
+            <div class="timeline-marker @hrdConfirmClass">4</div>
+            <div class="timeline-content @hrdConfirmClass">
+                <div class="timeline-header">
+                    <div class="timeline-title">🔹 HRD Confirmation</div>
+                    <span class="status-badge @hrdConfirmClass">@GetStatusDisplay(hrdConfirmStatus, Model.Status, "WAITING_FOR_HRD_CONFIRMATION")</span>
+                </div>
+                <div class="approver-info">
+                    <div class="approver-email">
+                        @if (!string.IsNullOrEmpty(Model.HRDConfirmationId))
+                        {
+                            <span>📧 @Model.HRDConfirmationId</span>
+                        }
+                        else
+                        {
+                            <span class="text-muted">ยังไม่ระบุผู้อนุมัติ</span>
+                        }
+                    </div>
+                    @if (!string.IsNullOrEmpty(Model.ApproveInfo_HRDConfirmation))
+                    {
+                        <div class="approval-date">✅ @Model.ApproveInfo_HRDConfirmation</div>
+                    }
+                </div>
+                @if (!string.IsNullOrEmpty(Model.Comment_HRDConfirmation))
+                {
+                    <div class="comment-box">
+                        <div class="comment-label">💬 ความคิดเห็น:</div>
+                        <div>@Model.Comment_HRDConfirmation</div>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Level 5: Managing Director -->
+        @{
+            var mdStatus = Model.Status_ManagingDirector ?? "Pending";
+            var mdClass = GetStatusClass(mdStatus, Model.Status, "WAITING_FOR_MANAGING_DIRECTOR");
+        }
+        <div class="timeline-item">
+            <div class="timeline-marker @mdClass">5</div>
+            <div class="timeline-content @mdClass">
+                <div class="timeline-header">
+                    <div class="timeline-title">🔹 Managing Director</div>
+                    <span class="status-badge @mdClass">@GetStatusDisplay(mdStatus, Model.Status, "WAITING_FOR_MANAGING_DIRECTOR")</span>
+                </div>
+                <div class="approver-info">
+                    <div class="approver-email">
+                        @if (!string.IsNullOrEmpty(Model.ManagingDirectorId))
+                        {
+                            <span>📧 @Model.ManagingDirectorId</span>
+                        }
+                        else
+                        {
+                            <span class="text-muted">ยังไม่ระบุผู้อนุมัติ</span>
+                        }
+                    </div>
+                    @if (!string.IsNullOrEmpty(Model.ApproveInfo_ManagingDirector))
+                    {
+                        <div class="approval-date">✅ @Model.ApproveInfo_ManagingDirector</div>
+                    }
+                </div>
+                @if (!string.IsNullOrEmpty(Model.Comment_ManagingDirector))
+                {
+                    <div class="comment-box">
+                        <div class="comment-label">💬 ความคิดเห็น:</div>
+                        <div>@Model.Comment_ManagingDirector</div>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Final Status -->
+        @if (Model.Status == "APPROVED")
+        {
+            <div class="timeline-item">
+                <div class="timeline-marker approved">✓</div>
+                <div class="timeline-content approved">
+                    <div class="timeline-header">
+                        <div class="timeline-title">🎉 อนุมัติเรียบร้อยแล้ว</div>
+                        <span class="status-badge approved">APPROVED</span>
+                    </div>
+                    <p>คำขออบรมได้รับการอนุมัติครบทุกขั้นตอนแล้ว</p>
+                </div>
+            </div>
+        }
+        else if (Model.Status == "Revise")
+        {
+            <div class="timeline-item">
+                <div class="timeline-marker rejected">!</div>
+                <div class="timeline-content rejected">
+                    <div class="timeline-header">
+                        <div class="timeline-title">🔄 ส่งกลับแก้ไข</div>
+                        <span class="status-badge rejected">REVISE</span>
+                    </div>
+                    <p>กรุณาแก้ไขเอกสารตามความเห็นของผู้อนุมัติ</p>
+                </div>
+            </div>
+        }
+        else if (Model.Status == "Revision Admin")
+        {
+            <div class="timeline-item">
+                <div class="timeline-marker rejected">!</div>
+                <div class="timeline-content rejected">
+                    <div class="timeline-header">
+                        <div class="timeline-title">🔄 ส่งกลับให้ HRD Admin แก้ไข</div>
+                        <span class="status-badge rejected">REVISION ADMIN</span>
+                    </div>
+                    <p>HRD Admin กรุณาแก้ไขเอกสารและส่งอนุมัติต่อ</p>
+                </div>
+            </div>
+        }
+        else if (Model.Status == "Reject")
+        {
+            <div class="timeline-item">
+                <div class="timeline-marker rejected">✗</div>
+                <div class="timeline-content rejected">
+                    <div class="timeline-header">
+                        <div class="timeline-title">❌ ไม่อนุมัติ</div>
+                        <span class="status-badge rejected">REJECTED</span>
+                    </div>
+                    <p>คำขออบรมไม่ได้รับการอนุมัติ</p>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@functions {
+    string GetStatusClass(string levelStatus, string mainStatus, string waitingStatus)
+    {
+        if (levelStatus == "Approved")
+            return "approved";
+        if (levelStatus == "Reject" || levelStatus == "Revise")
+            return "rejected";
+        if (mainStatus == waitingStatus)
+            return "waiting";
+        return "pending";
+    }
+
+    string GetStatusDisplay(string levelStatus, string mainStatus, string waitingStatus)
+    {
+        if (levelStatus == "Approved")
+            return "Approved";
+        if (levelStatus == "Reject")
+            return "Rejected";
+        if (levelStatus == "Revise")
+            return "Revise";
+        if (mainStatus == waitingStatus)
+            return "Waiting";
+        return "Pending";
+    }
+}
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+$(document).ready(function() {
+    $('#sendEmailBtn').click(function() {
+        if (!confirm('ต้องการส่ง Email เริ่มกระบวนการอนุมัติใช่หรือไม่?')) {
+            return;
+        }
+
+        $(this).prop('disabled', true).text('กำลังส่ง...');
+
+        $.ajax({
+            url: '/TrainingRequest/SendApprovalEmail',
+            type: 'POST',
+            data: { docNo: '@Model.DocNo' },
+            success: function(response) {
+                if (response.success) {
+                    alert(response.message);
+                    location.reload();
+                } else {
+                    alert(response.message);
+                    $('#sendEmailBtn').prop('disabled', false).text('📧 ส่ง Email เริ่มกระบวนการอนุมัติ');
+                }
+            },
+            error: function() {
+                alert('เกิดข้อผิดพลาดในการส่ง Email');
+                $('#sendEmailBtn').prop('disabled', false).text('📧 ส่ง Email เริ่มกระบวนการอนุมัติ');
+            }
+        });
+    });
+});
+</script>

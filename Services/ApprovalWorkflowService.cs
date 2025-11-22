@@ -1,0 +1,1042 @@
+using System;
+using System.Data.SqlClient;
+using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.Extensions.Configuration;
+using TrainingRequestApp.Models;
+
+namespace TrainingRequestApp.Services
+{
+    public class ApprovalWorkflowService : IApprovalWorkflowService
+    {
+        private readonly IConfiguration _configuration;
+        private readonly IEmailService _emailService;
+        private readonly string _connectionString;
+        private readonly string _baseUrl;
+
+        public ApprovalWorkflowService(IConfiguration configuration, IEmailService emailService)
+        {
+            _configuration = configuration;
+            _emailService = emailService;
+            _connectionString = _configuration.GetConnectionString("DefaultConnection");
+            _baseUrl = _configuration["AppSettings:BaseUrl"] ?? "https://localhost:1253";
+        }
+
+        #region Helper Methods
+
+        public string GetNextApprovalStatus(string currentStatus)
+        {
+            return currentStatus switch
+            {
+                "Pending" => "WAITING_FOR_SECTION_MANAGER",
+                "WAITING_FOR_SECTION_MANAGER" => "WAITING_FOR_DEPARTMENT_MANAGER",
+                "WAITING_FOR_DEPARTMENT_MANAGER" => "WAITING_FOR_HRD_ADMIN",
+                "WAITING_FOR_HRD_ADMIN" => "WAITING_FOR_HRD_CONFIRMATION",
+                "WAITING_FOR_HRD_CONFIRMATION" => "WAITING_FOR_MANAGING_DIRECTOR",
+                "WAITING_FOR_MANAGING_DIRECTOR" => "APPROVED",
+                "Revision Admin" => "WAITING_FOR_HRD_CONFIRMATION",
+                _ => currentStatus
+            };
+        }
+
+        public string GetNextApproverEmail(TrainingRequestEditViewModel request, string nextStatus)
+        {
+            return nextStatus switch
+            {
+                "WAITING_FOR_SECTION_MANAGER" => request.SectionManagerId,
+                "WAITING_FOR_DEPARTMENT_MANAGER" => request.DepartmentManagerId,
+                "WAITING_FOR_HRD_ADMIN" => request.HRDAdminId,
+                "WAITING_FOR_HRD_CONFIRMATION" => request.HRDConfirmationId,
+                "WAITING_FOR_MANAGING_DIRECTOR" => request.ManagingDirectorId,
+                _ => null
+            };
+        }
+
+        private string GetApproverRoleName(string role)
+        {
+            return role switch
+            {
+                "SectionManager" => "ผู้จัดการแผนก (Section Manager)",
+                "DepartmentManager" => "ผู้จัดการฝ่าย (Department Manager)",
+                "HRDAdmin" => "เจ้าหน้าที่พัฒนาบุคลากร (HRD Admin)",
+                "HRDConfirmation" => "ผู้รับรองการฝึกอบรม (HRD Confirmation)",
+                "ManagingDirector" => "กรรมการผู้จัดการ (Managing Director)",
+                _ => "ผู้อนุมัติ"
+            };
+        }
+
+        #endregion
+
+        #region Check Permission
+
+        public async Task<ApprovalPermissionResult> CheckApprovalPermission(string docNo, string userEmail)
+        {
+            var result = new ApprovalPermissionResult
+            {
+                CanApprove = false,
+                Message = "คุณไม่มีสิทธิ์อนุมัติเอกสารนี้"
+            };
+
+            try
+            {
+                var request = await GetTrainingRequest(docNo);
+                if (request == null)
+                {
+                    result.Message = "ไม่พบเอกสาร";
+                    return result;
+                }
+
+                result.Request = request;
+
+                // ตรวจสอบสิทธิ์ตาม Status และ Email
+                if (request.Status == "WAITING_FOR_SECTION_MANAGER" && userEmail == request.SectionManagerId)
+                {
+                    result.CanApprove = true;
+                    result.ApproverRole = "SectionManager";
+                    result.Message = "คุณมีสิทธิ์อนุมัติในฐานะ Section Manager";
+                }
+                else if (request.Status == "WAITING_FOR_DEPARTMENT_MANAGER" && userEmail == request.DepartmentManagerId)
+                {
+                    result.CanApprove = true;
+                    result.ApproverRole = "DepartmentManager";
+                    result.Message = "คุณมีสิทธิ์อนุมัติในฐานะ Department Manager";
+                }
+                else if (request.Status == "WAITING_FOR_HRD_ADMIN" && userEmail == request.HRDAdminId)
+                {
+                    result.CanApprove = true;
+                    result.ApproverRole = "HRDAdmin";
+                    result.Message = "คุณมีสิทธิ์อนุมัติในฐานะ HRD Admin";
+                }
+                else if (request.Status == "WAITING_FOR_HRD_CONFIRMATION" && userEmail == request.HRDConfirmationId)
+                {
+                    result.CanApprove = true;
+                    result.ApproverRole = "HRDConfirmation";
+                    result.Message = "คุณมีสิทธิ์อนุมัติในฐานะ HRD Confirmation";
+                }
+                else if (request.Status == "WAITING_FOR_MANAGING_DIRECTOR" && userEmail == request.ManagingDirectorId)
+                {
+                    result.CanApprove = true;
+                    result.ApproverRole = "ManagingDirector";
+                    result.Message = "คุณมีสิทธิ์อนุมัติในฐานะ Managing Director";
+                }
+                else if (request.Status == "Revision Admin" && userEmail == request.HRDAdminId)
+                {
+                    result.CanApprove = true;
+                    result.ApproverRole = "HRDAdmin";
+                    result.Message = "คุณมีสิทธิ์ดำเนินการในฐานะ HRD Admin (Revision Admin Mode)";
+                }
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ CheckApprovalPermission Error: {ex.Message}");
+                result.Message = "เกิดข้อผิดพลาดในการตรวจสอบสิทธิ์";
+                return result;
+            }
+        }
+
+        #endregion
+
+        #region Process Approval
+
+        public async Task<WorkflowResult> ProcessApproval(string docNo, string userEmail, string comment, string ipAddress)
+        {
+            var result = new WorkflowResult { Success = false };
+
+            try
+            {
+                // ตรวจสอบสิทธิ์
+                var permission = await CheckApprovalPermission(docNo, userEmail);
+                if (!permission.CanApprove)
+                {
+                    result.Message = permission.Message;
+                    return result;
+                }
+
+                var request = permission.Request;
+                string approverRole = permission.ApproverRole;
+                string previousStatus = request.Status;
+
+                // อัพเดท Status และ ApproveInfo ตาม Role
+                await UpdateApprovalStatus(docNo, approverRole, "APPROVED", comment, userEmail, ipAddress);
+
+                // หา Status ถัดไป
+                string nextStatus = GetNextApprovalStatus(previousStatus);
+
+                // อัพเดท Status หลัก
+                await UpdateMainStatus(docNo, nextStatus);
+
+                // บันทึก History
+                await SaveApprovalHistory(request.Id, docNo, approverRole, userEmail, "APPROVED", comment, previousStatus, nextStatus, ipAddress);
+
+                // ส่ง Email แจ้ง CreatedBy + CCEmail
+                await SendApprovalNotificationEmail(request, approverRole, comment);
+
+                // ถ้ายังไม่ APPROVED สุดท้าย ให้ส่ง Email ให้ Approver คนถัดไป
+                if (nextStatus != "APPROVED")
+                {
+                    string nextApproverEmail = GetNextApproverEmail(request, nextStatus);
+                    if (!string.IsNullOrEmpty(nextApproverEmail))
+                    {
+                        request.Status = nextStatus; // อัพเดท status ในตัวแปร
+                        await SendApprovalRequestEmail(request, nextApproverEmail, nextStatus);
+                    }
+                }
+                else
+                {
+                    // APPROVED สมบูรณ์ - ส่ง Email ให้ทุกคน
+                    await SendFinalApprovalEmail(request);
+                }
+
+                result.Success = true;
+                result.Message = "อนุมัติสำเร็จ";
+                result.NewStatus = nextStatus;
+
+                Console.WriteLine($"✅ Approval Success: {docNo} → {nextStatus}");
+                return result;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ ProcessApproval Error: {ex.Message}");
+                result.Message = $"เกิดข้อผิดพลาด: {ex.Message}";
+                return result;
+            }
+        }
+
+        #endregion
+
+        #region Process Revise
+
+        public async Task<WorkflowResult> ProcessRevise(string docNo, string userEmail, string comment, string ipAddress)
+        {
+            var result = new WorkflowResult { Success = false };
+
+            try
+            {
+                // Validate Comment (บังคับกรอก)
+                if (string.IsNullOrWhiteSpace(comment))
+                {
+                    result.Message = "กรุณากรอกหมายเหตุสำหรับการ Revise";
+                    return result;
+                }
+
+                var permission = await CheckApprovalPermission(docNo, userEmail);
+                if (!permission.CanApprove)
+                {
+                    result.Message = permission.Message;
+                    return result;
+                }
+
+                var request = permission.Request;
+                string approverRole = permission.ApproverRole;
+                string previousStatus = request.Status;
+
+                // ตรวจสอบว่าเป็น Revise กรณีที่ 1 หรือ 2
+                bool isRevisionAdminCase = (approverRole == "HRDConfirmation" || approverRole == "ManagingDirector");
+
+                string newStatus;
+                if (isRevisionAdminCase)
+                {
+                    // กรณีที่ 2: HRD Confirmation/Managing Director → Revision Admin
+                    newStatus = "Revision Admin";
+                }
+                else
+                {
+                    // กรณีที่ 1: Section/Dept/HRD Admin → Revise
+                    newStatus = "Revise";
+                }
+
+                // อัพเดท Status และ ApproveInfo
+                await UpdateApprovalStatus(docNo, approverRole, "Revise", comment, userEmail, ipAddress);
+
+                // อัพเดท Status หลัก
+                await UpdateMainStatus(docNo, newStatus);
+
+                // บันทึก History
+                await SaveApprovalHistory(request.Id, docNo, approverRole, userEmail, "Revise", comment, previousStatus, newStatus, ipAddress);
+
+                // ส่ง Email
+                if (isRevisionAdminCase)
+                {
+                    // ส่งให้ HRD Admin + CreatedBy + CCEmail
+                    await SendRevisionAdminEmail(request, approverRole, comment);
+                }
+                else
+                {
+                    // ส่งกลับ CreatedBy + CCEmail
+                    await SendReviseEmail(request, approverRole, comment);
+                }
+
+                result.Success = true;
+                result.Message = "ส่งกลับเพื่อแก้ไขสำเร็จ";
+                result.NewStatus = newStatus;
+
+                Console.WriteLine($"✅ Revise Success: {docNo} → {newStatus}");
+                return result;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ ProcessRevise Error: {ex.Message}");
+                result.Message = $"เกิดข้อผิดพลาด: {ex.Message}";
+                return result;
+            }
+        }
+
+        #endregion
+
+        #region Process Reject
+
+        public async Task<WorkflowResult> ProcessReject(string docNo, string userEmail, string comment, string ipAddress)
+        {
+            var result = new WorkflowResult { Success = false };
+
+            try
+            {
+                // Validate Comment (บังคับกรอก)
+                if (string.IsNullOrWhiteSpace(comment))
+                {
+                    result.Message = "กรุณากรอกหมายเหตุสำหรับการ Reject";
+                    return result;
+                }
+
+                var permission = await CheckApprovalPermission(docNo, userEmail);
+                if (!permission.CanApprove)
+                {
+                    result.Message = permission.Message;
+                    return result;
+                }
+
+                var request = permission.Request;
+                string approverRole = permission.ApproverRole;
+                string previousStatus = request.Status;
+                string newStatus = "REJECTED";
+
+                // อัพเดท Status และ ApproveInfo
+                await UpdateApprovalStatus(docNo, approverRole, "REJECTED", comment, userEmail, ipAddress);
+
+                // อัพเดท Status หลัก
+                await UpdateMainStatus(docNo, newStatus);
+
+                // บันทึก History
+                await SaveApprovalHistory(request.Id, docNo, approverRole, userEmail, "REJECTED", comment, previousStatus, newStatus, ipAddress);
+
+                // ส่ง Email แจ้ง CreatedBy + CCEmail
+                await SendRejectionEmail(request, approverRole, comment);
+
+                result.Success = true;
+                result.Message = "ปฏิเสธคำขอสำเร็จ";
+                result.NewStatus = newStatus;
+
+                Console.WriteLine($"✅ Reject Success: {docNo} → {newStatus}");
+                return result;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ ProcessReject Error: {ex.Message}");
+                result.Message = $"เกิดข้อผิดพลาด: {ex.Message}";
+                return result;
+            }
+        }
+
+        #endregion
+
+        #region Start Workflow
+
+        public async Task<bool> StartWorkflow(string docNo)
+        {
+            try
+            {
+                var request = await GetTrainingRequest(docNo);
+                if (request == null)
+                {
+                    Console.WriteLine($"❌ StartWorkflow: Request not found - {docNo}");
+                    return false;
+                }
+
+                // ส่ง Email #1: แจ้ง CreatedBy + CCEmail
+                await SendPendingNotificationEmail(request);
+
+                // อัพเดท Status
+                await UpdateMainStatus(docNo, "WAITING_FOR_SECTION_MANAGER");
+
+                // ส่ง Email #2: ขออนุมัติจาก Section Manager
+                await SendApprovalRequestEmail(request, request.SectionManagerId, "WAITING_FOR_SECTION_MANAGER");
+
+                Console.WriteLine($"✅ StartWorkflow Success: {docNo}");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ StartWorkflow Error: {ex.Message}");
+                return false;
+            }
+        }
+
+        #endregion
+
+        #region Reset Approval Status
+
+        public async Task ResetApprovalStatus(string docNo, string upToRole)
+        {
+            try
+            {
+                using (var conn = new SqlConnection(_connectionString))
+                {
+                    await conn.OpenAsync();
+
+                    string query = @"
+                        UPDATE [HRDSYSTEM].[dbo].[TrainingRequests]
+                        SET
+                            Status_SectionManager = 'Pending',
+                            ApproveInfo_SectionManager = NULL,
+                            Status_DepartmentManager = 'Pending',
+                            ApproveInfo_DepartmentManager = NULL,
+                            Status_HRDAdmin = 'Pending',
+                            ApproveInfo_HRDAdmin = NULL";
+
+                    // เพิ่ม reset HRD Confirmation และ Managing Director ถ้าเป็น Revision Admin
+                    if (upToRole == "HRDAdmin")
+                    {
+                        query += @",
+                            Status_HRDConfirmation = 'Pending',
+                            ApproveInfo_HRDConfirmation = NULL,
+                            Status_ManagingDirector = 'Pending',
+                            ApproveInfo_ManagingDirector = NULL";
+                    }
+
+                    query += " WHERE DocNo = @DocNo";
+
+                    using (var cmd = new SqlCommand(query, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@DocNo", docNo);
+                        await cmd.ExecuteNonQueryAsync();
+                    }
+                }
+
+                Console.WriteLine($"✅ Reset Approval Status: {docNo} (upTo: {upToRole})");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ ResetApprovalStatus Error: {ex.Message}");
+            }
+        }
+
+        #endregion
+
+        #region Database Methods
+
+        private async Task<TrainingRequestEditViewModel> GetTrainingRequest(string docNo)
+        {
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                await conn.OpenAsync();
+
+                string query = @"
+                    SELECT
+                        Id, DocNo, Company, TrainingType, SeminarTitle, TrainingLocation,
+                        TotalCost, StartDate, Status, CreatedBy, CCEmail,
+                        SectionManagerId, Status_SectionManager, Comment_SectionManager, ApproveInfo_SectionManager,
+                        DepartmentManagerId, Status_DepartmentManager, Comment_DepartmentManager, ApproveInfo_DepartmentManager,
+                        HRDAdminId, Status_HRDAdmin, Comment_HRDAdmin, ApproveInfo_HRDAdmin,
+                        HRDConfirmationId, Status_HRDConfirmation, Comment_HRDConfirmation, ApproveInfo_HRDConfirmation,
+                        ManagingDirectorId, Status_ManagingDirector, Comment_ManagingDirector, ApproveInfo_ManagingDirector,
+                        TrainingObjective, ExpectedOutcome
+                    FROM [HRDSYSTEM].[dbo].[TrainingRequests]
+                    WHERE DocNo = @DocNo AND IsActive = 1";
+
+                using (var cmd = new SqlCommand(query, conn))
+                {
+                    cmd.Parameters.AddWithValue("@DocNo", docNo);
+
+                    using (var reader = await cmd.ExecuteReaderAsync())
+                    {
+                        if (await reader.ReadAsync())
+                        {
+                            return new TrainingRequestEditViewModel
+                            {
+                                Id = reader.GetInt32(reader.GetOrdinal("Id")),
+                                DocNo = reader["DocNo"].ToString(),
+                                Company = reader["Company"].ToString(),
+                                TrainingType = reader["TrainingType"].ToString(),
+                                SeminarTitle = reader["SeminarTitle"].ToString(),
+                                TrainingLocation = reader["TrainingLocation"]?.ToString(),
+                                TotalCost = reader["TotalCost"] != DBNull.Value ? (decimal?)reader.GetDecimal(reader.GetOrdinal("TotalCost")) : null,
+                                StartDate = reader["StartDate"] != DBNull.Value ? (DateTime?)reader.GetDateTime(reader.GetOrdinal("StartDate")) : null,
+                                Status = reader["Status"].ToString(),
+                                CreatedBy = reader["CreatedBy"].ToString(),
+                                CCEmail = reader["CCEmail"]?.ToString(),
+                                SectionManagerId = reader["SectionManagerId"]?.ToString(),
+                                Status_SectionManager = reader["Status_SectionManager"]?.ToString(),
+                                Comment_SectionManager = reader["Comment_SectionManager"]?.ToString(),
+                                ApproveInfo_SectionManager = reader["ApproveInfo_SectionManager"]?.ToString(),
+                                DepartmentManagerId = reader["DepartmentManagerId"]?.ToString(),
+                                Status_DepartmentManager = reader["Status_DepartmentManager"]?.ToString(),
+                                Comment_DepartmentManager = reader["Comment_DepartmentManager"]?.ToString(),
+                                ApproveInfo_DepartmentManager = reader["ApproveInfo_DepartmentManager"]?.ToString(),
+                                HRDAdminId = reader["HRDAdminId"]?.ToString(),
+                                Status_HRDAdmin = reader["Status_HRDAdmin"]?.ToString(),
+                                Comment_HRDAdmin = reader["Comment_HRDAdmin"]?.ToString(),
+                                ApproveInfo_HRDAdmin = reader["ApproveInfo_HRDAdmin"]?.ToString(),
+                                HRDConfirmationId = reader["HRDConfirmationId"]?.ToString(),
+                                Status_HRDConfirmation = reader["Status_HRDConfirmation"]?.ToString(),
+                                Comment_HRDConfirmation = reader["Comment_HRDConfirmation"]?.ToString(),
+                                ApproveInfo_HRDConfirmation = reader["ApproveInfo_HRDConfirmation"]?.ToString(),
+                                ManagingDirectorId = reader["ManagingDirectorId"]?.ToString(),
+                                Status_ManagingDirector = reader["Status_ManagingDirector"]?.ToString(),
+                                Comment_ManagingDirector = reader["Comment_ManagingDirector"]?.ToString(),
+                                ApproveInfo_ManagingDirector = reader["ApproveInfo_ManagingDirector"]?.ToString(),
+                                TrainingObjective = reader["TrainingObjective"]?.ToString(),
+                                ExpectedOutcome = reader["ExpectedOutcome"]?.ToString()
+                            };
+                        }
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        private async Task UpdateApprovalStatus(string docNo, string approverRole, string status, string comment, string approverEmail, string ipAddress)
+        {
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                await conn.OpenAsync();
+
+                string approveInfo = $"{approverEmail} / {DateTime.Now:dd/MM/yyyy} / {DateTime.Now:HH:mm}";
+
+                string query = approverRole switch
+                {
+                    "SectionManager" => @"
+                        UPDATE [HRDSYSTEM].[dbo].[TrainingRequests]
+                        SET Status_SectionManager = @Status,
+                            Comment_SectionManager = @Comment,
+                            ApproveInfo_SectionManager = @ApproveInfo
+                        WHERE DocNo = @DocNo",
+                    "DepartmentManager" => @"
+                        UPDATE [HRDSYSTEM].[dbo].[TrainingRequests]
+                        SET Status_DepartmentManager = @Status,
+                            Comment_DepartmentManager = @Comment,
+                            ApproveInfo_DepartmentManager = @ApproveInfo
+                        WHERE DocNo = @DocNo",
+                    "HRDAdmin" => @"
+                        UPDATE [HRDSYSTEM].[dbo].[TrainingRequests]
+                        SET Status_HRDAdmin = @Status,
+                            Comment_HRDAdmin = @Comment,
+                            ApproveInfo_HRDAdmin = @ApproveInfo
+                        WHERE DocNo = @DocNo",
+                    "HRDConfirmation" => @"
+                        UPDATE [HRDSYSTEM].[dbo].[TrainingRequests]
+                        SET Status_HRDConfirmation = @Status,
+                            Comment_HRDConfirmation = @Comment,
+                            ApproveInfo_HRDConfirmation = @ApproveInfo
+                        WHERE DocNo = @DocNo",
+                    "ManagingDirector" => @"
+                        UPDATE [HRDSYSTEM].[dbo].[TrainingRequests]
+                        SET Status_ManagingDirector = @Status,
+                            Comment_ManagingDirector = @Comment,
+                            ApproveInfo_ManagingDirector = @ApproveInfo
+                        WHERE DocNo = @DocNo",
+                    _ => null
+                };
+
+                if (query != null)
+                {
+                    using (var cmd = new SqlCommand(query, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@Status", status);
+                        cmd.Parameters.AddWithValue("@Comment", comment ?? (object)DBNull.Value);
+                        cmd.Parameters.AddWithValue("@ApproveInfo", approveInfo);
+                        cmd.Parameters.AddWithValue("@DocNo", docNo);
+
+                        await cmd.ExecuteNonQueryAsync();
+                    }
+                }
+            }
+        }
+
+        private async Task UpdateMainStatus(string docNo, string newStatus)
+        {
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                await conn.OpenAsync();
+
+                string query = @"
+                    UPDATE [HRDSYSTEM].[dbo].[TrainingRequests]
+                    SET Status = @Status, UpdatedDate = GETDATE()
+                    WHERE DocNo = @DocNo";
+
+                using (var cmd = new SqlCommand(query, conn))
+                {
+                    cmd.Parameters.AddWithValue("@Status", newStatus);
+                    cmd.Parameters.AddWithValue("@DocNo", docNo);
+
+                    await cmd.ExecuteNonQueryAsync();
+                }
+            }
+        }
+
+        private async Task SaveApprovalHistory(int trainingRequestId, string docNo, string approverRole, string approverEmail, string action, string comment, string previousStatus, string newStatus, string ipAddress)
+        {
+            try
+            {
+                using (var conn = new SqlConnection(_connectionString))
+                {
+                    await conn.OpenAsync();
+
+                    string query = @"
+                        INSERT INTO [HRDSYSTEM].[dbo].[ApprovalHistory]
+                        (TrainingRequestId, DocNo, ApproverRole, ApproverEmail, Action, Comment, ActionDate, PreviousStatus, NewStatus, IpAddress)
+                        VALUES
+                        (@TrainingRequestId, @DocNo, @ApproverRole, @ApproverEmail, @Action, @Comment, GETDATE(), @PreviousStatus, @NewStatus, @IpAddress)";
+
+                    using (var cmd = new SqlCommand(query, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@TrainingRequestId", trainingRequestId);
+                        cmd.Parameters.AddWithValue("@DocNo", docNo);
+                        cmd.Parameters.AddWithValue("@ApproverRole", approverRole);
+                        cmd.Parameters.AddWithValue("@ApproverEmail", approverEmail);
+                        cmd.Parameters.AddWithValue("@Action", action);
+                        cmd.Parameters.AddWithValue("@Comment", comment ?? (object)DBNull.Value);
+                        cmd.Parameters.AddWithValue("@PreviousStatus", previousStatus);
+                        cmd.Parameters.AddWithValue("@NewStatus", newStatus);
+                        cmd.Parameters.AddWithValue("@IpAddress", ipAddress ?? (object)DBNull.Value);
+
+                        await cmd.ExecuteNonQueryAsync();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"⚠️ SaveApprovalHistory Error: {ex.Message}");
+            }
+        }
+
+        #endregion
+
+        #region Email Methods
+
+        private async Task SendApprovalRequestEmail(TrainingRequestEditViewModel request, string approverEmail, string statusWaitingFor)
+        {
+            string approverRoleName = statusWaitingFor switch
+            {
+                "WAITING_FOR_SECTION_MANAGER" => "ผู้จัดการแผนก (Section Manager)",
+                "WAITING_FOR_DEPARTMENT_MANAGER" => "ผู้จัดการฝ่าย (Department Manager)",
+                "WAITING_FOR_HRD_ADMIN" => "เจ้าหน้าที่พัฒนาบุคลากร (HRD Admin)",
+                "WAITING_FOR_HRD_CONFIRMATION" => "ผู้รับรองการฝึกอบรม (HRD Confirmation)",
+                "WAITING_FOR_MANAGING_DIRECTOR" => "กรรมการผู้จัดการ (Managing Director)",
+                _ => "ผู้อนุมัติ"
+            };
+
+            string subject = $"ขออนุมัติ {request.TrainingType} {request.DocNo}";
+            string approvalLink = $"{_baseUrl}/TrainingRequest/Edit?docNo={request.DocNo}";
+
+            string body = $@"
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }}
+        .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+        .header {{ background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }}
+        .content {{ background: #ffffff; padding: 30px; border-left: 1px solid #e0e0e0; border-right: 1px solid #e0e0e0; }}
+        .btn {{ display: inline-block; padding: 12px 30px; background: #667eea; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }}
+        .info-box {{ background: #f8f9fa; padding: 15px; border-left: 4px solid #667eea; margin: 15px 0; }}
+        .footer {{ background: #f8f9fa; padding: 20px; text-align: center; border-radius: 0 0 10px 10px; color: #666; }}
+        .status-badge {{ display: inline-block; padding: 5px 10px; border-radius: 3px; font-size: 12px; }}
+        .status-pending {{ background: #ffc107; color: #000; }}
+        .status-approved {{ background: #28a745; color: #fff; }}
+    </style>
+</head>
+<body>
+    <div class='container'>
+        <div class='header'>
+            <h2>📧 แจ้งขออนุมัติคำขอฝึกอบรม</h2>
+        </div>
+        <div class='content'>
+            <p>เรียน <strong>{approverRoleName}</strong></p>
+
+            <p>มีคำขอฝึกอบรมรอการอนุมัติจากท่าน</p>
+
+            <div class='info-box'>
+                <strong>📄 เลขที่เอกสาร:</strong> {request.DocNo}<br>
+                <strong>🏢 บริษัท:</strong> {request.Company}<br>
+                <strong>📚 ประเภท:</strong> {request.TrainingType}<br>
+                <strong>📖 หัวข้อ:</strong> {request.SeminarTitle}<br>
+                <strong>📍 สถานที่:</strong> {request.TrainingLocation}<br>
+                <strong>💰 ค่าใช้จ่าย:</strong> {request.TotalCost:N2} บาท<br>
+                <strong>🎯 วัตถุประสงค์:</strong> {request.TrainingObjective}<br>
+                <strong>✨ ผลที่คาดว่าจะได้รับ:</strong> {request.ExpectedOutcome}
+            </div>
+
+            <div style='text-align: center;'>
+                <a href='{approvalLink}' class='btn'>คลิกที่นี่เพื่อดูรายละเอียดและอนุมัติ</a>
+            </div>
+
+            <hr style='margin: 30px 0;'>
+
+            <h3>📊 สถานะการอนุมัติ</h3>
+            {GenerateApprovalStatusHtml(request)}
+        </div>
+        <div class='footer'>
+            <p>ระบบ Training Request Management</p>
+            <p><small>Email นี้ถูกส่งอัตโนมัติ กรุณาอย่าตอบกลับ</small></p>
+        </div>
+    </div>
+</body>
+</html>";
+
+            await _emailService.SendEmailAsync(approverEmail, subject, body, request.Id, "APPROVAL_REQUEST");
+        }
+
+        private async Task SendApprovalNotificationEmail(TrainingRequestEditViewModel request, string approverRole, string comment)
+        {
+            string approverRoleName = GetApproverRoleName(approverRole);
+            string subject = $"อนุมัติ {request.TrainingType} {request.DocNo}";
+            string docLink = $"{_baseUrl}/TrainingRequest/Edit?docNo={request.DocNo}";
+
+            string body = $@"
+<!DOCTYPE html>
+<html>
+<body style='font-family: Arial, sans-serif;'>
+    <div style='max-width: 600px; margin: 0 auto; padding: 20px;'>
+        <div style='background: #28a745; color: white; padding: 20px; text-align: center; border-radius: 10px 10px 0 0;'>
+            <h2>✅ การอนุมัติสำเร็จ</h2>
+        </div>
+        <div style='background: #ffffff; padding: 20px; border: 1px solid #e0e0e0;'>
+            <p>เรียน ผู้เกี่ยวข้อง</p>
+
+            <p>คำขอฝึกอบรม <strong>{request.DocNo}</strong> ได้รับการอนุมัติจาก <strong>{approverRoleName}</strong> แล้ว</p>
+
+            <div style='background: #d4edda; padding: 15px; border-left: 4px solid #28a745; margin: 15px 0;'>
+                <strong>📄 เอกสาร:</strong> {request.DocNo}<br>
+                <strong>📖 หัวข้อ:</strong> {request.SeminarTitle}<br>
+                <strong>✅ ผู้อนุมัติ:</strong> {approverRoleName}<br>
+                <strong>💬 หมายเหตุ:</strong> {(string.IsNullOrEmpty(comment) ? "-" : comment)}
+            </div>
+
+            <div style='text-align: center; margin: 20px 0;'>
+                <a href='{docLink}' style='display: inline-block; padding: 12px 30px; background: #28a745; color: white; text-decoration: none; border-radius: 5px;'>ดูรายละเอียดเอกสาร</a>
+            </div>
+
+            <h3>📊 สถานะการอนุมัติ</h3>
+            {GenerateApprovalStatusHtml(request)}
+        </div>
+    </div>
+</body>
+</html>";
+
+            // ส่งให้ CreatedBy
+            await _emailService.SendEmailAsync(request.CreatedBy, subject, body, request.Id, "APPROVAL_NOTIFICATION");
+
+            // ส่งให้ CCEmail
+            if (!string.IsNullOrEmpty(request.CCEmail))
+            {
+                var ccEmails = request.CCEmail.Split(',').Select(e => e.Trim()).ToArray();
+                await _emailService.SendEmailToMultipleAsync(ccEmails, subject, body, request.Id, "APPROVAL_NOTIFICATION");
+            }
+        }
+
+        private async Task SendPendingNotificationEmail(TrainingRequestEditViewModel request)
+        {
+            string subject = $"แจ้งการเปิดคำขอฝึกอบรม {request.TrainingType} {request.DocNo}";
+            string docLink = $"{_baseUrl}/TrainingRequest/Edit?docNo={request.DocNo}";
+
+            string body = $@"
+<!DOCTYPE html>
+<html>
+<body style='font-family: Arial, sans-serif;'>
+    <div style='max-width: 600px; margin: 0 auto; padding: 20px;'>
+        <div style='background: #007bff; color: white; padding: 20px; text-align: center; border-radius: 10px 10px 0 0;'>
+            <h2>📌 แจ้งการเปิดคำขอฝึกอบรม</h2>
+        </div>
+        <div style='background: #ffffff; padding: 20px; border: 1px solid #e0e0e0;'>
+            <p>เรียน {request.CreatedBy}</p>
+
+            <p>คำขอฝึกอบรมของท่านได้ถูกเปิดเรียบร้อยแล้ว</p>
+
+            <div style='background: #e7f3ff; padding: 15px; border-left: 4px solid #007bff; margin: 15px 0;'>
+                <strong>📄 เลขที่เอกสาร:</strong> {request.DocNo}<br>
+                <strong>📖 หัวข้อ:</strong> {request.SeminarTitle}<br>
+                <strong>📍 สถานที่:</strong> {request.TrainingLocation}<br>
+                <strong>💰 ค่าใช้จ่าย:</strong> {request.TotalCost:N2} บาท
+            </div>
+
+            <p>ระบบกำลังส่งคำขอไปยังผู้อนุมัติ</p>
+
+            <div style='text-align: center; margin: 20px 0;'>
+                <a href='{docLink}' style='display: inline-block; padding: 12px 30px; background: #007bff; color: white; text-decoration: none; border-radius: 5px;'>ดูรายละเอียดเอกสาร</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>";
+
+            // ส่งให้ CreatedBy
+            await _emailService.SendEmailAsync(request.CreatedBy, subject, body, request.Id, "PENDING_NOTIFICATION");
+
+            // ส่งให้ CCEmail
+            if (!string.IsNullOrEmpty(request.CCEmail))
+            {
+                var ccEmails = request.CCEmail.Split(',').Select(e => e.Trim()).ToArray();
+                await _emailService.SendEmailToMultipleAsync(ccEmails, subject, body, request.Id, "PENDING_NOTIFICATION");
+            }
+        }
+
+        private async Task SendReviseEmail(TrainingRequestEditViewModel request, string approverRole, string comment)
+        {
+            string approverRoleName = GetApproverRoleName(approverRole);
+            string subject = $"🔄 ต้องแก้ไข - คำขอ {request.DocNo}";
+            string editLink = $"{_baseUrl}/TrainingRequest/Edit?docNo={request.DocNo}";
+
+            string body = $@"
+<!DOCTYPE html>
+<html>
+<body style='font-family: Arial, sans-serif;'>
+    <div style='max-width: 600px; margin: 0 auto; padding: 20px;'>
+        <div style='background: #ffc107; color: #000; padding: 20px; text-align: center; border-radius: 10px 10px 0 0;'>
+            <h2>🔄 คำขอต้องแก้ไข</h2>
+        </div>
+        <div style='background: #ffffff; padding: 20px; border: 1px solid #e0e0e0;'>
+            <p>เรียน {request.CreatedBy}</p>
+
+            <p><strong>{approverRoleName}</strong> ขอให้แก้ไขคำขอฝึกอบรม</p>
+
+            <div style='background: #fff3cd; padding: 15px; border-left: 4px solid #ffc107; margin: 15px 0;'>
+                <strong>📄 เอกสาร:</strong> {request.DocNo}<br>
+                <strong>📖 หัวข้อ:</strong> {request.SeminarTitle}<br>
+                <strong>💬 เหตุผล:</strong><br>
+                <div style='background: white; padding: 10px; margin-top: 10px; border-radius: 5px;'>
+                    {comment}
+                </div>
+            </div>
+
+            <p>กรุณาแก้ไขและส่งใหม่</p>
+
+            <div style='text-align: center; margin: 20px 0;'>
+                <a href='{editLink}' style='display: inline-block; padding: 12px 30px; background: #ffc107; color: #000; text-decoration: none; border-radius: 5px;'>คลิกที่นี่เพื่อแก้ไข</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>";
+
+            // ส่งให้ CreatedBy
+            await _emailService.SendEmailAsync(request.CreatedBy, subject, body, request.Id, "REVISE_NOTIFICATION");
+
+            // ส่งให้ CCEmail
+            if (!string.IsNullOrEmpty(request.CCEmail))
+            {
+                var ccEmails = request.CCEmail.Split(',').Select(e => e.Trim()).ToArray();
+                await _emailService.SendEmailToMultipleAsync(ccEmails, subject, body, request.Id, "REVISE_NOTIFICATION");
+            }
+        }
+
+        private async Task SendRevisionAdminEmail(TrainingRequestEditViewModel request, string approverRole, string comment)
+        {
+            string approverRoleName = GetApproverRoleName(approverRole);
+            string subject = $"🔄 HRD Admin ต้องดำเนินการ - {request.DocNo}";
+            string editLink = $"{_baseUrl}/TrainingRequest/Edit?docNo={request.DocNo}";
+
+            string body = $@"
+<!DOCTYPE html>
+<html>
+<body style='font-family: Arial, sans-serif;'>
+    <div style='max-width: 600px; margin: 0 auto; padding: 20px;'>
+        <div style='background: #ff9800; color: white; padding: 20px; text-align: center; border-radius: 10px 10px 0 0;'>
+            <h2>🔄 Revision Admin Required</h2>
+        </div>
+        <div style='background: #ffffff; padding: 20px; border: 1px solid #e0e0e0;'>
+            <p>เรียน HRD Admin และผู้เกี่ยวข้อง</p>
+
+            <p><strong>{approverRoleName}</strong> ขอให้แก้ไขเอกสาร</p>
+
+            <div style='background: #fff3cd; padding: 15px; border-left: 4px solid #ff9800; margin: 15px 0;'>
+                <strong>📄 เอกสาร:</strong> {request.DocNo}<br>
+                <strong>📖 หัวข้อ:</strong> {request.SeminarTitle}<br>
+                <strong>💬 เหตุผล:</strong><br>
+                <div style='background: white; padding: 10px; margin-top: 10px; border-radius: 5px;'>
+                    {comment}
+                </div>
+            </div>
+
+            <p><strong>สำหรับ HRD Admin:</strong> กรุณาดำเนินการแก้ไขหรือส่งกลับผู้ขอ</p>
+
+            <div style='text-align: center; margin: 20px 0;'>
+                <a href='{editLink}' style='display: inline-block; padding: 12px 30px; background: #ff9800; color: white; text-decoration: none; border-radius: 5px;'>คลิกที่นี่เพื่อดำเนินการ</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>";
+
+            // ส่งให้ HRD Admin
+            if (!string.IsNullOrEmpty(request.HRDAdminId))
+            {
+                await _emailService.SendEmailAsync(request.HRDAdminId, subject, body, request.Id, "REVISION_ADMIN_NOTIFICATION");
+            }
+
+            // ส่งให้ CreatedBy
+            await _emailService.SendEmailAsync(request.CreatedBy, subject, body, request.Id, "REVISION_ADMIN_NOTIFICATION");
+
+            // ส่งให้ CCEmail
+            if (!string.IsNullOrEmpty(request.CCEmail))
+            {
+                var ccEmails = request.CCEmail.Split(',').Select(e => e.Trim()).ToArray();
+                await _emailService.SendEmailToMultipleAsync(ccEmails, subject, body, request.Id, "REVISION_ADMIN_NOTIFICATION");
+            }
+        }
+
+        private async Task SendRejectionEmail(TrainingRequestEditViewModel request, string approverRole, string comment)
+        {
+            string approverRoleName = GetApproverRoleName(approverRole);
+            string subject = $"❌ ปฏิเสธคำขอ - {request.DocNo}";
+            string docLink = $"{_baseUrl}/TrainingRequest/Edit?docNo={request.DocNo}";
+
+            string body = $@"
+<!DOCTYPE html>
+<html>
+<body style='font-family: Arial, sans-serif;'>
+    <div style='max-width: 600px; margin: 0 auto; padding: 20px;'>
+        <div style='background: #dc3545; color: white; padding: 20px; text-align: center; border-radius: 10px 10px 0 0;'>
+            <h2>❌ คำขอถูกปฏิเสธ</h2>
+        </div>
+        <div style='background: #ffffff; padding: 20px; border: 1px solid #e0e0e0;'>
+            <p>เรียน {request.CreatedBy}</p>
+
+            <p>คำขอฝึกอบรมถูกปฏิเสธโดย <strong>{approverRoleName}</strong></p>
+
+            <div style='background: #f8d7da; padding: 15px; border-left: 4px solid #dc3545; margin: 15px 0;'>
+                <strong>📄 เอกสาร:</strong> {request.DocNo}<br>
+                <strong>📖 หัวข้อ:</strong> {request.SeminarTitle}<br>
+                <strong>❌ ผู้ปฏิเสธ:</strong> {approverRoleName}<br>
+                <strong>💬 เหตุผล:</strong><br>
+                <div style='background: white; padding: 10px; margin-top: 10px; border-radius: 5px;'>
+                    {comment}
+                </div>
+            </div>
+
+            <p>กรุณาติดต่อผู้อนุมัติเพื่อสอบถามรายละเอียดเพิ่มเติม</p>
+
+            <div style='text-align: center; margin: 20px 0;'>
+                <a href='{docLink}' style='display: inline-block; padding: 12px 30px; background: #dc3545; color: white; text-decoration: none; border-radius: 5px;'>ดูรายละเอียดเอกสาร</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>";
+
+            // ส่งให้ CreatedBy
+            await _emailService.SendEmailAsync(request.CreatedBy, subject, body, request.Id, "REJECT_NOTIFICATION");
+
+            // ส่งให้ CCEmail
+            if (!string.IsNullOrEmpty(request.CCEmail))
+            {
+                var ccEmails = request.CCEmail.Split(',').Select(e => e.Trim()).ToArray();
+                await _emailService.SendEmailToMultipleAsync(ccEmails, subject, body, request.Id, "REJECT_NOTIFICATION");
+            }
+        }
+
+        private async Task SendFinalApprovalEmail(TrainingRequestEditViewModel request)
+        {
+            string subject = $"✅ คำขอฝึกอบรม {request.DocNo} ได้รับการอนุมัติ";
+            string docLink = $"{_baseUrl}/TrainingRequest/Edit?docNo={request.DocNo}";
+
+            string body = $@"
+<!DOCTYPE html>
+<html>
+<body style='font-family: Arial, sans-serif;'>
+    <div style='max-width: 600px; margin: 0 auto; padding: 20px;'>
+        <div style='background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;'>
+            <h1>🎉 อนุมัติสมบูรณ์!</h1>
+        </div>
+        <div style='background: #ffffff; padding: 30px; border: 1px solid #e0e0e0;'>
+            <p>เรียน ผู้เกี่ยวข้องทุกท่าน</p>
+
+            <p style='font-size: 18px;'><strong>คำขอฝึกอบรมได้รับการอนุมัติสมบูรณ์แล้ว! 🎊</strong></p>
+
+            <div style='background: #d4edda; padding: 20px; border-left: 4px solid #28a745; margin: 20px 0;'>
+                <strong>📄 เลขที่เอกสาร:</strong> {request.DocNo}<br>
+                <strong>📖 หัวข้อ:</strong> {request.SeminarTitle}<br>
+                <strong>📍 สถานที่:</strong> {request.TrainingLocation}<br>
+                <strong>💰 งบประมาณ:</strong> {request.TotalCost:N2} บาท<br>
+                <strong>📅 วันที่:</strong> {request.StartDate?.ToString("dd/MM/yyyy")}
+            </div>
+
+            <p>สามารถดำเนินการฝึกอบรมตามแผนได้</p>
+
+            <div style='text-align: center; margin: 30px 0;'>
+                <a href='{docLink}' style='display: inline-block; padding: 15px 40px; background: #28a745; color: white; text-decoration: none; border-radius: 5px; font-size: 16px;'>ดูรายละเอียดเอกสาร</a>
+            </div>
+
+            <h3>📊 สถานะการอนุมัติทั้งหมด</h3>
+            {GenerateApprovalStatusHtml(request)}
+        </div>
+    </div>
+</body>
+</html>";
+
+            // ส่งให้ทุกคน
+            var allEmails = new System.Collections.Generic.List<string> { request.CreatedBy };
+
+            if (!string.IsNullOrEmpty(request.CCEmail))
+            {
+                allEmails.AddRange(request.CCEmail.Split(',').Select(e => e.Trim()));
+            }
+
+            if (!string.IsNullOrEmpty(request.SectionManagerId)) allEmails.Add(request.SectionManagerId);
+            if (!string.IsNullOrEmpty(request.DepartmentManagerId)) allEmails.Add(request.DepartmentManagerId);
+            if (!string.IsNullOrEmpty(request.HRDAdminId)) allEmails.Add(request.HRDAdminId);
+            if (!string.IsNullOrEmpty(request.HRDConfirmationId)) allEmails.Add(request.HRDConfirmationId);
+            if (!string.IsNullOrEmpty(request.ManagingDirectorId)) allEmails.Add(request.ManagingDirectorId);
+
+            var uniqueEmails = allEmails.Distinct().ToArray();
+
+            await _emailService.SendEmailToMultipleAsync(uniqueEmails, subject, body, request.Id, "FINAL_APPROVAL");
+        }
+
+        private string GenerateApprovalStatusHtml(TrainingRequestEditViewModel request)
+        {
+            return $@"
+<table style='width: 100%; border-collapse: collapse;'>
+    <tr style='border-bottom: 1px solid #e0e0e0;'>
+        <td style='padding: 10px; font-weight: bold;'>ผู้จัดการแผนก (Section Manager)</td>
+        <td style='padding: 10px;'>{request.SectionManagerId ?? "-"}</td>
+        <td style='padding: 10px;'><span class='status-badge {GetStatusClass(request.Status_SectionManager)}'>{request.Status_SectionManager ?? "รออนุมัติ"}</span></td>
+    </tr>
+    <tr style='border-bottom: 1px solid #e0e0e0;'>
+        <td style='padding: 10px; font-weight: bold;'>ผู้จัดการฝ่าย (Department Manager)</td>
+        <td style='padding: 10px;'>{request.DepartmentManagerId ?? "-"}</td>
+        <td style='padding: 10px;'><span class='status-badge {GetStatusClass(request.Status_DepartmentManager)}'>{request.Status_DepartmentManager ?? "รออนุมัติ"}</span></td>
+    </tr>
+    <tr style='border-bottom: 1px solid #e0e0e0;'>
+        <td style='padding: 10px; font-weight: bold;'>เจ้าหน้าที่พัฒนาบุคลากร (HRD Admin)</td>
+        <td style='padding: 10px;'>{request.HRDAdminId ?? "-"}</td>
+        <td style='padding: 10px;'><span class='status-badge {GetStatusClass(request.Status_HRDAdmin)}'>{request.Status_HRDAdmin ?? "รออนุมัติ"}</span></td>
+    </tr>
+    <tr style='border-bottom: 1px solid #e0e0e0;'>
+        <td style='padding: 10px; font-weight: bold;'>ผู้รับรองการฝึกอบรม (HRD Confirmation)</td>
+        <td style='padding: 10px;'>{request.HRDConfirmationId ?? "-"}</td>
+        <td style='padding: 10px;'><span class='status-badge {GetStatusClass(request.Status_HRDConfirmation)}'>{request.Status_HRDConfirmation ?? "รออนุมัติ"}</span></td>
+    </tr>
+    <tr>
+        <td style='padding: 10px; font-weight: bold;'>กรรมการผู้จัดการ (Managing Director)</td>
+        <td style='padding: 10px;'>{request.ManagingDirectorId ?? "-"}</td>
+        <td style='padding: 10px;'><span class='status-badge {GetStatusClass(request.Status_ManagingDirector)}'>{request.Status_ManagingDirector ?? "รออนุมัติ"}</span></td>
+    </tr>
+</table>";
+        }
+
+        private string GetStatusClass(string status)
+        {
+            return status switch
+            {
+                "APPROVED" => "status-approved",
+                "Pending" => "status-pending",
+                _ => "status-pending"
+            };
+        }
+
+        #endregion
+    }
+}

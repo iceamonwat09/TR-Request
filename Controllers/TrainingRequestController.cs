@@ -19,15 +19,21 @@ namespace TrainingRequestApp.Controllers
         private readonly ITrainingRequestService _trainingRequestService;
         private readonly IEmployeeService _employeeService;
         private readonly IConfiguration _configuration;
+        private readonly IApprovalWorkflowService _approvalWorkflowService;
+        private readonly IEmailService _emailService;
 
         public TrainingRequestController(
             ITrainingRequestService trainingRequestService,
             IEmployeeService employeeService,
-            IConfiguration configuration)
+            IConfiguration configuration,
+            IApprovalWorkflowService approvalWorkflowService,
+            IEmailService emailService)
         {
             _trainingRequestService = trainingRequestService;
             _employeeService = employeeService;
             _configuration = configuration;
+            _approvalWorkflowService = approvalWorkflowService;
+            _emailService = emailService;
         }
 
         // ====================================================================
@@ -228,6 +234,42 @@ namespace TrainingRequestApp.Controllers
                                 reader.Close();
                                 model.Employees = await GetEmployeesForRequest(conn, model.Id);
 
+                                // ✅ Multi-Mode Logic
+                                string userEmail = HttpContext.Session.GetString("UserEmail") ?? "";
+                                string userRole = HttpContext.Session.GetString("UserRole") ?? "User";
+                                bool isAdmin = userRole.Contains("Admin");
+                                bool isHRDAdmin = (userEmail == model.HRDAdminId);
+                                bool isHRDConfirmation = (userEmail == model.HRDConfirmationId);
+
+                                // ตรวจสอบว่า User นี้มีสิทธิ์ Approve หรือไม่
+                                var permissionResult = await _approvalWorkflowService.CheckApprovalPermission(docNo, userEmail);
+
+                                // กำหนด Mode
+                                string pageMode = "View"; // Default
+
+                                if (model.Status == "Revise" && userEmail == model.CreatedBy)
+                                {
+                                    pageMode = "Edit"; // CreatedBy แก้ไขหลัง Revise
+                                }
+                                else if (model.Status == "Revision Admin" && (isHRDAdmin || isHRDConfirmation))
+                                {
+                                    pageMode = "Admin"; // HRD Admin/Confirmation แก้ไข Revision Admin
+                                }
+                                else if (permissionResult.CanApprove)
+                                {
+                                    pageMode = "Approve"; // ผู้อนุมัติอนุมัติได้
+                                }
+                                else if (isAdmin || isHRDAdmin || isHRDConfirmation)
+                                {
+                                    pageMode = "Admin"; // Admin เห็นทุกอย่าง
+                                }
+
+                                ViewBag.PageMode = pageMode;
+                                ViewBag.CanApprove = permissionResult.CanApprove;
+                                ViewBag.ApproverRole = permissionResult.ApproverRole;
+                                ViewBag.CurrentUserEmail = userEmail;
+                                ViewBag.IsAdmin = isAdmin;
+
                                 return View(model);
                             }
                             else
@@ -322,6 +364,223 @@ namespace TrainingRequestApp.Controllers
                 Console.WriteLine($"❌ Error: {ex.Message}");
                 Console.WriteLine($"StackTrace: {ex.StackTrace}");
                 return Json(new { success = false, message = "❌ เกิดข้อผิดพลาด: " + ex.Message });
+            }
+        }
+
+        // ====================================================================
+        // Approval Workflow Actions
+        // ====================================================================
+
+        /// <summary>
+        /// GET: /TrainingRequest/ApprovalFlow?docNo=xxx
+        /// แสดงหน้า Timeline ของ Approval Flow
+        /// </summary>
+        [HttpGet]
+        public async Task<IActionResult> ApprovalFlow(string docNo)
+        {
+            if (string.IsNullOrEmpty(docNo))
+            {
+                TempData["Error"] = "ไม่พบ Document Number";
+                return RedirectToAction("MonthlyRequests", "Home");
+            }
+
+            try
+            {
+                string connectionString = _configuration.GetConnectionString("DefaultConnection");
+                using (SqlConnection conn = new SqlConnection(connectionString))
+                {
+                    await conn.OpenAsync();
+
+                    // Fetch Training Request with all approval info
+                    string query = @"
+                        SELECT
+                            Id, DocNo, Company, SeminarTitle, StartDate, EndDate,
+                            Status, CreatedBy, CreatedDate,
+                            SectionManagerId, Status_SectionManager, Comment_SectionManager, ApproveInfo_SectionManager,
+                            DepartmentManagerId, Status_DepartmentManager, Comment_DepartmentManager, ApproveInfo_DepartmentManager,
+                            HRDAdminId, Status_HRDAdmin, Comment_HRDAdmin, ApproveInfo_HRDAdmin,
+                            HRDConfirmationId, Status_HRDConfirmation, Comment_HRDConfirmation, ApproveInfo_HRDConfirmation,
+                            ManagingDirectorId, Status_ManagingDirector, Comment_ManagingDirector, ApproveInfo_ManagingDirector
+                        FROM [HRDSYSTEM].[dbo].[TrainingRequests]
+                        WHERE DocNo = @DocNo AND IsActive = 1";
+
+                    using (SqlCommand cmd = new SqlCommand(query, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@DocNo", docNo);
+
+                        using (var reader = await cmd.ExecuteReaderAsync())
+                        {
+                            if (await reader.ReadAsync())
+                            {
+                                var model = new TrainingRequestEditViewModel
+                                {
+                                    Id = reader.GetInt32(reader.GetOrdinal("Id")),
+                                    DocNo = reader["DocNo"].ToString(),
+                                    Company = reader["Company"].ToString(),
+                                    SeminarTitle = reader["SeminarTitle"].ToString(),
+                                    StartDate = reader["StartDate"] != DBNull.Value ? (DateTime?)reader.GetDateTime(reader.GetOrdinal("StartDate")) : null,
+                                    EndDate = reader["EndDate"] != DBNull.Value ? (DateTime?)reader.GetDateTime(reader.GetOrdinal("EndDate")) : null,
+                                    Status = reader["Status"].ToString(),
+                                    CreatedBy = reader["CreatedBy"].ToString(),
+                                    CreatedDate = reader.GetDateTime(reader.GetOrdinal("CreatedDate")),
+                                    SectionManagerId = reader["SectionManagerId"]?.ToString(),
+                                    Status_SectionManager = reader["Status_SectionManager"]?.ToString(),
+                                    Comment_SectionManager = reader["Comment_SectionManager"]?.ToString(),
+                                    ApproveInfo_SectionManager = reader["ApproveInfo_SectionManager"]?.ToString(),
+                                    DepartmentManagerId = reader["DepartmentManagerId"]?.ToString(),
+                                    Status_DepartmentManager = reader["Status_DepartmentManager"]?.ToString(),
+                                    Comment_DepartmentManager = reader["Comment_DepartmentManager"]?.ToString(),
+                                    ApproveInfo_DepartmentManager = reader["ApproveInfo_DepartmentManager"]?.ToString(),
+                                    HRDAdminId = reader["HRDAdminId"]?.ToString(),
+                                    Status_HRDAdmin = reader["Status_HRDAdmin"]?.ToString(),
+                                    Comment_HRDAdmin = reader["Comment_HRDAdmin"]?.ToString(),
+                                    ApproveInfo_HRDAdmin = reader["ApproveInfo_HRDAdmin"]?.ToString(),
+                                    HRDConfirmationId = reader["HRDConfirmationId"]?.ToString(),
+                                    Status_HRDConfirmation = reader["Status_HRDConfirmation"]?.ToString(),
+                                    Comment_HRDConfirmation = reader["Comment_HRDConfirmation"]?.ToString(),
+                                    ApproveInfo_HRDConfirmation = reader["ApproveInfo_HRDConfirmation"]?.ToString(),
+                                    ManagingDirectorId = reader["ManagingDirectorId"]?.ToString(),
+                                    Status_ManagingDirector = reader["Status_ManagingDirector"]?.ToString(),
+                                    Comment_ManagingDirector = reader["Comment_ManagingDirector"]?.ToString(),
+                                    ApproveInfo_ManagingDirector = reader["ApproveInfo_ManagingDirector"]?.ToString()
+                                };
+
+                                return View(model);
+                            }
+                            else
+                            {
+                                TempData["Error"] = "ไม่พบข้อมูลคำร้องขออบรม";
+                                return RedirectToAction("MonthlyRequests", "Home");
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Error in ApprovalFlow: {ex.Message}");
+                TempData["Error"] = "เกิดข้อผิดพลาดในการโหลดข้อมูล";
+                return RedirectToAction("MonthlyRequests", "Home");
+            }
+        }
+
+        /// <summary>
+        /// POST: /TrainingRequest/SendApprovalEmail
+        /// ส่ง Email เริ่มต้น Workflow (Pending → WAITING_FOR_SECTION_MANAGER)
+        /// </summary>
+        [HttpPost]
+        public async Task<IActionResult> SendApprovalEmail(string docNo)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(docNo))
+                {
+                    return Json(new { success = false, message = "ไม่พบ Document Number" });
+                }
+
+                bool result = await _approvalWorkflowService.StartWorkflow(docNo);
+
+                if (result)
+                {
+                    return Json(new
+                    {
+                        success = true,
+                        message = "✅ เริ่มกระบวนการอนุมัติและส่ง Email สำเร็จ"
+                    });
+                }
+                else
+                {
+                    return Json(new
+                    {
+                        success = false,
+                        message = "❌ ไม่สามารถส่ง Email ได้ กรุณาตรวจสอบข้อมูลผู้อนุมัติ"
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Error in SendApprovalEmail: {ex.Message}");
+                return Json(new { success = false, message = "เกิดข้อผิดพลาด: " + ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// POST: /TrainingRequest/Approve
+        /// จัดการ Approve / Revise / Reject
+        /// </summary>
+        [HttpPost]
+        public async Task<IActionResult> Approve([FromBody] ApprovalActionRequest request)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(request.DocNo) || string.IsNullOrEmpty(request.Action))
+                {
+                    return Json(new { success = false, message = "ข้อมูลไม่ครบถ้วน" });
+                }
+
+                // ดึง UserEmail จาก Session
+                string userEmail = HttpContext.Session.GetString("UserEmail") ?? "";
+                if (string.IsNullOrEmpty(userEmail))
+                {
+                    return Json(new { success = false, message = "ไม่พบข้อมูลผู้ใช้ กรุณาล็อกอินใหม่" });
+                }
+
+                // ดึง IP Address
+                string ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown";
+
+                // ตรวจสอบว่า Revise/Reject ต้องมี Comment
+                if ((request.Action == "Revise" || request.Action == "Reject") && string.IsNullOrWhiteSpace(request.Comment))
+                {
+                    return Json(new { success = false, message = "กรุณาระบุเหตุผลในการ " + request.Action });
+                }
+
+                WorkflowResult result;
+
+                switch (request.Action.ToLower())
+                {
+                    case "approve":
+                        result = await _approvalWorkflowService.ProcessApproval(
+                            request.DocNo,
+                            userEmail,
+                            request.Comment ?? "",
+                            ipAddress
+                        );
+                        break;
+
+                    case "revise":
+                        result = await _approvalWorkflowService.ProcessRevise(
+                            request.DocNo,
+                            userEmail,
+                            request.Comment,
+                            ipAddress
+                        );
+                        break;
+
+                    case "reject":
+                        result = await _approvalWorkflowService.ProcessReject(
+                            request.DocNo,
+                            userEmail,
+                            request.Comment,
+                            ipAddress
+                        );
+                        break;
+
+                    default:
+                        return Json(new { success = false, message = "Action ไม่ถูกต้อง" });
+                }
+
+                return Json(new
+                {
+                    success = result.Success,
+                    message = result.Message,
+                    newStatus = result.NewStatus
+                });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Error in Approve: {ex.Message}");
+                Console.WriteLine($"StackTrace: {ex.StackTrace}");
+                return Json(new { success = false, message = "เกิดข้อผิดพลาด: " + ex.Message });
             }
         }
 
@@ -1562,5 +1821,12 @@ namespace TrainingRequestApp.Controllers
         public string? Name { get; set; }
         public string? Lastname { get; set; }
         public string? Level { get; set; }
+    }
+
+    public class ApprovalActionRequest
+    {
+        public string DocNo { get; set; } = string.Empty;
+        public string Action { get; set; } = string.Empty; // "Approve", "Revise", "Reject"
+        public string? Comment { get; set; }
     }
 }
