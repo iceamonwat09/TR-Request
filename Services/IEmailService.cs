@@ -12,12 +12,13 @@ namespace TrainingRequestApp.Services
         /// <param name="htmlBody">เนื้อหา HTML</param>
         /// <param name="trainingRequestId">ID ของ TrainingRequest (สำหรับ Log)</param>
         /// <param name="emailType">ประเภทของ Email</param>
+        /// <param name="docNo">เลขที่เอกสาร (สำหรับ Log)</param>
         /// <returns>true ถ้าส่งสำเร็จ, false ถ้าล้มเหลว</returns>
-        Task<bool> SendEmailAsync(string toEmail, string subject, string htmlBody, int? trainingRequestId = null, string? emailType = null);
+        Task<bool> SendEmailAsync(string toEmail, string subject, string htmlBody, int? trainingRequestId = null, string? emailType = null, string? docNo = null);
 
         /// <summary>
         /// ส่ง Email ให้หลายคน
         /// </summary>
-        Task<bool> SendEmailToMultipleAsync(string[] toEmails, string subject, string htmlBody, int? trainingRequestId = null, string? emailType = null);
+        Task<bool> SendEmailToMultipleAsync(string[] toEmails, string subject, string htmlBody, int? trainingRequestId = null, string? emailType = null, string? docNo = null);
     }
 }

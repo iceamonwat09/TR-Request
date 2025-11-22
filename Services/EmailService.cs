@@ -18,7 +18,7 @@ namespace TrainingRequestApp.Services
             _connectionString = _configuration.GetConnectionString("DefaultConnection");
         }
 
-        public async Task<bool> SendEmailAsync(string toEmail, string subject, string htmlBody, int? trainingRequestId = null, string? emailType = null)
+        public async Task<bool> SendEmailAsync(string toEmail, string subject, string htmlBody, int? trainingRequestId = null, string? emailType = null, string? docNo = null)
         {
             if (string.IsNullOrWhiteSpace(toEmail))
             {
@@ -72,8 +72,8 @@ namespace TrainingRequestApp.Services
                     Console.WriteLine($"✅ Email sent successfully to: {toEmail}");
                     Console.WriteLine($"   Subject: {subject}");
 
-                    // บันทึก Log
-                    await LogEmail(trainingRequestId, null, toEmail, emailType ?? "UNKNOWN", subject, "SENT", null);
+                    // ⭐ บันทึก Log พร้อม DocNo
+                    await LogEmail(trainingRequestId, docNo, toEmail, emailType ?? "UNKNOWN", subject, "SENT", null);
 
                     return true;
                 }
@@ -89,8 +89,8 @@ namespace TrainingRequestApp.Services
                     Console.WriteLine($"   Inner: {smtpEx.InnerException.Message}");
                 }
 
-                // บันทึก Log ที่ล้มเหลว
-                await LogEmail(trainingRequestId, null, toEmail, emailType ?? "UNKNOWN", subject, "FAILED",
+                // ⭐ บันทึก Log ที่ล้มเหลว พร้อม DocNo
+                await LogEmail(trainingRequestId, docNo, toEmail, emailType ?? "UNKNOWN", subject, "FAILED",
                     $"SMTP Error: {smtpEx.StatusCode} - {smtpEx.Message}");
 
                 return false;
@@ -101,14 +101,14 @@ namespace TrainingRequestApp.Services
                 Console.WriteLine($"   To: {toEmail}");
                 Console.WriteLine($"   Subject: {subject}");
 
-                // บันทึก Log ที่ล้มเหลว
-                await LogEmail(trainingRequestId, null, toEmail, emailType ?? "UNKNOWN", subject, "FAILED", ex.Message);
+                // ⭐ บันทึก Log ที่ล้มเหลว พร้อม DocNo
+                await LogEmail(trainingRequestId, docNo, toEmail, emailType ?? "UNKNOWN", subject, "FAILED", ex.Message);
 
                 return false;
             }
         }
 
-        public async Task<bool> SendEmailToMultipleAsync(string[] toEmails, string subject, string htmlBody, int? trainingRequestId = null, string? emailType = null)
+        public async Task<bool> SendEmailToMultipleAsync(string[] toEmails, string subject, string htmlBody, int? trainingRequestId = null, string? emailType = null, string? docNo = null)
         {
             bool allSuccess = true;
 
@@ -116,7 +116,7 @@ namespace TrainingRequestApp.Services
             {
                 if (!string.IsNullOrWhiteSpace(email))
                 {
-                    bool success = await SendEmailAsync(email.Trim(), subject, htmlBody, trainingRequestId, emailType);
+                    bool success = await SendEmailAsync(email.Trim(), subject, htmlBody, trainingRequestId, emailType, docNo);
                     if (!success)
                         allSuccess = false;
                 }

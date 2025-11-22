@@ -191,7 +191,7 @@ namespace TrainingRequestApp.Services
                 string nextStatus = GetNextApprovalStatus(previousStatus);
 
                 // อัพเดท Status หลัก
-                await UpdateMainStatus(docNo, nextStatus);
+                await UpdateMainStatus(docNo, nextStatus, userEmail);
 
                 // บันทึก History
                 await SaveApprovalHistory(request.Id, docNo, approverRole, userEmail, "APPROVED", comment, previousStatus, nextStatus, ipAddress);
@@ -277,7 +277,7 @@ namespace TrainingRequestApp.Services
                 await UpdateApprovalStatus(docNo, approverRole, "Revise", comment, userEmail, ipAddress);
 
                 // อัพเดท Status หลัก
-                await UpdateMainStatus(docNo, newStatus);
+                await UpdateMainStatus(docNo, newStatus, userEmail);
 
                 // บันทึก History
                 await SaveApprovalHistory(request.Id, docNo, approverRole, userEmail, "Revise", comment, previousStatus, newStatus, ipAddress);
@@ -342,7 +342,7 @@ namespace TrainingRequestApp.Services
                 await UpdateApprovalStatus(docNo, approverRole, "REJECTED", comment, userEmail, ipAddress);
 
                 // อัพเดท Status หลัก
-                await UpdateMainStatus(docNo, newStatus);
+                await UpdateMainStatus(docNo, newStatus, userEmail);
 
                 // บันทึก History
                 await SaveApprovalHistory(request.Id, docNo, approverRole, userEmail, "REJECTED", comment, previousStatus, newStatus, ipAddress);
@@ -644,7 +644,7 @@ namespace TrainingRequestApp.Services
             }
         }
 
-        private async Task UpdateMainStatus(string docNo, string newStatus)
+        private async Task UpdateMainStatus(string docNo, string newStatus, string updatedBy = "SYSTEM")
         {
             try
             {
@@ -660,11 +660,11 @@ namespace TrainingRequestApp.Services
                     using (var cmd = new SqlCommand(query, conn))
                     {
                         cmd.Parameters.AddWithValue("@Status", newStatus);
-                        cmd.Parameters.AddWithValue("@UpdatedBy", "SYSTEM");
+                        cmd.Parameters.AddWithValue("@UpdatedBy", updatedBy);
                         cmd.Parameters.AddWithValue("@DocNo", docNo);
 
                         int rowsAffected = await cmd.ExecuteNonQueryAsync();
-                        Console.WriteLine($"✅ UpdateMainStatus: {docNo} → {newStatus} (Rows affected: {rowsAffected})");
+                        Console.WriteLine($"✅ UpdateMainStatus: {docNo} → {newStatus} by {updatedBy} (Rows affected: {rowsAffected})");
                     }
                 }
             }
@@ -798,7 +798,7 @@ namespace TrainingRequestApp.Services
 </body>
 </html>";
 
-            await _emailService.SendEmailAsync(approverEmail, subject, body, request.Id, "APPROVAL_REQUEST");
+            await _emailService.SendEmailAsync(approverEmail, subject, body, request.Id, "APPROVAL_REQUEST", request.DocNo);
         }
 
         private async Task SendApprovalNotificationEmail(TrainingRequestEditViewModel request, string approverRole, string comment)
@@ -839,13 +839,13 @@ namespace TrainingRequestApp.Services
 </html>";
 
             // ส่งให้ CreatedBy
-            await _emailService.SendEmailAsync(request.CreatedBy, subject, body, request.Id, "APPROVAL_NOTIFICATION");
+            await _emailService.SendEmailAsync(request.CreatedBy, subject, body, request.Id, "APPROVAL_NOTIFICATION", request.DocNo);
 
             // ส่งให้ CCEmail
             if (!string.IsNullOrEmpty(request.CCEmail))
             {
                 var ccEmails = request.CCEmail.Split(',').Select(e => e.Trim()).ToArray();
-                await _emailService.SendEmailToMultipleAsync(ccEmails, subject, body, request.Id, "APPROVAL_NOTIFICATION");
+                await _emailService.SendEmailToMultipleAsync(ccEmails, subject, body, request.Id, "APPROVAL_NOTIFICATION", request.DocNo);
             }
         }
 
@@ -885,13 +885,13 @@ namespace TrainingRequestApp.Services
 </html>";
 
             // ส่งให้ CreatedBy
-            await _emailService.SendEmailAsync(request.CreatedBy, subject, body, request.Id, "PENDING_NOTIFICATION");
+            await _emailService.SendEmailAsync(request.CreatedBy, subject, body, request.Id, "PENDING_NOTIFICATION", request.DocNo);
 
             // ส่งให้ CCEmail
             if (!string.IsNullOrEmpty(request.CCEmail))
             {
                 var ccEmails = request.CCEmail.Split(',').Select(e => e.Trim()).ToArray();
-                await _emailService.SendEmailToMultipleAsync(ccEmails, subject, body, request.Id, "PENDING_NOTIFICATION");
+                await _emailService.SendEmailToMultipleAsync(ccEmails, subject, body, request.Id, "PENDING_NOTIFICATION", request.DocNo);
             }
         }
 
@@ -934,13 +934,13 @@ namespace TrainingRequestApp.Services
 </html>";
 
             // ส่งให้ CreatedBy
-            await _emailService.SendEmailAsync(request.CreatedBy, subject, body, request.Id, "REVISE_NOTIFICATION");
+            await _emailService.SendEmailAsync(request.CreatedBy, subject, body, request.Id, "REVISE_NOTIFICATION", request.DocNo);
 
             // ส่งให้ CCEmail
             if (!string.IsNullOrEmpty(request.CCEmail))
             {
                 var ccEmails = request.CCEmail.Split(',').Select(e => e.Trim()).ToArray();
-                await _emailService.SendEmailToMultipleAsync(ccEmails, subject, body, request.Id, "REVISE_NOTIFICATION");
+                await _emailService.SendEmailToMultipleAsync(ccEmails, subject, body, request.Id, "REVISE_NOTIFICATION", request.DocNo);
             }
         }
 
@@ -985,17 +985,17 @@ namespace TrainingRequestApp.Services
             // ส่งให้ HRD Admin
             if (!string.IsNullOrEmpty(request.HRDAdminId))
             {
-                await _emailService.SendEmailAsync(request.HRDAdminId, subject, body, request.Id, "REVISION_ADMIN_NOTIFICATION");
+                await _emailService.SendEmailAsync(request.HRDAdminId, subject, body, request.Id, "REVISION_ADMIN_NOTIFICATION", request.DocNo);
             }
 
             // ส่งให้ CreatedBy
-            await _emailService.SendEmailAsync(request.CreatedBy, subject, body, request.Id, "REVISION_ADMIN_NOTIFICATION");
+            await _emailService.SendEmailAsync(request.CreatedBy, subject, body, request.Id, "REVISION_ADMIN_NOTIFICATION", request.DocNo);
 
             // ส่งให้ CCEmail
             if (!string.IsNullOrEmpty(request.CCEmail))
             {
                 var ccEmails = request.CCEmail.Split(',').Select(e => e.Trim()).ToArray();
-                await _emailService.SendEmailToMultipleAsync(ccEmails, subject, body, request.Id, "REVISION_ADMIN_NOTIFICATION");
+                await _emailService.SendEmailToMultipleAsync(ccEmails, subject, body, request.Id, "REVISION_ADMIN_NOTIFICATION", request.DocNo);
             }
         }
 
@@ -1039,13 +1039,13 @@ namespace TrainingRequestApp.Services
 </html>";
 
             // ส่งให้ CreatedBy
-            await _emailService.SendEmailAsync(request.CreatedBy, subject, body, request.Id, "REJECT_NOTIFICATION");
+            await _emailService.SendEmailAsync(request.CreatedBy, subject, body, request.Id, "REJECT_NOTIFICATION", request.DocNo);
 
             // ส่งให้ CCEmail
             if (!string.IsNullOrEmpty(request.CCEmail))
             {
                 var ccEmails = request.CCEmail.Split(',').Select(e => e.Trim()).ToArray();
-                await _emailService.SendEmailToMultipleAsync(ccEmails, subject, body, request.Id, "REJECT_NOTIFICATION");
+                await _emailService.SendEmailToMultipleAsync(ccEmails, subject, body, request.Id, "REJECT_NOTIFICATION", request.DocNo);
             }
         }
 
@@ -1104,7 +1104,7 @@ namespace TrainingRequestApp.Services
 
             var uniqueEmails = allEmails.Distinct().ToArray();
 
-            await _emailService.SendEmailToMultipleAsync(uniqueEmails, subject, body, request.Id, "FINAL_APPROVAL");
+            await _emailService.SendEmailToMultipleAsync(uniqueEmails, subject, body, request.Id, "FINAL_APPROVAL", request.DocNo);
         }
 
         private string GenerateApprovalStatusHtml(TrainingRequestEditViewModel request)
