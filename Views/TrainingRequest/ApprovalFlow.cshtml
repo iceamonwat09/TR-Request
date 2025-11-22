@@ -2,6 +2,31 @@
 @{
     ViewData["Title"] = "Approval Workflow Timeline";
     Layout = "~/Views/Shared/_Layout.cshtml";
+
+    // Helper functions
+    string GetStatusClass(string levelStatus, string mainStatus, string waitingStatus)
+    {
+        if (levelStatus == "Approved")
+            return "approved";
+        if (levelStatus == "Reject" || levelStatus == "Revise")
+            return "rejected";
+        if (mainStatus == waitingStatus)
+            return "waiting";
+        return "pending";
+    }
+
+    string GetStatusDisplay(string levelStatus, string mainStatus, string waitingStatus)
+    {
+        if (levelStatus == "Approved")
+            return "Approved";
+        if (levelStatus == "Reject")
+            return "Rejected";
+        if (levelStatus == "Revise")
+            return "Revise";
+        if (mainStatus == waitingStatus)
+            return "Waiting";
+        return "Pending";
+    }
 }
 
 <style>
@@ -494,32 +519,6 @@
         }
     </div>
 </div>
-
-@functions {
-    string GetStatusClass(string levelStatus, string mainStatus, string waitingStatus)
-    {
-        if (levelStatus == "Approved")
-            return "approved";
-        if (levelStatus == "Reject" || levelStatus == "Revise")
-            return "rejected";
-        if (mainStatus == waitingStatus)
-            return "waiting";
-        return "pending";
-    }
-
-    string GetStatusDisplay(string levelStatus, string mainStatus, string waitingStatus)
-    {
-        if (levelStatus == "Approved")
-            return "Approved";
-        if (levelStatus == "Reject")
-            return "Rejected";
-        if (levelStatus == "Revise")
-            return "Revise";
-        if (mainStatus == waitingStatus)
-            return "Waiting";
-        return "Pending";
-    }
-}
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
