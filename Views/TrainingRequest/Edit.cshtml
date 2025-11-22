@@ -774,9 +774,59 @@
                                     </div>
                                 </div>
 
-                                <!-- ผู้อนุมัติระดับที่ 3: Managing Director -->
+                                <!-- ผู้อนุมัติระดับที่ 3: HRD Admin -->
                                 <hr class="my-4">
-                                <h5 class="fw-bold mb-3">👤 ผู้อนุมัติระดับที่ 3: Managing Director</h5>
+                                <h5 class="fw-bold mb-3">👤 ผู้อนุมัติระดับที่ 3: HRD Admin (ผู้ตรวจสอบ)</h5>
+
+                                <div class="row g-3">
+                                    <div class="col-md-12">
+                                        <label class="form-label fw-bold">HRD Admin</label>
+                                        <input type="text" class="form-control form-control-lg" value="@Model.HRDAdminId" readonly style="background-color: #e9ecef; border-radius: 10px;" />
+                                        <input type="hidden" name="HRDAdminId" value="@Model.HRDAdminId" />
+                                        <small class="text-muted">กำหนดอัตโนมัติจากระบบ</small>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label fw-bold">สถานะ</label>
+                                        <input type="text" name="Status_HRDAdmin" class="form-control form-control-lg" value="@Model.Status_HRDAdmin" readonly style="background-color: #e9ecef;" />
+                                    </div>
+                                    <div class="col-md-8">
+                                        <label class="form-label fw-bold">ความคิดเห็น</label>
+                                        <textarea name="Comment_HRDAdmin" class="form-control form-control-lg" rows="2" readonly style="background-color: #e9ecef;">@Model.Comment_HRDAdmin</textarea>
+                                    </div>
+                                    <div class="col-md-12">
+                                        <label class="form-label fw-bold">ข้อมูลการอนุมัติ</label>
+                                        <input type="text" name="ApproveInfo_HRDAdmin" class="form-control form-control-lg" value="@Model.ApproveInfo_HRDAdmin" readonly style="background-color: #e9ecef;" />
+                                    </div>
+                                </div>
+
+                                <!-- ผู้อนุมัติระดับที่ 4: HRD Confirmation -->
+                                <hr class="my-4">
+                                <h5 class="fw-bold mb-3">👤 ผู้อนุมัติระดับที่ 4: HRD Confirmation (ผู้อนุมัติการอบรม)</h5>
+
+                                <div class="row g-3">
+                                    <div class="col-md-12">
+                                        <label class="form-label fw-bold">HRD Confirmation</label>
+                                        <input type="text" class="form-control form-control-lg" value="@Model.HRDConfirmationId" readonly style="background-color: #e9ecef; border-radius: 10px;" />
+                                        <input type="hidden" name="HRDConfirmationId" value="@Model.HRDConfirmationId" />
+                                        <small class="text-muted">กำหนดอัตโนมัติจากระบบ</small>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label fw-bold">สถานะ</label>
+                                        <input type="text" name="Status_HRDConfirmation" class="form-control form-control-lg" value="@Model.Status_HRDConfirmation" readonly style="background-color: #e9ecef;" />
+                                    </div>
+                                    <div class="col-md-8">
+                                        <label class="form-label fw-bold">ความคิดเห็น</label>
+                                        <textarea name="Comment_HRDConfirmation" class="form-control form-control-lg" rows="2" readonly style="background-color: #e9ecef;">@Model.Comment_HRDConfirmation</textarea>
+                                    </div>
+                                    <div class="col-md-12">
+                                        <label class="form-label fw-bold">ข้อมูลการอนุมัติ</label>
+                                        <input type="text" name="ApproveInfo_HRDConfirmation" class="form-control form-control-lg" value="@Model.ApproveInfo_HRDConfirmation" readonly style="background-color: #e9ecef;" />
+                                    </div>
+                                </div>
+
+                                <!-- ผู้อนุมัติระดับที่ 5: Managing Director -->
+                                <hr class="my-4">
+                                <h5 class="fw-bold mb-3">👤 ผู้อนุมัติระดับที่ 5: Managing Director</h5>
 
                                 <div class="row g-3">
                                     <div class="col-md-12">
