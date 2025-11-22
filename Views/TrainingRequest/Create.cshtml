@@ -712,6 +712,26 @@
                                     <input type="hidden" id="managingDirectorIdHidden" name="ManagingDirectorId" value="" />
                                 </div>
 
+                                <!-- HRD Admin (ผู้ตรวจสอบ) - Readonly -->
+                                <div class="form-group mt-3">
+                                    <label class="form-label fw-bold">
+                                        👤 HRD Admin (ผู้ตรวจสอบ)
+                                        <small class="text-muted">(กำหนดอัตโนมัติจากระบบ)</small>
+                                    </label>
+                                    <input type="text" id="hrdAdminDisplay" class="form-control form-control-lg" placeholder="กำลังโหลด..." readonly style="background-color: #e9ecef; border-radius: 10px;" />
+                                    <input type="hidden" id="hrdAdminIdHidden" name="HRDAdminId" value="" />
+                                </div>
+
+                                <!-- HRD Confirmation (ผู้อนุมัติการอบรม) - Readonly -->
+                                <div class="form-group mt-3">
+                                    <label class="form-label fw-bold">
+                                        👤 HRD Confirmation (ผู้อนุมัติการอบรม)
+                                        <small class="text-muted">(กำหนดอัตโนมัติจากระบบ)</small>
+                                    </label>
+                                    <input type="text" id="hrdConfirmationDisplay" class="form-control form-control-lg" placeholder="กำลังโหลด..." readonly style="background-color: #e9ecef; border-radius: 10px;" />
+                                    <input type="hidden" id="hrdConfirmationIdHidden" name="HRDConfirmationId" value="" />
+                                </div>
+
                                 <!-- ปุ่มบันทึก -->
                                 <div class="text-center mt-5">
                                     <button type="submit" class="btn btn-primary btn-lg text-white px-5 py-3 fw-bold" style="border-radius: 25px; box-shadow: 0 4px 15px rgba(13, 110, 253, 0.3);">
@@ -2387,6 +2407,54 @@
                 }
 
                 // ====================================================================
+                // Validation ผู้อนุมัติทั้งหมด (บังคับ)
+                // ====================================================================
+
+                console.log('🔍 Validating approvers...');
+
+                const sectionManagerId = document.getElementById('sectionManagerIdHidden');
+                if (!sectionManagerId || !sectionManagerId.value) {
+                    alert('❌ กรุณาเลือก Section Manager\n\nผู้อนุมัติระดับที่ 1');
+                    isSubmitting = false;
+                    return false;
+                }
+
+                const departmentManagerId = document.getElementById('departmentManagerIdHidden');
+                if (!departmentManagerId || !departmentManagerId.value) {
+                    alert('❌ กรุณาเลือก Department Manager\n\nผู้อนุมัติระดับที่ 2');
+                    isSubmitting = false;
+                    return false;
+                }
+
+                const managingDirectorId = document.getElementById('managingDirectorIdHidden');
+                if (!managingDirectorId || !managingDirectorId.value) {
+                    alert('❌ กรุณาเลือก Managing Director\n\nผู้อนุมัติระดับที่ 5');
+                    isSubmitting = false;
+                    return false;
+                }
+
+                const hrdAdminId = document.getElementById('hrdAdminIdHidden');
+                if (!hrdAdminId || !hrdAdminId.value) {
+                    alert('❌ ไม่พบข้อมูล HRD Admin\n\nผู้อนุมัติระดับที่ 3\n\nกรุณารีเฟรชหน้าหรือติดต่อผู้ดูแลระบบ');
+                    isSubmitting = false;
+                    return false;
+                }
+
+                const hrdConfirmationId = document.getElementById('hrdConfirmationIdHidden');
+                if (!hrdConfirmationId || !hrdConfirmationId.value) {
+                    alert('❌ ไม่พบข้อมูล HRD Confirmation\n\nผู้อนุมัติระดับที่ 4\n\nกรุณารีเฟรชหน้าหรือติดต่อผู้ดูแลระบบ');
+                    isSubmitting = false;
+                    return false;
+                }
+
+                console.log('✅ All approvers validation passed:');
+                console.log('  - Section Manager:', sectionManagerId.value);
+                console.log('  - Department Manager:', departmentManagerId.value);
+                console.log('  - HRD Admin:', hrdAdminId.value);
+                console.log('  - HRD Confirmation:', hrdConfirmationId.value);
+                console.log('  - Managing Director:', managingDirectorId.value);
+
+                // ====================================================================
                 // ดึงข้อมูลพนักงาน
                 // ====================================================================
 
@@ -2486,5 +2554,56 @@
         }, { once: false, capture: true }); // ⭐ ใช้ capture phase
 
         console.log('✅ Form submit handler installed!');
+
+        // ====================================================================
+        // 🆕 ดึงข้อมูล HRD Admin และ HRD Confirmation อัตโนมัติ
+        // ====================================================================
+        async function loadHRDApprovers() {
+            try {
+                console.log('🔄 Loading HRD Approvers...');
+
+                // ดึง HRD Admin (UserID = 7777777)
+                const hrdAdminResponse = await fetch('/api/employees/by-userid?userId=7777777');
+                const hrdAdminData = await hrdAdminResponse.json();
+
+                if (hrdAdminData.success) {
+                    const displayText = `${hrdAdminData.fullName} (${hrdAdminData.email})`;
+                    $('#hrdAdminDisplay').val(displayText);
+                    $('#hrdAdminIdHidden').val(hrdAdminData.email);
+                    console.log('✅ HRD Admin loaded:', hrdAdminData.email);
+                } else {
+                    $('#hrdAdminDisplay').val('ไม่พบข้อมูล HRD Admin (UserID: 7777777)');
+                    $('#hrdAdminIdHidden').val('');
+                    console.warn('⚠️ HRD Admin not found:', hrdAdminData.message);
+                }
+
+                // ดึง HRD Confirmation (UserID = 8888888)
+                const hrdConfirmationResponse = await fetch('/api/employees/by-userid?userId=8888888');
+                const hrdConfirmationData = await hrdConfirmationResponse.json();
+
+                if (hrdConfirmationData.success) {
+                    const displayText = `${hrdConfirmationData.fullName} (${hrdConfirmationData.email})`;
+                    $('#hrdConfirmationDisplay').val(displayText);
+                    $('#hrdConfirmationIdHidden').val(hrdConfirmationData.email);
+                    console.log('✅ HRD Confirmation loaded:', hrdConfirmationData.email);
+                } else {
+                    $('#hrdConfirmationDisplay').val('ไม่พบข้อมูล HRD Confirmation (UserID: 8888888)');
+                    $('#hrdConfirmationIdHidden').val('');
+                    console.warn('⚠️ HRD Confirmation not found:', hrdConfirmationData.message);
+                }
+            } catch (error) {
+                console.error('❌ Error loading HRD Approvers:', error);
+                $('#hrdAdminDisplay').val('เกิดข้อผิดพลาดในการโหลด');
+                $('#hrdConfirmationDisplay').val('เกิดข้อผิดพลาดในการโหลด');
+                $('#hrdAdminIdHidden').val('');
+                $('#hrdConfirmationIdHidden').val('');
+            }
+        }
+
+        // เรียกใช้งานเมื่อหน้าโหลดเสร็จ
+        $(document).ready(function() {
+            loadHRDApprovers();
+        });
+
     })();
 </script>
