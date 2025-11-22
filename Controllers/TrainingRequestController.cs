@@ -237,9 +237,9 @@ namespace TrainingRequestApp.Controllers
                                 // ✅ Multi-Mode Logic
                                 string userEmail = HttpContext.Session.GetString("UserEmail") ?? "";
                                 string userRole = HttpContext.Session.GetString("UserRole") ?? "User";
-                                bool isAdmin = userRole.Contains("Admin");
-                                bool isHRDAdmin = (userEmail == model.HRDAdminId);
-                                bool isHRDConfirmation = (userEmail == model.HRDConfirmationId);
+                                bool isAdmin = userRole.Contains("Admin", StringComparison.OrdinalIgnoreCase);
+                                bool isHRDAdmin = string.Equals(userEmail, model.HRDAdminId, StringComparison.OrdinalIgnoreCase);
+                                bool isHRDConfirmation = string.Equals(userEmail, model.HRDConfirmationId, StringComparison.OrdinalIgnoreCase);
 
                                 // ตรวจสอบว่า User นี้มีสิทธิ์ Approve หรือไม่
                                 var permissionResult = await _approvalWorkflowService.CheckApprovalPermission(docNo, userEmail);
@@ -247,7 +247,7 @@ namespace TrainingRequestApp.Controllers
                                 // กำหนด Mode
                                 string pageMode = "View"; // Default
 
-                                if (model.Status == "Revise" && userEmail == model.CreatedBy)
+                                if (model.Status == "Revise" && string.Equals(userEmail, model.CreatedBy, StringComparison.OrdinalIgnoreCase))
                                 {
                                     pageMode = "Edit"; // CreatedBy แก้ไขหลัง Revise
                                 }
@@ -1381,7 +1381,7 @@ namespace TrainingRequestApp.Controllers
                 // ✅ ดึง UserRole และ UserEmail จาก Session
                 string userEmail = HttpContext.Session.GetString("UserEmail") ?? "System";
                 string userRole = HttpContext.Session.GetString("UserRole") ?? "User";
-                bool isAdmin = userRole.Contains("Admin"); // System Admin หรือ Admin
+                bool isAdmin = userRole.Contains("Admin", StringComparison.OrdinalIgnoreCase); // System Admin หรือ Admin
 
                 string connectionString = _configuration.GetConnectionString("DefaultConnection");
                 var requests = new List<dynamic>();
