@@ -577,22 +577,33 @@ namespace TrainingRequestApp.Services
 
         private async Task UpdateMainStatus(string docNo, string newStatus)
         {
-            using (var conn = new SqlConnection(_connectionString))
+            try
             {
-                await conn.OpenAsync();
-
-                string query = @"
-                    UPDATE [HRDSYSTEM].[dbo].[TrainingRequests]
-                    SET Status = @Status, UpdatedDate = GETDATE()
-                    WHERE DocNo = @DocNo";
-
-                using (var cmd = new SqlCommand(query, conn))
+                using (var conn = new SqlConnection(_connectionString))
                 {
-                    cmd.Parameters.AddWithValue("@Status", newStatus);
-                    cmd.Parameters.AddWithValue("@DocNo", docNo);
+                    await conn.OpenAsync();
 
-                    await cmd.ExecuteNonQueryAsync();
+                    string query = @"
+                        UPDATE [HRDSYSTEM].[dbo].[TrainingRequests]
+                        SET Status = @Status
+                        WHERE DocNo = @DocNo";
+
+                    using (var cmd = new SqlCommand(query, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@Status", newStatus);
+                        cmd.Parameters.AddWithValue("@DocNo", docNo);
+
+                        int rowsAffected = await cmd.ExecuteNonQueryAsync();
+                        Console.WriteLine($"✅ UpdateMainStatus: {docNo} → {newStatus} (Rows affected: {rowsAffected})");
+                    }
                 }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ UpdateMainStatus Error: {ex.Message}");
+                Console.WriteLine($"   DocNo: {docNo}");
+                Console.WriteLine($"   NewStatus: {newStatus}");
+                throw; // Re-throw เพื่อให้ StartWorkflow catch ได้
             }
         }
 
