@@ -2525,9 +2525,9 @@
                     console.log('✅ Save successful!');
                     alert(`✅ ${result.message}\n\n📄 เลขที่เอกสาร: ${result.docNo}`);
 
-                    // Redirect
+                    // Redirect to ApprovalFlow page
                     setTimeout(() => {
-                        window.location.href = '/Home#';
+                        window.location.href = `/TrainingRequest/ApprovalFlow?docNo=${result.docNo}`;
                     }, 500);
 
                 } else {
