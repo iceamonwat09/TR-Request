@@ -142,6 +142,11 @@
             font-size: 12px;
         }
 
+        /* Custom badge colors for workflow statuses */
+        .bg-orange {
+            background-color: #ff8c00 !important;
+        }
+
         .action-btn {
             width: 36px;
             height: 36px;
@@ -496,32 +501,35 @@
             // ✅ แสดงสถานะตามที่เก็บในฐานข้อมูลจริง (ไม่แปลงเป็นภาษาไทย)
             switch(status) {
                 case 'Pending':
-                    return '<span class="badge bg-warning text-dark">' + status + '</span>';
+                    return '<span class="badge bg-warning text-dark"><i class="fas fa-clock"></i> ' + status + '</span>';
                 case 'WAITING_FOR_SECTION_MANAGER':
-                    return '<span class="badge bg-primary">' + status + '</span>';
+                    return '<span class="badge bg-primary"><i class="fas fa-hourglass-half"></i> ' + status + '</span>';
                 case 'WAITING_FOR_DEPARTMENT_MANAGER':
-                    return '<span class="badge bg-primary">' + status + '</span>';
+                    return '<span class="badge bg-primary"><i class="fas fa-hourglass-half"></i> ' + status + '</span>';
                 case 'WAITING_FOR_HRD_ADMIN':
-                    return '<span class="badge bg-info text-dark">' + status + '</span>';
+                    return '<span class="badge bg-info text-dark"><i class="fas fa-hourglass-half"></i> ' + status + '</span>';
                 case 'WAITING_FOR_HRD_CONFIRMATION':
-                    return '<span class="badge bg-info text-dark">' + status + '</span>';
+                    return '<span class="badge bg-info text-dark"><i class="fas fa-hourglass-half"></i> ' + status + '</span>';
                 case 'WAITING_FOR_MANAGING_DIRECTOR':
-                    return '<span class="badge bg-dark">' + status + '</span>';
+                    return '<span class="badge bg-dark"><i class="fas fa-hourglass-half"></i> ' + status + '</span>';
                 case 'Approved':
                 case 'APPROVED':
-                    return '<span class="badge bg-success">' + status + '</span>';
+                    return '<span class="badge bg-success"><i class="fas fa-check-circle"></i> ' + status + '</span>';
                 case 'Rejected':
                 case 'REJECTED':
-                    return '<span class="badge bg-danger">' + status + '</span>';
+                case 'Reject':
+                    return '<span class="badge bg-danger"><i class="fas fa-times-circle"></i> ' + status + '</span>';
                 case 'Revise':
-                    return '<span class="badge bg-warning">' + status + '</span>';
+                    return '<span class="badge bg-warning text-dark"><i class="fas fa-edit"></i> ' + status + '</span>';
+                case 'Revision Admin':
+                    return '<span class="badge bg-orange text-white"><i class="fas fa-user-edit"></i> ' + status + '</span>';
                 case 'Complete':
                 case 'COMPLETE':
-                    return '<span class="badge bg-success"><i class="fas fa-check-circle"></i> ' + status + '</span>';
+                    return '<span class="badge bg-success"><i class="fas fa-check-double"></i> ' + status + '</span>';
                 case 'RESCHEDULED':
-                    return '<span class="badge bg-secondary">' + status + '</span>';
+                    return '<span class="badge bg-secondary"><i class="fas fa-calendar-alt"></i> ' + status + '</span>';
                 default:
-                    return '<span class="badge bg-secondary">' + status + '</span>';
+                    return '<span class="badge bg-secondary"><i class="fas fa-question"></i> ' + status + '</span>';
             }
         }
 
