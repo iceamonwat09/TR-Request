@@ -354,13 +354,32 @@ namespace TrainingRequestApp.Services
                     return false;
                 }
 
+                // ⭐ Validation: เช็คว่ามีผู้อนุมัติหรือไม่
+                Console.WriteLine("🔍 Checking approver assignments:");
+                Console.WriteLine($"   Section Manager: {request.SectionManagerId ?? "NOT ASSIGNED"}");
+                Console.WriteLine($"   Department Manager: {request.DepartmentManagerId ?? "NOT ASSIGNED"}");
+                Console.WriteLine($"   HRD Admin: {request.HRDAdminId ?? "NOT ASSIGNED"}");
+                Console.WriteLine($"   HRD Confirmation: {request.HRDConfirmationId ?? "NOT ASSIGNED"}");
+                Console.WriteLine($"   Managing Director: {request.ManagingDirectorId ?? "NOT ASSIGNED"}");
+
+                if (string.IsNullOrWhiteSpace(request.SectionManagerId))
+                {
+                    Console.WriteLine($"❌ StartWorkflow: Section Manager not assigned!");
+                    Console.WriteLine($"   DocNo: {docNo}");
+                    Console.WriteLine($"   Please assign Section Manager before starting workflow");
+                    return false; // ❌ ไม่สามารถเริ่ม workflow ได้ถ้าไม่มี Section Manager
+                }
+
                 // ส่ง Email #1: แจ้ง CreatedBy + CCEmail
+                Console.WriteLine("📧 Sending pending notification...");
                 await SendPendingNotificationEmail(request);
 
                 // อัพเดท Status
+                Console.WriteLine("📝 Updating status to WAITING_FOR_SECTION_MANAGER...");
                 await UpdateMainStatus(docNo, "WAITING_FOR_SECTION_MANAGER");
 
                 // ส่ง Email #2: ขออนุมัติจาก Section Manager
+                Console.WriteLine($"📧 Sending approval request to Section Manager ({request.SectionManagerId})...");
                 await SendApprovalRequestEmail(request, request.SectionManagerId, "WAITING_FOR_SECTION_MANAGER");
 
                 Console.WriteLine($"✅ StartWorkflow Success: {docNo}");
@@ -369,6 +388,7 @@ namespace TrainingRequestApp.Services
             catch (Exception ex)
             {
                 Console.WriteLine($"❌ StartWorkflow Error: {ex.Message}");
+                Console.WriteLine($"   StackTrace: {ex.StackTrace}");
                 return false;
             }
         }
@@ -618,6 +638,16 @@ namespace TrainingRequestApp.Services
 
         private async Task SendApprovalRequestEmail(TrainingRequestEditViewModel request, string approverEmail, string statusWaitingFor)
         {
+            // ⭐ Validation: เช็คว่ามี approver email หรือไม่
+            if (string.IsNullOrWhiteSpace(approverEmail))
+            {
+                Console.WriteLine($"⚠️ SendApprovalRequestEmail: Approver email is NULL or EMPTY!");
+                Console.WriteLine($"   DocNo: {request.DocNo}");
+                Console.WriteLine($"   Status: {statusWaitingFor}");
+                Console.WriteLine($"   ❌ Cannot send approval email - Please assign approver first!");
+                return; // ไม่ส่ง email ถ้าไม่มี email
+            }
+
             string approverRoleName = statusWaitingFor switch
             {
                 "WAITING_FOR_SECTION_MANAGER" => "ผู้จัดการแผนก (Section Manager)",
