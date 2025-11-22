@@ -1303,8 +1303,13 @@
         if (!canEdit) {
             console.log('🔒 Read-only Mode: Disabling form fields (Approve Mode: ' + isApproveMode + ')');
 
-            // Disable input, select, textarea ทั้งหมด (ยกเว้น readonly อยู่แล้ว)
+            // ⭐ Disable input, select, textarea ทั้งหมด (ยกเว้น readonly และ approvalComment ในโหมดอนุมัติ)
             document.querySelectorAll('input:not([readonly]), select:not([readonly]), textarea:not([readonly])').forEach(el => {
+                // ⭐ ยกเว้น approvalComment ถ้าอยู่ในโหมดอนุมัติ
+                if (isApproveMode && el.id === 'approvalComment') {
+                    return; // ไม่ disable comment box
+                }
+
                 el.disabled = true;
                 el.style.cursor = 'not-allowed';
             });
@@ -1330,11 +1335,13 @@
 
             // ⭐ Debug log สำหรับ Approve Mode
             if (isApproveMode) {
-                console.log('✅ Approve Mode: Approval buttons should be ENABLED');
+                console.log('✅ Approve Mode: Approval buttons and comment should be ENABLED');
                 setTimeout(() => {
                     console.log('   - #btnApprove disabled:', document.getElementById('btnApprove')?.disabled);
                     console.log('   - #btnRevise disabled:', document.getElementById('btnRevise')?.disabled);
                     console.log('   - #btnReject disabled:', document.getElementById('btnReject')?.disabled);
+                    console.log('   - #approvalComment disabled:', document.getElementById('approvalComment')?.disabled);
+                    console.log('   - #approvalComment readonly:', document.getElementById('approvalComment')?.readOnly);
                 }, 100);
             }
         }
