@@ -1,7 +1,6 @@
 @model TrainingRequestApp.Models.TrainingRequestEditViewModel
 @{
     ViewData["Title"] = "Approval Workflow Timeline";
-    Layout = "~/Views/Shared/_Layout.cshtml";
 
     // Helper functions
     string GetStatusClass(string levelStatus, string mainStatus, string waitingStatus)
@@ -28,6 +27,18 @@
         return "Pending";
     }
 }
+
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>@ViewData["Title"]</title>
+
+    <!-- Bootstrap 5 & Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
 
 <style>
     .timeline-container {
@@ -243,6 +254,8 @@
         background: #7f8c8d;
     }
 </style>
+</head>
+<body>
 
 <div class="timeline-container">
     <!-- Document Info Card -->
@@ -551,3 +564,5 @@ $(document).ready(function() {
     });
 });
 </script>
+</body>
+</html>
