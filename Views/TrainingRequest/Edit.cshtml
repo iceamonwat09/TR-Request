@@ -1028,7 +1028,7 @@
                 success: function(response) {
                     if (response.success) {
                         alert(response.message);
-                        window.location.href = '/Home/MonthlyRequests';
+                        window.location.href = '/Home';
                     } else {
                         alert(response.message);
                         isProcessing = false;
@@ -3334,9 +3334,9 @@
                     console.log('✅ Save successful!');
                     alert(`✅ ${result.message}\n\n📄 เลขที่เอกสาร: ${result.docNo}`);
 
-                    // Redirect
+                    // Redirect to MonthlyRequests
                     setTimeout(() => {
-                        window.location.href = '/TrainingRequest/Index';
+                        window.location.href = '/Home/MonthlyRequests';
                     }, 500);
 
                 } else {

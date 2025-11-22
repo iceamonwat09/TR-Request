@@ -473,7 +473,7 @@
                                 <i class="fas fa-file-alt"></i>
                             </button>
                             <button class="action-btn btn-workflow"
-                                    onclick="viewWorkflow(${item.id})"
+                                    onclick="viewWorkflow('${item.docNo}')"
                                     title="Flow การอนุมัติ">
                                 <i class="fas fa-project-diagram"></i>
                             </button>
@@ -547,8 +547,8 @@
             window.location.href = '@Url.Action("Details", "TrainingRequest")/' + id;
         }
 
-        function viewWorkflow(id) {
-            alert('Flow การอนุมัติสำหรับ ID: ' + id + '\n(ฟีเจอร์นี้จะพัฒนาต่อ)');
+        function viewWorkflow(docNo) {
+            window.location.href = '@Url.Action("ApprovalFlow", "TrainingRequest")?docNo=' + encodeURIComponent(docNo);
         }
     </script>
 </body>
