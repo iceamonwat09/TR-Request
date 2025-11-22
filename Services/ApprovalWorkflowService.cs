@@ -88,42 +88,68 @@ namespace TrainingRequestApp.Services
 
                 result.Request = request;
 
-                // ตรวจสอบสิทธิ์ตาม Status และ Email
-                if (request.Status == "WAITING_FOR_SECTION_MANAGER" && userEmail == request.SectionManagerId)
+                // 🔧 Debug logging
+                Console.WriteLine($"🔍 CheckApprovalPermission:");
+                Console.WriteLine($"   User Email: {userEmail}");
+                Console.WriteLine($"   Status: {request.Status}");
+                Console.WriteLine($"   Section Manager: {request.SectionManagerId}");
+                Console.WriteLine($"   Department Manager: {request.DepartmentManagerId}");
+                Console.WriteLine($"   HRD Admin: {request.HRDAdminId}");
+                Console.WriteLine($"   HRD Confirmation: {request.HRDConfirmationId}");
+                Console.WriteLine($"   Managing Director: {request.ManagingDirectorId}");
+
+                // ตรวจสอบสิทธิ์ตาม Status และ Email (Case-Insensitive)
+                if (request.Status == "WAITING_FOR_SECTION_MANAGER" &&
+                    string.Equals(userEmail, request.SectionManagerId, StringComparison.OrdinalIgnoreCase))
                 {
                     result.CanApprove = true;
                     result.ApproverRole = "SectionManager";
                     result.Message = "คุณมีสิทธิ์อนุมัติในฐานะ Section Manager";
+                    Console.WriteLine($"✅ Permission granted: Section Manager");
                 }
-                else if (request.Status == "WAITING_FOR_DEPARTMENT_MANAGER" && userEmail == request.DepartmentManagerId)
+                else if (request.Status == "WAITING_FOR_DEPARTMENT_MANAGER" &&
+                         string.Equals(userEmail, request.DepartmentManagerId, StringComparison.OrdinalIgnoreCase))
                 {
                     result.CanApprove = true;
                     result.ApproverRole = "DepartmentManager";
                     result.Message = "คุณมีสิทธิ์อนุมัติในฐานะ Department Manager";
+                    Console.WriteLine($"✅ Permission granted: Department Manager");
                 }
-                else if (request.Status == "WAITING_FOR_HRD_ADMIN" && userEmail == request.HRDAdminId)
+                else if (request.Status == "WAITING_FOR_HRD_ADMIN" &&
+                         string.Equals(userEmail, request.HRDAdminId, StringComparison.OrdinalIgnoreCase))
                 {
                     result.CanApprove = true;
                     result.ApproverRole = "HRDAdmin";
                     result.Message = "คุณมีสิทธิ์อนุมัติในฐานะ HRD Admin";
+                    Console.WriteLine($"✅ Permission granted: HRD Admin");
                 }
-                else if (request.Status == "WAITING_FOR_HRD_CONFIRMATION" && userEmail == request.HRDConfirmationId)
+                else if (request.Status == "WAITING_FOR_HRD_CONFIRMATION" &&
+                         string.Equals(userEmail, request.HRDConfirmationId, StringComparison.OrdinalIgnoreCase))
                 {
                     result.CanApprove = true;
                     result.ApproverRole = "HRDConfirmation";
                     result.Message = "คุณมีสิทธิ์อนุมัติในฐานะ HRD Confirmation";
+                    Console.WriteLine($"✅ Permission granted: HRD Confirmation");
                 }
-                else if (request.Status == "WAITING_FOR_MANAGING_DIRECTOR" && userEmail == request.ManagingDirectorId)
+                else if (request.Status == "WAITING_FOR_MANAGING_DIRECTOR" &&
+                         string.Equals(userEmail, request.ManagingDirectorId, StringComparison.OrdinalIgnoreCase))
                 {
                     result.CanApprove = true;
                     result.ApproverRole = "ManagingDirector";
                     result.Message = "คุณมีสิทธิ์อนุมัติในฐานะ Managing Director";
+                    Console.WriteLine($"✅ Permission granted: Managing Director");
                 }
-                else if (request.Status == "Revision Admin" && userEmail == request.HRDAdminId)
+                else if (request.Status == "Revision Admin" &&
+                         string.Equals(userEmail, request.HRDAdminId, StringComparison.OrdinalIgnoreCase))
                 {
                     result.CanApprove = true;
                     result.ApproverRole = "HRDAdmin";
                     result.Message = "คุณมีสิทธิ์ดำเนินการในฐานะ HRD Admin (Revision Admin Mode)";
+                    Console.WriteLine($"✅ Permission granted: HRD Admin (Revision Mode)");
+                }
+                else
+                {
+                    Console.WriteLine($"❌ Permission denied: User email does not match any approver for current status");
                 }
 
                 return result;
