@@ -39,6 +39,14 @@ namespace TrainingRequestApp.Services
                 string fromName = emailSettings["FromName"] ?? "Training Request System";
                 bool enableSsl = bool.Parse(emailSettings["EnableSsl"] ?? "true");
 
+                // ⭐ Debug logging
+                Console.WriteLine("📧 Email Configuration:");
+                Console.WriteLine($"   SMTP Server: {smtpServer}:{smtpPort}");
+                Console.WriteLine($"   Username: {smtpUsername}");
+                Console.WriteLine($"   From: {fromEmail}");
+                Console.WriteLine($"   SSL: {enableSsl}");
+                Console.WriteLine($"   To: {toEmail}");
+
                 // สร้าง SMTP Client
                 using (var smtpClient = new SmtpClient(smtpServer, smtpPort))
                 {
@@ -56,6 +64,8 @@ namespace TrainingRequestApp.Services
 
                     mailMessage.To.Add(toEmail);
 
+                    Console.WriteLine("📤 Attempting to send email...");
+
                     // ส่ง Email
                     await smtpClient.SendMailAsync(mailMessage);
 
@@ -67,6 +77,23 @@ namespace TrainingRequestApp.Services
 
                     return true;
                 }
+            }
+            catch (SmtpException smtpEx)
+            {
+                Console.WriteLine($"❌ SMTP Error: {smtpEx.Message}");
+                Console.WriteLine($"   StatusCode: {smtpEx.StatusCode}");
+                Console.WriteLine($"   To: {toEmail}");
+                Console.WriteLine($"   Subject: {subject}");
+                if (smtpEx.InnerException != null)
+                {
+                    Console.WriteLine($"   Inner: {smtpEx.InnerException.Message}");
+                }
+
+                // บันทึก Log ที่ล้มเหลว
+                await LogEmail(trainingRequestId, null, toEmail, emailType ?? "UNKNOWN", subject, "FAILED",
+                    $"SMTP Error: {smtpEx.StatusCode} - {smtpEx.Message}");
+
+                return false;
             }
             catch (Exception ex)
             {
