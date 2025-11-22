@@ -280,6 +280,12 @@
                 📧 ส่ง Email เริ่มกระบวนการอนุมัติ
             </button>
         }
+        else
+        {
+            <button onclick="window.location.href='/TrainingRequest/Edit?docNo=@Model.DocNo'" class="send-email-btn" style="background: #3498db;">
+                📝 ดูรายละเอียดและอนุมัติ
+            </button>
+        }
         <button onclick="window.location.href='/Home/MonthlyRequests'" class="back-btn">
             ← กลับ
         </button>
@@ -583,9 +589,9 @@ $(document).ready(function() {
 
                 if (response.success) {
                     console.log('%c✅ Workflow started successfully!', 'color: #4CAF50; font-weight: bold;');
-                    console.log('🔄 Reloading page...');
-                    alert(response.message);
-                    location.reload();
+                    console.log('🔄 Redirecting to Edit page...');
+                    alert(response.message + '\n\n✅ ระบบจะนำคุณไปยังหน้าอนุมัติ');
+                    window.location.href = '/TrainingRequest/Edit?docNo=' + '@Model.DocNo';
                 } else {
                     console.error('%c❌ Workflow failed!', 'color: #f44336; font-weight: bold;');
                     console.error('Error Message:', response.message);
