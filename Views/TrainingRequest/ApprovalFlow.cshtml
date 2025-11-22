@@ -536,28 +536,75 @@
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
 $(document).ready(function() {
+    console.log('%c╔═══════════════════════════════════════════════════════════╗', 'color: #4CAF50; font-weight: bold;');
+    console.log('%c║  Training Request Approval Workflow - Debug Console     ║', 'color: #4CAF50; font-weight: bold;');
+    console.log('%c╚═══════════════════════════════════════════════════════════╝', 'color: #4CAF50; font-weight: bold;');
+    console.log('📋 Document Number:', '@Model.DocNo');
+    console.log('📊 Current Status:', '@Model.Status');
+    console.log('👤 Created By:', '@Model.CreatedBy');
+    console.log('📧 CC Email:', '@Model.CCEmail');
+    console.log('\n📌 TIP: Open this console (F12) before clicking "Send Email" to see detailed debug information\n');
+
     $('#sendEmailBtn').click(function() {
+        console.log('\n%c═══════════════════════════════════════════════════════════', 'color: #2196F3; font-weight: bold;');
+        console.log('%c🚀 Send Approval Email Button Clicked', 'color: #2196F3; font-weight: bold; font-size: 14px;');
+        console.log('%c═══════════════════════════════════════════════════════════', 'color: #2196F3; font-weight: bold;');
+        console.log('⏰ Timestamp:', new Date().toLocaleString('th-TH'));
+        console.log('📄 DocNo:', '@Model.DocNo');
+
         if (!confirm('ต้องการส่ง Email เริ่มกระบวนการอนุมัติใช่หรือไม่?')) {
+            console.log('❌ User cancelled the operation');
             return;
         }
 
+        console.log('✅ User confirmed - Disabling button and sending AJAX request...');
         $(this).prop('disabled', true).text('กำลังส่ง...');
+
+        console.log('📡 AJAX Request Details:');
+        console.log('   URL: /TrainingRequest/SendApprovalEmail');
+        console.log('   Method: POST');
+        console.log('   Data:', { docNo: '@Model.DocNo' });
 
         $.ajax({
             url: '/TrainingRequest/SendApprovalEmail',
             type: 'POST',
             data: { docNo: '@Model.DocNo' },
             success: function(response) {
+                console.log('\n%c✅ AJAX SUCCESS Response Received', 'color: #4CAF50; font-weight: bold; font-size: 14px;');
+                console.log('Response Object:', response);
+                console.log('   success:', response.success);
+                console.log('   message:', response.message);
+                if (response.debugInfo) {
+                    console.log('   debugInfo:', response.debugInfo);
+                }
+                if (response.errorType) {
+                    console.log('   errorType:', response.errorType);
+                }
+
                 if (response.success) {
+                    console.log('%c✅ Workflow started successfully!', 'color: #4CAF50; font-weight: bold;');
+                    console.log('🔄 Reloading page...');
                     alert(response.message);
                     location.reload();
                 } else {
-                    alert(response.message);
+                    console.error('%c❌ Workflow failed!', 'color: #f44336; font-weight: bold;');
+                    console.error('Error Message:', response.message);
+                    console.error('Debug Info:', response.debugInfo);
+                    console.log('%c💡 Check the SERVER CONSOLE for detailed error logs', 'color: #FF9800; font-weight: bold; font-size: 12px;');
+                    alert(response.message + '\n\n💡 เปิด Server Console เพื่อดู error details');
                     $('#sendEmailBtn').prop('disabled', false).text('📧 ส่ง Email เริ่มกระบวนการอนุมัติ');
                 }
             },
-            error: function() {
-                alert('เกิดข้อผิดพลาดในการส่ง Email');
+            error: function(xhr, status, error) {
+                console.log('\n%c❌ AJAX ERROR', 'color: #f44336; font-weight: bold; font-size: 14px;');
+                console.error('XHR Object:', xhr);
+                console.error('Status:', status);
+                console.error('Error:', error);
+                console.error('Response Text:', xhr.responseText);
+                console.error('Status Code:', xhr.status);
+                console.log('%c💡 This is a network/HTTP error, not a workflow error', 'color: #FF9800; font-weight: bold;');
+
+                alert('เกิดข้อผิดพลาดในการส่ง Email\n\nStatus: ' + status + '\nError: ' + error + '\n\n💡 เปิด Browser Console (F12) เพื่อดู details');
                 $('#sendEmailBtn').prop('disabled', false).text('📧 ส่ง Email เริ่มกระบวนการอนุมัติ');
             }
         });

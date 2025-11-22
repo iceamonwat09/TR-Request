@@ -473,34 +473,61 @@ namespace TrainingRequestApp.Controllers
         {
             try
             {
+                Console.WriteLine($"\n╔════════════════════════════════════════╗");
+                Console.WriteLine($"║  SendApprovalEmail Controller Called  ║");
+                Console.WriteLine($"╚════════════════════════════════════════╝");
+                Console.WriteLine($"DocNo: {docNo}");
+
                 if (string.IsNullOrEmpty(docNo))
                 {
-                    return Json(new { success = false, message = "ไม่พบ Document Number" });
+                    Console.WriteLine($"❌ Controller: DocNo is null or empty");
+                    return Json(new {
+                        success = false,
+                        message = "ไม่พบ Document Number",
+                        debugInfo = "DocNo parameter is missing"
+                    });
                 }
 
+                Console.WriteLine($"✅ Controller: DocNo validated, calling StartWorkflow...");
                 bool result = await _approvalWorkflowService.StartWorkflow(docNo);
+                Console.WriteLine($"Controller: StartWorkflow returned {result}");
 
                 if (result)
                 {
+                    Console.WriteLine($"✅ Controller: Returning SUCCESS response");
                     return Json(new
                     {
                         success = true,
-                        message = "✅ เริ่มกระบวนการอนุมัติและส่ง Email สำเร็จ"
+                        message = "✅ เริ่มกระบวนการอนุมัติและส่ง Email สำเร็จ",
+                        debugInfo = "Workflow started successfully. Check server console for detailed logs."
                     });
                 }
                 else
                 {
+                    Console.WriteLine($"❌ Controller: Returning FAILURE response");
                     return Json(new
                     {
                         success = false,
-                        message = "❌ ไม่สามารถส่ง Email ได้ กรุณาตรวจสอบข้อมูลผู้อนุมัติ"
+                        message = "❌ ไม่สามารถส่ง Email ได้ กรุณาตรวจสอบข้อมูลผู้อนุมัติ",
+                        debugInfo = "StartWorkflow returned false. Check server console for error details."
                     });
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"❌ Error in SendApprovalEmail: {ex.Message}");
-                return Json(new { success = false, message = "เกิดข้อผิดพลาด: " + ex.Message });
+                Console.WriteLine($"\n╔════════════════════════════════════════╗");
+                Console.WriteLine($"║  SendApprovalEmail Controller ERROR   ║");
+                Console.WriteLine($"╚════════════════════════════════════════╝");
+                Console.WriteLine($"Error Type: {ex.GetType().Name}");
+                Console.WriteLine($"Error Message: {ex.Message}");
+                Console.WriteLine($"StackTrace:\n{ex.StackTrace}");
+
+                return Json(new {
+                    success = false,
+                    message = "เกิดข้อผิดพลาด: " + ex.Message,
+                    errorType = ex.GetType().Name,
+                    debugInfo = "Exception thrown in controller. Check server console for full stack trace."
+                });
             }
         }
 

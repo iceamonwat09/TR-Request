@@ -347,48 +347,91 @@ namespace TrainingRequestApp.Services
         {
             try
             {
+                Console.WriteLine($"\n========================================");
+                Console.WriteLine($"🚀 StartWorkflow STARTED: {docNo}");
+                Console.WriteLine($"========================================\n");
+
                 var request = await GetTrainingRequest(docNo);
                 if (request == null)
                 {
-                    Console.WriteLine($"❌ StartWorkflow: Request not found - {docNo}");
+                    Console.WriteLine($"❌ [ERROR] Request not found - {docNo}");
                     return false;
                 }
 
+                Console.WriteLine($"✅ [STEP 1/5] GetTrainingRequest SUCCESS");
+                Console.WriteLine($"   DocNo: {request.DocNo}");
+                Console.WriteLine($"   Status: {request.Status}");
+                Console.WriteLine($"   CreatedBy: {request.CreatedBy}");
+
                 // ⭐ Validation: เช็คว่ามีผู้อนุมัติหรือไม่
-                Console.WriteLine("🔍 Checking approver assignments:");
-                Console.WriteLine($"   Section Manager: {request.SectionManagerId ?? "NOT ASSIGNED"}");
-                Console.WriteLine($"   Department Manager: {request.DepartmentManagerId ?? "NOT ASSIGNED"}");
-                Console.WriteLine($"   HRD Admin: {request.HRDAdminId ?? "NOT ASSIGNED"}");
-                Console.WriteLine($"   HRD Confirmation: {request.HRDConfirmationId ?? "NOT ASSIGNED"}");
-                Console.WriteLine($"   Managing Director: {request.ManagingDirectorId ?? "NOT ASSIGNED"}");
+                Console.WriteLine($"\n📋 [STEP 2/5] Validating Approver Assignments:");
+                Console.WriteLine($"   Section Manager: {request.SectionManagerId ?? "❌ NOT ASSIGNED"}");
+                Console.WriteLine($"   Department Manager: {request.DepartmentManagerId ?? "⚠️ NOT ASSIGNED"}");
+                Console.WriteLine($"   HRD Admin: {request.HRDAdminId ?? "⚠️ NOT ASSIGNED"}");
+                Console.WriteLine($"   HRD Confirmation: {request.HRDConfirmationId ?? "⚠️ NOT ASSIGNED"}");
+                Console.WriteLine($"   Managing Director: {request.ManagingDirectorId ?? "⚠️ NOT ASSIGNED"}");
 
                 if (string.IsNullOrWhiteSpace(request.SectionManagerId))
                 {
-                    Console.WriteLine($"❌ StartWorkflow: Section Manager not assigned!");
-                    Console.WriteLine($"   DocNo: {docNo}");
-                    Console.WriteLine($"   Please assign Section Manager before starting workflow");
-                    return false; // ❌ ไม่สามารถเริ่ม workflow ได้ถ้าไม่มี Section Manager
+                    Console.WriteLine($"\n❌ [ERROR] Section Manager not assigned!");
+                    Console.WriteLine($"   Cannot start workflow without Section Manager");
+                    return false;
                 }
 
+                Console.WriteLine($"✅ [STEP 2/5] Validation SUCCESS - Section Manager assigned");
+
                 // ส่ง Email #1: แจ้ง CreatedBy + CCEmail
-                Console.WriteLine("📧 Sending pending notification...");
+                Console.WriteLine($"\n📧 [STEP 3/5] Sending Pending Notification Email...");
+                Console.WriteLine($"   To: {request.CreatedBy}");
+                if (!string.IsNullOrEmpty(request.CCEmail))
+                {
+                    Console.WriteLine($"   CC: {request.CCEmail}");
+                }
+
                 await SendPendingNotificationEmail(request);
+                Console.WriteLine($"✅ [STEP 3/5] Pending Notification Email sent");
+
+                // เพิ่ม delay เล็กน้อยเพื่อไม่ให้ส่ง email ติดกันเกินไป
+                await Task.Delay(500);
 
                 // อัพเดท Status
-                Console.WriteLine("📝 Updating status to WAITING_FOR_SECTION_MANAGER...");
+                Console.WriteLine($"\n📝 [STEP 4/5] Updating Status to WAITING_FOR_SECTION_MANAGER...");
+                Console.WriteLine($"   DocNo: {docNo}");
+                Console.WriteLine($"   Current Status: {request.Status}");
+                Console.WriteLine($"   New Status: WAITING_FOR_SECTION_MANAGER");
+
                 await UpdateMainStatus(docNo, "WAITING_FOR_SECTION_MANAGER");
+                Console.WriteLine($"✅ [STEP 4/5] Status Update SUCCESS");
+
+                // เพิ่ม delay เล็กน้อย
+                await Task.Delay(500);
 
                 // ส่ง Email #2: ขออนุมัติจาก Section Manager
-                Console.WriteLine($"📧 Sending approval request to Section Manager ({request.SectionManagerId})...");
-                await SendApprovalRequestEmail(request, request.SectionManagerId, "WAITING_FOR_SECTION_MANAGER");
+                Console.WriteLine($"\n📧 [STEP 5/5] Sending Approval Request Email...");
+                Console.WriteLine($"   To: {request.SectionManagerId}");
+                Console.WriteLine($"   Role: Section Manager");
 
-                Console.WriteLine($"✅ StartWorkflow Success: {docNo}");
+                await SendApprovalRequestEmail(request, request.SectionManagerId, "WAITING_FOR_SECTION_MANAGER");
+                Console.WriteLine($"✅ [STEP 5/5] Approval Request Email sent");
+
+                Console.WriteLine($"\n========================================");
+                Console.WriteLine($"✅ ✅ ✅ StartWorkflow SUCCESS: {docNo}");
+                Console.WriteLine($"========================================\n");
                 return true;
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"❌ StartWorkflow Error: {ex.Message}");
-                Console.WriteLine($"   StackTrace: {ex.StackTrace}");
+                Console.WriteLine($"\n========================================");
+                Console.WriteLine($"❌ ❌ ❌ StartWorkflow FAILED: {docNo}");
+                Console.WriteLine($"========================================");
+                Console.WriteLine($"Error Type: {ex.GetType().Name}");
+                Console.WriteLine($"Error Message: {ex.Message}");
+                Console.WriteLine($"StackTrace:\n{ex.StackTrace}");
+                if (ex.InnerException != null)
+                {
+                    Console.WriteLine($"Inner Exception: {ex.InnerException.Message}");
+                }
+                Console.WriteLine($"========================================\n");
                 return false;
             }
         }
