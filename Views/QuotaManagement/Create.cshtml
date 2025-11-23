@@ -3,114 +3,389 @@
     ViewData["Title"] = "เพิ่มโควต้าประจำปี";
 }
 
-<div class="container mt-4">
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card shadow">
-                <div class="card-header bg-success text-white">
-                    <h2 class="mb-0">
-                        <i class="fas fa-plus-circle"></i> เพิ่มโควต้าประจำปี
-                    </h2>
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>@ViewData["Title"]</title>
+
+    <!-- Bootstrap 5 & Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding-top: 80px; /* Space for back button */
+        }
+
+        .container {
+            padding: 30px;
+        }
+
+        .card {
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+            border: none;
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.6s ease;
+            background: white;
+        }
+
+        .card.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .card-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 20px 20px 0 0 !important;
+            padding: 25px;
+            border: none;
+        }
+
+        .card-header h2 {
+            margin: 0;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .card-body {
+            padding: 30px;
+        }
+
+        .form-label {
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .form-control, .form-select {
+            border-radius: 10px;
+            border: 2px solid #e0e0e0;
+            padding: 12px 15px;
+            transition: all 0.3s ease;
+            font-size: 15px;
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+
+        .form-text {
+            font-size: 13px;
+            color: #6c757d;
+            margin-top: 5px;
+        }
+
+        .text-danger {
+            color: #dc3545 !important;
+            font-size: 13px;
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 10px;
+            padding: 12px 30px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            border-radius: 10px;
+            padding: 12px 30px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-secondary:hover {
+            transform: translateY(-2px);
+        }
+
+        .back-btn {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1000;
+            background: white;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+            text-decoration: none;
+            color: #667eea;
+            font-size: 20px;
+        }
+
+        .back-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+            color: #764ba2;
+        }
+
+        .help-card {
+            border-radius: 15px;
+            border: 2px solid #667eea;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
+            margin-top: 20px;
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.6s ease 0.2s;
+        }
+
+        .help-card.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .help-card .card-body {
+            padding: 20px;
+        }
+
+        .help-card h6 {
+            color: #667eea;
+            font-weight: 700;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .help-card ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+
+        .help-card ul li {
+            margin-bottom: 8px;
+            color: #495057;
+        }
+
+        .alert {
+            border-radius: 10px;
+            border: none;
+            padding: 15px 20px;
+        }
+
+        .loading-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .loading-overlay.active {
+            display: flex;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @@keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Animation for form fields */
+        .mb-3 {
+            opacity: 0;
+            transform: translateX(-20px);
+            animation: slideIn 0.5s ease forwards;
+        }
+
+        .mb-3:nth-child(1) { animation-delay: 0.1s; }
+        .mb-3:nth-child(2) { animation-delay: 0.2s; }
+        .mb-3:nth-child(3) { animation-delay: 0.3s; }
+        .mb-3:nth-child(4) { animation-delay: 0.4s; }
+
+        @@keyframes slideIn {
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Back Button -->
+    <a href="@Url.Action("Index", "QuotaManagement")" class="back-btn" title="กลับหน้าหลัก">
+        <i class="fas fa-arrow-left"></i>
+    </a>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+    </div>
+
+    <div class="container mt-4">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <!-- Main Form Card -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="mb-0">
+                            <i class="fas fa-plus-circle"></i> เพิ่มโควต้าประจำปี
+                        </h2>
+                    </div>
+
+                    <div class="card-body">
+                        <form asp-action="Create" method="post" id="quotaForm">
+                            @Html.AntiForgeryToken()
+
+                            <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+                            <!-- Department Dropdown -->
+                            <div class="mb-3">
+                                <label asp-for="Department" class="form-label">
+                                    <i class="fas fa-building"></i> ฝ่าย <span class="text-danger">*</span>
+                                </label>
+                                <select asp-for="Department" class="form-select" required>
+                                    <option value="">-- เลือกฝ่าย --</option>
+                                    @if (ViewBag.Departments != null)
+                                    {
+                                        foreach (var dept in ViewBag.Departments)
+                                        {
+                                            <option value="@dept">@dept</option>
+                                        }
+                                    }
+                                </select>
+                                <span asp-validation-for="Department" class="text-danger"></span>
+                            </div>
+
+                            <!-- Year Dropdown -->
+                            <div class="mb-3">
+                                <label asp-for="Year" class="form-label">
+                                    <i class="fas fa-calendar-alt"></i> ปี <span class="text-danger">*</span>
+                                </label>
+                                <select asp-for="Year" class="form-select" required>
+                                    <option value="">-- เลือกปี --</option>
+                                    @if (ViewBag.Years != null)
+                                    {
+                                        foreach (var year in ViewBag.Years)
+                                        {
+                                            <option value="@year">@year</option>
+                                        }
+                                    }
+                                </select>
+                                <span asp-validation-for="Year" class="text-danger"></span>
+                            </div>
+
+                            <!-- Quota Hours Input -->
+                            <div class="mb-3">
+                                <label asp-for="Qhours" class="form-label">
+                                    <i class="fas fa-clock"></i> โควต้าชั่วโมง (ชม.) <span class="text-danger">*</span>
+                                </label>
+                                <input asp-for="Qhours" type="number" class="form-control"
+                                       min="0" step="1" placeholder="กรอกจำนวนชั่วโมง" required />
+                                <span asp-validation-for="Qhours" class="text-danger"></span>
+                                <div class="form-text">
+                                    <i class="fas fa-info-circle"></i> ระบุจำนวนชั่วโมงที่จัดสรรให้กับฝ่ายในปีนี้
+                                </div>
+                            </div>
+
+                            <!-- Cost Input -->
+                            <div class="mb-3">
+                                <label asp-for="Cost" class="form-label">
+                                    <i class="fas fa-money-bill-wave"></i> โควต้าเงิน (บาท) <span class="text-danger">*</span>
+                                </label>
+                                <input asp-for="Cost" type="number" class="form-control"
+                                       min="0" step="0.01" placeholder="กรอกจำนวนเงิน" required />
+                                <span asp-validation-for="Cost" class="text-danger"></span>
+                                <div class="form-text">
+                                    <i class="fas fa-info-circle"></i> ระบุงบประมาณที่จัดสรรให้กับฝ่ายในปีนี้
+                                </div>
+                            </div>
+
+                            <!-- Buttons -->
+                            <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                                <a href="@Url.Action("Index", "QuotaManagement")" class="btn btn-secondary">
+                                    <i class="fas fa-times"></i> ยกเลิก
+                                </a>
+                                <button type="submit" class="btn btn-success">
+                                    <i class="fas fa-save"></i> บันทึก
+                                </button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
 
-                <div class="card-body">
-                    <form asp-action="Create" method="post">
-                        @Html.AntiForgeryToken()
-
-                        <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
-
-                        <!-- Department Dropdown -->
-                        <div class="mb-3">
-                            <label asp-for="Department" class="form-label">
-                                <i class="fas fa-building"></i> ฝ่าย <span class="text-danger">*</span>
-                            </label>
-                            <select asp-for="Department" class="form-select" required>
-                                <option value="">-- เลือกฝ่าย --</option>
-                                @if (ViewBag.Departments != null)
-                                {
-                                    foreach (var dept in ViewBag.Departments)
-                                    {
-                                        <option value="@dept">@dept</option>
-                                    }
-                                }
-                            </select>
-                            <span asp-validation-for="Department" class="text-danger"></span>
-                        </div>
-
-                        <!-- Year Dropdown -->
-                        <div class="mb-3">
-                            <label asp-for="Year" class="form-label">
-                                <i class="fas fa-calendar-alt"></i> ปี <span class="text-danger">*</span>
-                            </label>
-                            <select asp-for="Year" class="form-select" required>
-                                <option value="">-- เลือกปี --</option>
-                                @if (ViewBag.Years != null)
-                                {
-                                    foreach (var year in ViewBag.Years)
-                                    {
-                                        <option value="@year">@year</option>
-                                    }
-                                }
-                            </select>
-                            <span asp-validation-for="Year" class="text-danger"></span>
-                        </div>
-
-                        <!-- Quota Hours Input -->
-                        <div class="mb-3">
-                            <label asp-for="Qhours" class="form-label">
-                                <i class="fas fa-clock"></i> โควต้าชั่วโมง (ชม.) <span class="text-danger">*</span>
-                            </label>
-                            <input asp-for="Qhours" type="number" class="form-control"
-                                   min="0" step="1" placeholder="กรอกจำนวนชั่วโมง" required />
-                            <span asp-validation-for="Qhours" class="text-danger"></span>
-                            <div class="form-text">
-                                <i class="fas fa-info-circle"></i> ระบุจำนวนชั่วโมงที่จัดสรรให้กับฝ่ายในปีนี้
-                            </div>
-                        </div>
-
-                        <!-- Cost Input -->
-                        <div class="mb-3">
-                            <label asp-for="Cost" class="form-label">
-                                <i class="fas fa-money-bill-wave"></i> โควต้าเงิน (บาท) <span class="text-danger">*</span>
-                            </label>
-                            <input asp-for="Cost" type="number" class="form-control"
-                                   min="0" step="0.01" placeholder="กรอกจำนวนเงิน" required />
-                            <span asp-validation-for="Cost" class="text-danger"></span>
-                            <div class="form-text">
-                                <i class="fas fa-info-circle"></i> ระบุงบประมาณที่จัดสรรให้กับฝ่ายในปีนี้
-                            </div>
-                        </div>
-
-                        <!-- Buttons -->
-                        <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
-                            <a href="@Url.Action("Index", "QuotaManagement")" class="btn btn-secondary">
-                                <i class="fas fa-times"></i> ยกเลิก
-                            </a>
-                            <button type="submit" class="btn btn-success">
-                                <i class="fas fa-save"></i> บันทึก
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-
-            <!-- Help Card -->
-            <div class="card mt-3 border-info">
-                <div class="card-body">
-                    <h6 class="card-title text-info">
-                        <i class="fas fa-question-circle"></i> คำแนะนำ
-                    </h6>
-                    <ul class="mb-0">
-                        <li>เลือกฝ่ายและปีที่ต้องการกำหนดโควต้า</li>
-                        <li>ระบุจำนวนชั่วโมงและงบประมาณที่จัดสรรให้</li>
-                        <li>ระบบจะบันทึกข้อมูลผู้สร้างและวันที่สร้างอัตโนมัติ</li>
-                        <li>แต่ละฝ่ายสามารถมีโควต้าได้เพียง 1 รายการต่อปี</li>
-                    </ul>
+                <!-- Help Card -->
+                <div class="card help-card">
+                    <div class="card-body">
+                        <h6>
+                            <i class="fas fa-question-circle"></i> คำแนะนำ
+                        </h6>
+                        <ul>
+                            <li>เลือกฝ่ายและปีที่ต้องการกำหนดโควต้า</li>
+                            <li>ระบุจำนวนชั่วโมงและงบประมาณที่จัดสรรให้</li>
+                            <li>ระบบจะบันทึกข้อมูลผู้สร้างและวันที่สร้างอัตโนมัติ</li>
+                            <li>แต่ละฝ่ายสามารถมีโควต้าได้เพียง 1 รายการต่อปี</li>
+                        </ul>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-</div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Card animation on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(() => {
+                document.querySelectorAll('.card').forEach(card => {
+                    card.classList.add('show');
+                });
+                document.querySelector('.help-card').classList.add('show');
+            }, 100);
+
+            // Form submission with loading overlay
+            const form = document.getElementById('quotaForm');
+            if (form) {
+                form.addEventListener('submit', function(e) {
+                    const loadingOverlay = document.getElementById('loadingOverlay');
+                    if (loadingOverlay) {
+                        loadingOverlay.classList.add('active');
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>
 
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
