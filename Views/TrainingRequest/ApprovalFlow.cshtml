@@ -2,6 +2,11 @@
 @{
     ViewData["Title"] = "Approval Workflow Timeline";
 
+    // ตรวจสอบสิทธิ์ User
+    var userRole = Context.Session.GetString("UserRole") ?? "User";
+    bool isAdmin = userRole.Contains("Admin", StringComparison.OrdinalIgnoreCase) ||
+                   userRole.Contains("System Admin", StringComparison.OrdinalIgnoreCase);
+
     // Helper functions
     string GetStatusClass(string levelStatus, string mainStatus, string waitingStatus)
     {
@@ -286,6 +291,15 @@
                 📝 ดูรายละเอียดและอนุมัติ
             </button>
         }
+
+        @* ปุ่ม Retry Email - สำหรับ Admin/System Admin เท่านั้น *@
+        @if (isAdmin && Model.Status != "Pending" && Model.Status != "APPROVED" && Model.Status != "REJECTED")
+        {
+            <button id="btnRetryEmail" class="send-email-btn" style="background: #17a2b8; margin-left: 10px;">
+                🔄 Retry Email
+            </button>
+        }
+
         <button onclick="window.location.href='/Home/MonthlyRequests'" class="back-btn">
             ← กลับ
         </button>
@@ -612,6 +626,75 @@ $(document).ready(function() {
 
                 alert('เกิดข้อผิดพลาดในการส่ง Email\n\nStatus: ' + status + '\nError: ' + error + '\n\n💡 เปิด Browser Console (F12) เพื่อดู details');
                 $('#sendEmailBtn').prop('disabled', false).text('📧 ส่ง Email เริ่มกระบวนการอนุมัติ');
+            }
+        });
+    });
+
+    // ═══════════════════════════════════════════════════════════
+    // 🔄 Retry Email Button Handler (สำหรับ Admin/System Admin)
+    // ═══════════════════════════════════════════════════════════
+    $('#btnRetryEmail').click(function() {
+        console.log('\n%c═══════════════════════════════════════════════════════════', 'color: #17a2b8; font-weight: bold;');
+        console.log('%c🔄 Retry Email Button Clicked', 'color: #17a2b8; font-weight: bold; font-size: 14px;');
+        console.log('%c═══════════════════════════════════════════════════════════', 'color: #17a2b8; font-weight: bold;');
+        console.log('⏰ Timestamp:', new Date().toLocaleString('th-TH'));
+        console.log('📄 DocNo:', '@Model.DocNo');
+        console.log('📊 Current Status:', '@Model.Status');
+
+        const confirmMsg = 'ยืนยันการส่ง Email ซ้ำ?\n\n' +
+                          'Email จะถูกส่งไปยัง:\n' +
+                          '• ผู้อนุมัติคนปัจจุบัน\n' +
+                          '• ผู้สร้างเอกสาร (CreatedBy)\n' +
+                          '• CC Emails\n' +
+                          '• HRD Admin\n\n' +
+                          'ต้องการดำเนินการต่อหรือไม่?';
+
+        if (!confirm(confirmMsg)) {
+            console.log('❌ User cancelled the operation');
+            return;
+        }
+
+        console.log('✅ User confirmed - Disabling button and sending AJAX request...');
+        const $btn = $(this);
+        const originalText = $btn.html();
+        $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> กำลังส่ง Email...');
+
+        console.log('📡 AJAX Request Details:');
+        console.log('   URL: /TrainingRequest/RetryEmail');
+        console.log('   Method: POST');
+        console.log('   Data:', { docNo: '@Model.DocNo' });
+
+        $.ajax({
+            url: '/TrainingRequest/RetryEmail',
+            type: 'POST',
+            data: { docNo: '@Model.DocNo' },
+            success: function(response) {
+                console.log('\n%c✅ AJAX SUCCESS Response Received', 'color: #4CAF50; font-weight: bold; font-size: 14px;');
+                console.log('Response Object:', response);
+                console.log('   success:', response.success);
+                console.log('   message:', response.message);
+
+                if (response.success) {
+                    console.log('%c✅ Retry Email sent successfully!', 'color: #4CAF50; font-weight: bold;');
+                    alert('✅ ' + response.message + '\n\nEmail ได้ถูกส่งไปยังผู้อนุมัติและผู้เกี่ยวข้องแล้ว');
+                    $btn.prop('disabled', false).html(originalText);
+                } else {
+                    console.error('%c❌ Retry Email failed!', 'color: #f44336; font-weight: bold;');
+                    console.error('Error Message:', response.message);
+                    alert('❌ ' + response.message);
+                    $btn.prop('disabled', false).html(originalText);
+                }
+            },
+            error: function(xhr, status, error) {
+                console.log('\n%c❌ AJAX ERROR', 'color: #f44336; font-weight: bold; font-size: 14px;');
+                console.error('XHR Object:', xhr);
+                console.error('Status:', status);
+                console.error('Error:', error);
+                console.error('Response Text:', xhr.responseText);
+                console.error('Status Code:', xhr.status);
+
+                alert('เกิดข้อผิดพลาดในการส่ง Email ซ้ำ\n\nStatus: ' + status + '\nError: ' + error + '\n\n💡 เปิด Browser Console (F12) เพื่อดู details');
+                $btn.prop('disabled', false).html(originalText);
             }
         });
     });

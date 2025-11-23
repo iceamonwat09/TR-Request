@@ -44,6 +44,12 @@ namespace TrainingRequestApp.Services
         /// Reset Status หลัง Revise (กรณีที่ 1)
         /// </summary>
         Task ResetApprovalStatus(string docNo, string upToRole);
+
+        /// <summary>
+        /// ส่ง Email ซ้ำสำหรับ Admin/System Admin
+        /// ส่งไปยัง: ผู้อนุมัติคนปัจจุบัน + CreatedBy + CC + HRD Admin
+        /// </summary>
+        Task<WorkflowResult> RetryEmail(string docNo);
     }
 
     public class ApprovalPermissionResult
