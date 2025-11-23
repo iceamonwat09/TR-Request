@@ -41,9 +41,12 @@ namespace TrainingRequestApp.Services
         Task<bool> StartWorkflow(string docNo);
 
         /// <summary>
-        /// Reset Status หลัง Revise (กรณีที่ 1)
+        /// Reset Approval Status แยก 2 กรณี:
+        /// - resetType = null/"Revise": Reset ระดับ 1-3 (Section/Dept/HRD Admin)
+        /// - resetType = "HRDAdmin"/"RevisionAdmin": Reset ระดับ 4-5 (HRD Confirmation/MD)
+        /// Comment_XXX ทั้งหมดจะถูกเก็บไว้เสมอ
         /// </summary>
-        Task ResetApprovalStatus(string docNo, string upToRole);
+        Task ResetApprovalStatus(string docNo, string resetType);
 
         /// <summary>
         /// ส่ง Email ซ้ำสำหรับ Admin/System Admin

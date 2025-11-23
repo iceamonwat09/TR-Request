@@ -482,7 +482,7 @@ namespace TrainingRequestApp.Services
 
         #region Reset Approval Status
 
-        public async Task ResetApprovalStatus(string docNo, string upToRole)
+        public async Task ResetApprovalStatus(string docNo, string resetType)
         {
             try
             {
@@ -490,27 +490,39 @@ namespace TrainingRequestApp.Services
                 {
                     await conn.OpenAsync();
 
-                    string query = @"
-                        UPDATE [HRDSYSTEM].[dbo].[TrainingRequests]
-                        SET
-                            Status_SectionManager = 'Pending',
-                            ApproveInfo_SectionManager = NULL,
-                            Status_DepartmentManager = 'Pending',
-                            ApproveInfo_DepartmentManager = NULL,
-                            Status_HRDAdmin = 'Pending',
-                            ApproveInfo_HRDAdmin = NULL";
+                    string query = "";
 
-                    // เพิ่ม reset HRD Confirmation และ Managing Director ถ้าเป็น Revision Admin
-                    if (upToRole == "HRDAdmin")
+                    // ⭐ แยก 2 กรณีอย่างชัดเจน
+                    if (resetType == "HRDAdmin" || resetType == "RevisionAdmin")
                     {
-                        query += @",
-                            Status_HRDConfirmation = 'Pending',
-                            ApproveInfo_HRDConfirmation = NULL,
-                            Status_ManagingDirector = 'Pending',
-                            ApproveInfo_ManagingDirector = NULL";
-                    }
+                        // กรณี 2: Revision Admin → Reset เฉพาะ ระดับ 4-5 (ไม่แตะ ระดับ 1-3!)
+                        query = @"
+                            UPDATE [HRDSYSTEM].[dbo].[TrainingRequests]
+                            SET
+                                Status_HRDConfirmation = 'Pending',
+                                ApproveInfo_HRDConfirmation = NULL,
+                                Status_ManagingDirector = 'Pending',
+                                ApproveInfo_ManagingDirector = NULL
+                            WHERE DocNo = @DocNo";
 
-                    query += " WHERE DocNo = @DocNo";
+                        Console.WriteLine($"🔄 Resetting Level 4-5 (HRD Confirmation + Managing Director) for {docNo}");
+                    }
+                    else
+                    {
+                        // กรณี 1: Revise → Reset เฉพาะ ระดับ 1-3 (ไม่แตะ ระดับ 4-5!)
+                        query = @"
+                            UPDATE [HRDSYSTEM].[dbo].[TrainingRequests]
+                            SET
+                                Status_SectionManager = 'Pending',
+                                ApproveInfo_SectionManager = NULL,
+                                Status_DepartmentManager = 'Pending',
+                                ApproveInfo_DepartmentManager = NULL,
+                                Status_HRDAdmin = 'Pending',
+                                ApproveInfo_HRDAdmin = NULL
+                            WHERE DocNo = @DocNo";
+
+                        Console.WriteLine($"🔄 Resetting Level 1-3 (Section + Dept + HRD Admin) for {docNo}");
+                    }
 
                     using (var cmd = new SqlCommand(query, conn))
                     {
@@ -519,7 +531,7 @@ namespace TrainingRequestApp.Services
                     }
                 }
 
-                Console.WriteLine($"✅ Reset Approval Status: {docNo} (upTo: {upToRole})");
+                Console.WriteLine($"✅ Reset Approval Status: {docNo} (Type: {resetType})");
             }
             catch (Exception ex)
             {
