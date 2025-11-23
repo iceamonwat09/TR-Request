@@ -190,6 +190,14 @@ namespace TrainingRequestApp.Services
                 // หา Status ถัดไป
                 string nextStatus = GetNextApprovalStatus(previousStatus);
 
+                // ⭐ ถ้า previousStatus = "Revision Admin" และ HRD Admin อนุมัติ
+                // ต้อง Reset Status_HRDConfirmation และ Status_ManagingDirector เป็น Pending
+                if (previousStatus == "Revision Admin" && approverRole == "HRDAdmin")
+                {
+                    Console.WriteLine($"🔄 Revision Admin → WAITING_FOR_HRD_CONFIRMATION: Resetting HRD Confirmation & Managing Director status");
+                    await ResetApprovalStatus(docNo, "HRDAdmin");
+                }
+
                 // อัพเดท Status หลัก
                 await UpdateMainStatus(docNo, nextStatus, userEmail);
 
@@ -474,7 +482,7 @@ namespace TrainingRequestApp.Services
 
         #region Reset Approval Status
 
-        public async Task ResetApprovalStatus(string docNo, string upToRole)
+        public async Task ResetApprovalStatus(string docNo, string resetType)
         {
             try
             {
@@ -482,27 +490,39 @@ namespace TrainingRequestApp.Services
                 {
                     await conn.OpenAsync();
 
-                    string query = @"
-                        UPDATE [HRDSYSTEM].[dbo].[TrainingRequests]
-                        SET
-                            Status_SectionManager = 'Pending',
-                            ApproveInfo_SectionManager = NULL,
-                            Status_DepartmentManager = 'Pending',
-                            ApproveInfo_DepartmentManager = NULL,
-                            Status_HRDAdmin = 'Pending',
-                            ApproveInfo_HRDAdmin = NULL";
+                    string query = "";
 
-                    // เพิ่ม reset HRD Confirmation และ Managing Director ถ้าเป็น Revision Admin
-                    if (upToRole == "HRDAdmin")
+                    // ⭐ แยก 2 กรณีอย่างชัดเจน
+                    if (resetType == "HRDAdmin" || resetType == "RevisionAdmin")
                     {
-                        query += @",
-                            Status_HRDConfirmation = 'Pending',
-                            ApproveInfo_HRDConfirmation = NULL,
-                            Status_ManagingDirector = 'Pending',
-                            ApproveInfo_ManagingDirector = NULL";
-                    }
+                        // กรณี 2: Revision Admin → Reset เฉพาะ ระดับ 4-5 (ไม่แตะ ระดับ 1-3!)
+                        query = @"
+                            UPDATE [HRDSYSTEM].[dbo].[TrainingRequests]
+                            SET
+                                Status_HRDConfirmation = 'Pending',
+                                ApproveInfo_HRDConfirmation = NULL,
+                                Status_ManagingDirector = 'Pending',
+                                ApproveInfo_ManagingDirector = NULL
+                            WHERE DocNo = @DocNo";
 
-                    query += " WHERE DocNo = @DocNo";
+                        Console.WriteLine($"🔄 Resetting Level 4-5 (HRD Confirmation + Managing Director) for {docNo}");
+                    }
+                    else
+                    {
+                        // กรณี 1: Revise → Reset เฉพาะ ระดับ 1-3 (ไม่แตะ ระดับ 4-5!)
+                        query = @"
+                            UPDATE [HRDSYSTEM].[dbo].[TrainingRequests]
+                            SET
+                                Status_SectionManager = 'Pending',
+                                ApproveInfo_SectionManager = NULL,
+                                Status_DepartmentManager = 'Pending',
+                                ApproveInfo_DepartmentManager = NULL,
+                                Status_HRDAdmin = 'Pending',
+                                ApproveInfo_HRDAdmin = NULL
+                            WHERE DocNo = @DocNo";
+
+                        Console.WriteLine($"🔄 Resetting Level 1-3 (Section + Dept + HRD Admin) for {docNo}");
+                    }
 
                     using (var cmd = new SqlCommand(query, conn))
                     {
@@ -511,12 +531,171 @@ namespace TrainingRequestApp.Services
                     }
                 }
 
-                Console.WriteLine($"✅ Reset Approval Status: {docNo} (upTo: {upToRole})");
+                Console.WriteLine($"✅ Reset Approval Status: {docNo} (Type: {resetType})");
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"❌ ResetApprovalStatus Error: {ex.Message}");
             }
+        }
+
+        #endregion
+
+        #region Retry Email
+
+        /// <summary>
+        /// Retry Email - ส่ง Email ซ้ำตาม Status ปัจจุบัน
+        /// สำหรับ Admin/System Admin เท่านั้น
+        /// ส่งไปยัง: ผู้อนุมัติคนปัจจุบัน + CreatedBy + CC + HRD Admin
+        /// </summary>
+        public async Task<WorkflowResult> RetryEmail(string docNo)
+        {
+            var result = new WorkflowResult { Success = false };
+
+            try
+            {
+                Console.WriteLine($"\n========================================");
+                Console.WriteLine($"🔄 RetryEmail STARTED: {docNo}");
+                Console.WriteLine($"========================================\n");
+
+                var request = await GetTrainingRequest(docNo);
+                if (request == null)
+                {
+                    result.Message = "ไม่พบเอกสาร";
+                    Console.WriteLine($"❌ Request not found");
+                    return result;
+                }
+
+                string currentStatus = request.Status;
+                Console.WriteLine($"📋 Current Status: {currentStatus}");
+
+                // ตรวจสอบว่า Status สามารถ Retry Email ได้หรือไม่
+                if (currentStatus == "Pending" || currentStatus == "APPROVED" || currentStatus == "REJECTED")
+                {
+                    result.Message = $"ไม่สามารถ Retry Email สำหรับ Status: {currentStatus}";
+                    Console.WriteLine($"⚠️ Cannot retry email for status: {currentStatus}");
+                    return result;
+                }
+
+                // หาผู้อนุมัติคนปัจจุบัน
+                string nextApproverEmail = GetNextApproverEmail(request, currentStatus);
+                Console.WriteLine($"📧 Next Approver: {nextApproverEmail ?? "N/A"}");
+
+                // ส่ง Email #1: แจ้ง CreatedBy + CCEmail + HRD Admin
+                Console.WriteLine($"\n📧 Sending notification to CreatedBy + CC + HRD Admin...");
+                await SendRetryNotificationEmail(request, currentStatus);
+
+                // ส่ง Email #2: ขออนุมัติจากผู้อนุมัติคนปัจจุบัน
+                if (!string.IsNullOrEmpty(nextApproverEmail))
+                {
+                    Console.WriteLine($"\n📧 Sending approval request to {nextApproverEmail}...");
+                    await SendApprovalRequestEmail(request, nextApproverEmail, currentStatus);
+                }
+                else
+                {
+                    Console.WriteLine($"\n⚠️ No approver email found for status: {currentStatus}");
+                }
+
+                result.Success = true;
+                result.Message = $"✅ ส่ง Email ซ้ำสำเร็จ (Status: {currentStatus})";
+
+                Console.WriteLine($"\n========================================");
+                Console.WriteLine($"✅ RetryEmail SUCCESS: {docNo}");
+                Console.WriteLine($"========================================\n");
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"\n========================================");
+                Console.WriteLine($"❌ RetryEmail FAILED: {docNo}");
+                Console.WriteLine($"========================================");
+                Console.WriteLine($"Error: {ex.Message}");
+                Console.WriteLine($"StackTrace:\n{ex.StackTrace}");
+
+                result.Message = $"เกิดข้อผิดพลาด: {ex.Message}";
+                return result;
+            }
+        }
+
+        /// <summary>
+        /// ส่ง Email แจ้ง CreatedBy + CC + HRD Admin ว่ามีการ Retry Email
+        /// </summary>
+        private async Task SendRetryNotificationEmail(TrainingRequestEditViewModel request, string currentStatus)
+        {
+            string statusDisplay = GetStatusDisplayName(currentStatus);
+            string subject = $"🔄 Retry Email - {request.TrainingType} {request.DocNo}";
+            string docLink = $"{_baseUrl}/TrainingRequest/Edit?docNo={request.DocNo}";
+
+            string body = $@"
+<!DOCTYPE html>
+<html>
+<body style='font-family: Arial, sans-serif;'>
+    <div style='max-width: 600px; margin: 0 auto; padding: 20px;'>
+        <div style='background: #17a2b8; color: white; padding: 20px; text-align: center; border-radius: 10px 10px 0 0;'>
+            <h2>🔄 Retry Email Notification</h2>
+        </div>
+        <div style='background: #ffffff; padding: 20px; border: 1px solid #e0e0e0;'>
+            <p>เรียน ผู้เกี่ยวข้อง</p>
+
+            <p>ระบบได้ทำการส่ง Email ซ้ำสำหรับเอกสารฉบับนี้</p>
+
+            <div style='background: #d1ecf1; padding: 15px; border-left: 4px solid #17a2b8; margin: 15px 0;'>
+                <strong>📄 เลขที่เอกสาร:</strong> {request.DocNo}<br>
+                <strong>📖 หัวข้อ:</strong> {request.SeminarTitle}<br>
+                <strong>📊 Status ปัจจุบัน:</strong> {statusDisplay}<br>
+                <strong>🔄 Email ส่งไปยัง:</strong> ผู้อนุมัติคนปัจจุบัน
+            </div>
+
+            <p>กรุณาตรวจสอบอีเมลและดำเนินการอนุมัติหากท่านเป็นผู้อนุมัติ</p>
+
+            <div style='text-align: center; margin: 20px 0;'>
+                <a href='{docLink}' style='display: inline-block; padding: 12px 30px; background: #17a2b8; color: white; text-decoration: none; border-radius: 5px;'>ดูรายละเอียดเอกสาร</a>
+            </div>
+        </div>
+        <div style='background: #f8f9fa; padding: 20px; text-align: center; border-radius: 0 0 10px 10px; color: #666;'>
+            <p>ระบบ Training Request Management</p>
+            <p><small>Email นี้ถูกส่งอัตโนมัติ กรุณาอย่าตอบกลับ</small></p>
+        </div>
+    </div>
+</body>
+</html>";
+
+            // ส่งให้ CreatedBy
+            await _emailService.SendEmailAsync(request.CreatedBy, subject, body, request.Id, "RETRY_EMAIL_NOTIFICATION", request.DocNo);
+
+            // ส่งให้ CCEmail
+            if (!string.IsNullOrEmpty(request.CCEmail))
+            {
+                var ccEmails = request.CCEmail.Split(',').Select(e => e.Trim()).ToArray();
+                await _emailService.SendEmailToMultipleAsync(ccEmails, subject, body, request.Id, "RETRY_EMAIL_NOTIFICATION", request.DocNo);
+            }
+
+            // ส่งให้ HRD Admin
+            if (!string.IsNullOrEmpty(request.HRDAdminId))
+            {
+                await _emailService.SendEmailAsync(request.HRDAdminId, subject, body, request.Id, "RETRY_EMAIL_NOTIFICATION", request.DocNo);
+            }
+        }
+
+        /// <summary>
+        /// แปลง Status เป็นชื่อที่อ่านง่าย
+        /// </summary>
+        private string GetStatusDisplayName(string status)
+        {
+            return status switch
+            {
+                "WAITING_FOR_SECTION_MANAGER" => "รอ Section Manager อนุมัติ",
+                "WAITING_FOR_DEPARTMENT_MANAGER" => "รอ Department Manager อนุมัติ",
+                "WAITING_FOR_HRD_ADMIN" => "รอ HRD Admin อนุมัติ",
+                "WAITING_FOR_HRD_CONFIRMATION" => "รอ HRD Confirmation อนุมัติ",
+                "WAITING_FOR_MANAGING_DIRECTOR" => "รอ Managing Director อนุมัติ",
+                "Revise" => "ส่งกลับแก้ไข",
+                "Revision Admin" => "ส่งกลับ HRD Admin แก้ไข",
+                "APPROVED" => "อนุมัติสมบูรณ์",
+                "REJECTED" => "ไม่อนุมัติ",
+                _ => status
+            };
         }
 
         #endregion

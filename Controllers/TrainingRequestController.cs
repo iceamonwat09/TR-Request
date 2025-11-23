@@ -251,9 +251,13 @@ namespace TrainingRequestApp.Controllers
                                 {
                                     pageMode = "Edit"; // CreatedBy แก้ไขหลัง Revise
                                 }
-                                else if (model.Status == "Revision Admin" && (isHRDAdmin || isHRDConfirmation))
+                                else if (model.Status == "Revision Admin" && isHRDAdmin)
                                 {
-                                    pageMode = "Admin"; // HRD Admin/Confirmation แก้ไข Revision Admin
+                                    pageMode = "Approve"; // ✅ HRD Admin สามารถอนุมัติได้ใน Revision Admin Mode
+                                }
+                                else if (model.Status == "Revision Admin" && isHRDConfirmation)
+                                {
+                                    pageMode = "Admin"; // HRD Confirmation เป็น Admin Mode (ดูอย่างเดียว)
                                 }
                                 else if (permissionResult.CanApprove)
                                 {
@@ -305,6 +309,22 @@ namespace TrainingRequestApp.Controllers
 
                 string connectionString = _configuration.GetConnectionString("DefaultConnection");
 
+                // 🔍 ดึง Status เดิมก่อน UPDATE (เพื่อตรวจสอบว่าเป็น Revise หรือไม่)
+                string previousStatus = null;
+                using (SqlConnection conn = new SqlConnection(connectionString))
+                {
+                    await conn.OpenAsync();
+                    string query = "SELECT Status FROM [HRDSYSTEM].[dbo].[TrainingRequests] WHERE DocNo = @DocNo AND IsActive = 1";
+                    using (SqlCommand cmd = new SqlCommand(query, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@DocNo", docNo);
+                        var result = await cmd.ExecuteScalarAsync();
+                        previousStatus = result?.ToString();
+                    }
+                }
+
+                Console.WriteLine($"📋 Previous Status: {previousStatus}");
+
                 using (SqlConnection conn = new SqlConnection(connectionString))
                 {
                     await conn.OpenAsync();
@@ -341,13 +361,6 @@ namespace TrainingRequestApp.Controllers
 
                             transaction.Commit();
                             Console.WriteLine("✅ Transaction committed");
-
-                            return Json(new
-                            {
-                                success = true,
-                                message = "✅ อัพเดทข้อมูลสำเร็จ",
-                                docNo = docNo
-                            });
                         }
                         catch (Exception ex)
                         {
@@ -358,6 +371,47 @@ namespace TrainingRequestApp.Controllers
                         }
                     }
                 }
+
+                // ⭐ ตรวจสอบว่า Status เดิมเป็น "Revise" หรือไม่
+                // ถ้าใช่ → Reset Status และส่งกลับเข้า Workflow ใหม่
+                if (previousStatus == "Revise")
+                {
+                    Console.WriteLine($"\n🔄 Detected Revise → Re-submitting to workflow...");
+
+                    // Reset Status_XXX และ ApproveInfo_XXX เป็น Pending/NULL
+                    await _approvalWorkflowService.ResetApprovalStatus(docNo, null);
+                    Console.WriteLine($"✅ Approval Status Reset");
+
+                    // เริ่ม Workflow ใหม่ (Status → WAITING_FOR_SECTION_MANAGER + ส่ง Email)
+                    bool workflowStarted = await _approvalWorkflowService.StartWorkflow(docNo);
+
+                    if (workflowStarted)
+                    {
+                        Console.WriteLine($"✅ Workflow restarted successfully");
+                        return Json(new
+                        {
+                            success = true,
+                            message = "✅ อัพเดทข้อมูลสำเร็จ และส่งเข้าสู่การอนุมัติใหม่",
+                            docNo = docNo
+                        });
+                    }
+                    else
+                    {
+                        Console.WriteLine($"❌ Failed to restart workflow");
+                        return Json(new
+                        {
+                            success = false,
+                            message = "❌ อัพเดทข้อมูลสำเร็จ แต่ไม่สามารถส่งเข้าสู่การอนุมัติได้"
+                        });
+                    }
+                }
+
+                return Json(new
+                {
+                    success = true,
+                    message = "✅ อัพเดทข้อมูลสำเร็จ",
+                    docNo = docNo
+                });
             }
             catch (Exception ex)
             {
@@ -608,6 +662,74 @@ namespace TrainingRequestApp.Controllers
                 Console.WriteLine($"❌ Error in Approve: {ex.Message}");
                 Console.WriteLine($"StackTrace: {ex.StackTrace}");
                 return Json(new { success = false, message = "เกิดข้อผิดพลาด: " + ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// POST: /TrainingRequest/RetryEmail
+        /// ส่ง Email ซ้ำสำหรับ Admin/System Admin เท่านั้น
+        /// ส่งไปยัง: ผู้อนุมัติคนปัจจุบัน + CreatedBy + CC + HRD Admin
+        /// </summary>
+        [HttpPost]
+        public async Task<IActionResult> RetryEmail(string docNo)
+        {
+            try
+            {
+                Console.WriteLine($"\n╔════════════════════════════════════════╗");
+                Console.WriteLine($"║  RetryEmail Controller Called          ║");
+                Console.WriteLine($"╚════════════════════════════════════════╝");
+                Console.WriteLine($"DocNo: {docNo}");
+
+                // ตรวจสอบสิทธิ์ว่าเป็น Admin หรือ System Admin
+                string userRole = HttpContext.Session.GetString("UserRole") ?? "User";
+                bool isAdmin = userRole.Contains("Admin", StringComparison.OrdinalIgnoreCase) ||
+                               userRole.Contains("System Admin", StringComparison.OrdinalIgnoreCase);
+
+                Console.WriteLine($"User Role: {userRole}");
+                Console.WriteLine($"Is Admin: {isAdmin}");
+
+                if (!isAdmin)
+                {
+                    Console.WriteLine($"❌ Access denied: User is not Admin");
+                    return Json(new {
+                        success = false,
+                        message = "คุณไม่มีสิทธิ์ใช้งานฟีเจอร์นี้ (เฉพาะ Admin/System Admin)"
+                    });
+                }
+
+                if (string.IsNullOrEmpty(docNo))
+                {
+                    Console.WriteLine($"❌ DocNo is null or empty");
+                    return Json(new {
+                        success = false,
+                        message = "ไม่พบ Document Number"
+                    });
+                }
+
+                Console.WriteLine($"✅ Calling RetryEmail Service...");
+                var result = await _approvalWorkflowService.RetryEmail(docNo);
+
+                Console.WriteLine($"Service returned: {result.Success}");
+
+                return Json(new
+                {
+                    success = result.Success,
+                    message = result.Message
+                });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"\n╔════════════════════════════════════════╗");
+                Console.WriteLine($"║  RetryEmail Controller ERROR           ║");
+                Console.WriteLine($"╚════════════════════════════════════════╝");
+                Console.WriteLine($"Error Type: {ex.GetType().Name}");
+                Console.WriteLine($"Error Message: {ex.Message}");
+                Console.WriteLine($"StackTrace:\n{ex.StackTrace}");
+
+                return Json(new {
+                    success = false,
+                    message = "เกิดข้อผิดพลาด: " + ex.Message
+                });
             }
         }
 

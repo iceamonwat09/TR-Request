@@ -3,173 +3,472 @@
     ViewData["Title"] = "จัดการโควต้าประจำปี";
 }
 
-<div class="container mt-4">
-    <div class="row">
-        <div class="col-md-12">
-            <div class="card shadow">
-                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-                    <h2 class="mb-0">
-                        <i class="fas fa-chart-pie"></i> จัดการโควต้าประจำปี
-                    </h2>
-                    <a href="@Url.Action("Create", "QuotaManagement")" class="btn btn-success">
-                        <i class="fas fa-plus"></i> เพิ่มโควต้าใหม่
-                    </a>
-                </div>
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>@ViewData["Title"]</title>
 
-                <div class="card-body">
-                    @if (TempData["SuccessMessage"] != null)
-                    {
-                        <div class="alert alert-success alert-dismissible fade show">
-                            <i class="fas fa-check-circle"></i> @TempData["SuccessMessage"]
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                        </div>
-                    }
+    <!-- Bootstrap 5 & Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-                    @if (TempData["ErrorMessage"] != null)
-                    {
-                        <div class="alert alert-danger alert-dismissible fade show">
-                            <i class="fas fa-exclamation-circle"></i> @TempData["ErrorMessage"]
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                        </div>
-                    }
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
 
-                    <!-- Filter Section -->
-                    <div class="row mb-3">
-                        <div class="col-md-3">
-                            <label for="yearFilter" class="form-label">
-                                <i class="fas fa-filter"></i> กรองตามปี:
-                            </label>
-                            <select id="yearFilter" class="form-select" onchange="filterByYear()">
-                                <option value="">ทั้งหมด</option>
-                                @if (ViewBag.Years != null)
-                                {
-                                    foreach (var year in ViewBag.Years)
-                                    {
-                                        <option value="@year">@year</option>
-                                    }
-                                }
-                            </select>
-                        </div>
+        .container-fluid {
+            padding: 30px;
+            padding-top: 80px; /* Space for back button */
+        }
+
+        .card {
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+            border: none;
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.6s ease;
+            background: white;
+        }
+
+        .card.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .card-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 20px 20px 0 0 !important;
+            padding: 25px;
+            border: none;
+        }
+
+        .card-header h2 {
+            margin: 0;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .filter-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 25px;
+        }
+
+        .form-control, .form-select {
+            border-radius: 10px;
+            border: 2px solid #e0e0e0;
+            padding: 10px 15px;
+            transition: all 0.3s ease;
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+
+        .btn-primary, .btn-success {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 10px;
+            padding: 10px 25px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary:hover, .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            border-radius: 10px;
+            padding: 10px 25px;
+            font-weight: 600;
+        }
+
+        .table-responsive {
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+        }
+
+        table.table {
+            margin-bottom: 0;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+
+        table.table thead th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-weight: 600;
+            border: none;
+            padding: 15px;
+            text-align: center;
+            white-space: nowrap;
+        }
+
+        table.table thead th:first-child {
+            border-radius: 10px 0 0 0;
+        }
+
+        table.table thead th:last-child {
+            border-radius: 0 10px 0 0;
+        }
+
+        table.table tbody td {
+            padding: 12px;
+            vertical-align: middle;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        table.table tbody tr:hover {
+            background: #f8f9ff;
+            transition: all 0.2s ease;
+        }
+
+        .badge {
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 12px;
+        }
+
+        .action-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border: none;
+            transition: all 0.3s ease;
+            margin: 0 3px;
+        }
+
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .btn-warning.action-btn {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+
+        .btn-danger.action-btn {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+            color: white;
+        }
+
+        .summary-card {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+            color: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(250, 112, 154, 0.3);
+        }
+
+        .summary-card h5 {
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .back-btn {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1000;
+            background: white;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+            text-decoration: none;
+            color: #667eea;
+            font-size: 20px;
+        }
+
+        .back-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+            color: #764ba2;
+        }
+
+        .loading-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .loading-overlay.active {
+            display: flex;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @@keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .alert {
+            border-radius: 10px;
+            border: none;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+        }
+
+        .empty-state i {
+            font-size: 64px;
+            color: #d1d5db;
+            margin-bottom: 20px;
+        }
+
+        .empty-state h5 {
+            color: #6b7280;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .empty-state p {
+            color: #9ca3af;
+            margin-bottom: 25px;
+        }
+
+        /* Modal Improvements */
+        .modal-content {
+            border-radius: 15px;
+            border: none;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .modal-header.bg-danger {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%) !important;
+            border-radius: 15px 15px 0 0;
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- Back Button -->
+    <a href="/" class="back-btn" title="กลับหน้าหลัก">
+        <i class="fas fa-arrow-left"></i>
+    </a>
+
+    <div class="container-fluid">
+        <div class="row justify-content-center">
+            <div class="col-12 col-xl-10">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center flex-wrap">
+                        <h2 class="mb-0">
+                            <i class="fas fa-chart-pie"></i> จัดการโควต้าประจำปี
+                        </h2>
+                        <a href="@Url.Action("Create", "QuotaManagement")" class="btn btn-success mt-2 mt-md-0">
+                            <i class="fas fa-plus"></i> เพิ่มโควต้าใหม่
+                        </a>
                     </div>
 
-                    @if (Model != null && Model.Any())
-                    {
-                        <div class="table-responsive">
-                            <table class="table table-striped table-hover" id="quotaTable">
-                                <thead class="table-primary">
-                                    <tr>
-                                        <th>ฝ่าย</th>
-                                        <th>ปี</th>
-                                        <th class="text-end">โควต้าชั่วโมง (ชม.)</th>
-                                        <th class="text-end">โควต้าเงิน (บาท)</th>
-                                        <th>สร้างโดย</th>
-                                        <th width="150" class="text-center">จัดการ</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach (var quota in Model)
-                                    {
-                                        <tr data-year="@quota.Year">
-                                            <td>
-                                                <strong>@quota.Department</strong>
-                                            </td>
-                                            <td>
-                                                <span class="badge bg-info">@quota.Year</span>
-                                            </td>
-                                            <td class="text-end">
-                                                @quota.Qhours.ToString("N0")
-                                            </td>
-                                            <td class="text-end">
-                                                @quota.Cost.ToString("N2")
-                                            </td>
-                                            <td>@(quota.CreatedBy ?? "-")</td>
-                                            <td class="text-center">
-                                                <a href="@Url.Action("Edit", "QuotaManagement", new { id = quota.ID })"
-                                                   class="btn btn-sm btn-warning" title="แก้ไข">
-                                                    <i class="fas fa-edit"></i>
-                                                </a>
-                                                <button onclick="confirmDelete(@quota.ID, '@quota.Department', '@quota.Year')"
-                                                        class="btn btn-sm btn-danger" title="ลบ">
-                                                    <i class="fas fa-trash"></i>
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    }
-                                </tbody>
-                            </table>
-                        </div>
+                    <div class="card-body">
+                        @if (TempData["SuccessMessage"] != null)
+                        {
+                            <div class="alert alert-success alert-dismissible fade show">
+                                <i class="fas fa-check-circle"></i> @TempData["SuccessMessage"]
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        }
 
-                        <!-- Summary Section -->
-                        <div class="row mt-4">
-                            <div class="col-md-12">
-                                <div class="card bg-light">
-                                    <div class="card-body">
-                                        <h5 class="card-title">
-                                            <i class="fas fa-info-circle"></i> สรุป
-                                        </h5>
-                                        <p class="mb-0">จำนวนโควต้าทั้งหมด: <strong>@Model.Count</strong> รายการ</p>
-                                    </div>
+                        @if (TempData["ErrorMessage"] != null)
+                        {
+                            <div class="alert alert-danger alert-dismissible fade show">
+                                <i class="fas fa-exclamation-circle"></i> @TempData["ErrorMessage"]
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        }
+
+                        <!-- Filter Section -->
+                        <div class="filter-section">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <label for="yearFilter" class="form-label">
+                                        <i class="fas fa-filter"></i> กรองตามปี:
+                                    </label>
+                                    <select id="yearFilter" class="form-select" onchange="filterByYear()">
+                                        <option value="">ทั้งหมด</option>
+                                        @if (ViewBag.Years != null)
+                                        {
+                                            foreach (var year in ViewBag.Years)
+                                            {
+                                                <option value="@year">@year</option>
+                                            }
+                                        }
+                                    </select>
                                 </div>
                             </div>
                         </div>
-                    }
-                    else
-                    {
-                        <div class="text-center py-5">
-                            <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
-                            <h5 class="text-muted">ไม่พบข้อมูลโควต้า</h5>
-                            <p class="text-muted">เริ่มต้นโดยการเพิ่มโควต้าประจำปี</p>
-                            <a href="@Url.Action("Create", "QuotaManagement")" class="btn btn-primary">
-                                <i class="fas fa-plus"></i> เพิ่มโควต้าแรก
-                            </a>
-                        </div>
-                    }
+
+                        @if (Model != null && Model.Any())
+                        {
+                            <div class="table-responsive">
+                                <table class="table table-hover" id="quotaTable">
+                                    <thead>
+                                        <tr>
+                                            <th>ฝ่าย</th>
+                                            <th>ปี</th>
+                                            <th class="text-end">โควต้าชั่วโมง (ชม.)</th>
+                                            <th class="text-end">โควต้าเงิน (บาท)</th>
+                                            <th>สร้างโดย</th>
+                                            <th width="120" class="text-center">จัดการ</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var quota in Model)
+                                        {
+                                            <tr data-year="@quota.Year">
+                                                <td>
+                                                    <strong>@quota.Department</strong>
+                                                </td>
+                                                <td>
+                                                    <span class="badge bg-info">@quota.Year</span>
+                                                </td>
+                                                <td class="text-end">
+                                                    <strong>@quota.Qhours.ToString("N0")</strong>
+                                                </td>
+                                                <td class="text-end">
+                                                    <strong>@quota.Cost.ToString("N2")</strong>
+                                                </td>
+                                                <td>@(quota.CreatedBy ?? "-")</td>
+                                                <td class="text-center">
+                                                    <a href="@Url.Action("Edit", "QuotaManagement", new { id = quota.ID })"
+                                                       class="btn-warning action-btn" title="แก้ไข">
+                                                        <i class="fas fa-edit"></i>
+                                                    </a>
+                                                    <button onclick="confirmDelete(@quota.ID, '@quota.Department', '@quota.Year')"
+                                                            class="btn-danger action-btn" title="ลบ">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <!-- Summary Section -->
+                            <div class="row mt-4">
+                                <div class="col-12">
+                                    <div class="summary-card">
+                                        <h5>
+                                            <i class="fas fa-info-circle"></i> สรุปข้อมูล
+                                        </h5>
+                                        <p class="mb-0">
+                                            <i class="fas fa-database"></i> จำนวนโควต้าทั้งหมด: <strong>@Model.Count รายการ</strong>
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="empty-state">
+                                <i class="fas fa-inbox"></i>
+                                <h5>ไม่พบข้อมูลโควต้า</h5>
+                                <p>เริ่มต้นโดยการเพิ่มโควต้าประจำปีสำหรับแต่ละฝ่าย</p>
+                                <a href="@Url.Action("Create", "QuotaManagement")" class="btn btn-primary">
+                                    <i class="fas fa-plus"></i> เพิ่มโควต้าแรก
+                                </a>
+                            </div>
+                        }
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-</div>
 
-<!-- Delete Confirmation Modal -->
-<div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header bg-danger text-white">
-                <h5 class="modal-title">
-                    <i class="fas fa-exclamation-triangle"></i> ยืนยันการลบ
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <p>คุณต้องการลบโควต้าประจำปีนี้หรือไม่?</p>
-                <p><strong>ฝ่าย:</strong> <span id="deleteDepartment"></span></p>
-                <p><strong>ปี:</strong> <span id="deleteYear"></span></p>
-                <p class="text-danger">
-                    <i class="fas fa-exclamation-circle"></i> การดำเนินการนี้ไม่สามารถยกเลิกได้
-                </p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                    <i class="fas fa-times"></i> ยกเลิก
-                </button>
-                <form id="deleteForm" method="post" style="display: inline;">
-                    @Html.AntiForgeryToken()
-                    <button type="submit" class="btn btn-danger">
-                        <i class="fas fa-trash"></i> ลบ
+    <!-- Delete Confirmation Modal -->
+    <div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">
+                        <i class="fas fa-exclamation-triangle"></i> ยืนยันการลบ
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>คุณต้องการลบโควต้าประจำปีนี้หรือไม่?</p>
+                    <p><strong>ฝ่าย:</strong> <span id="deleteDepartment"></span></p>
+                    <p><strong>ปี:</strong> <span id="deleteYear"></span></p>
+                    <p class="text-danger">
+                        <i class="fas fa-exclamation-circle"></i> การดำเนินการนี้ไม่สามารถยกเลิกได้
+                    </p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times"></i> ยกเลิก
                     </button>
-                </form>
+                    <form id="deleteForm" method="post" style="display: inline;">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn btn-danger">
+                            <i class="fas fa-trash"></i> ลบ
+                        </button>
+                    </form>
+                </div>
             </div>
         </div>
     </div>
-</div>
 
-@section Scripts {
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        // Card animation on load
+        document.addEventListener('DOMContentLoaded', function () {
+            setTimeout(function () {
+                document.querySelector('.card').classList.add('show');
+            }, 100);
+        });
+
+        // Filter by year
         function filterByYear() {
             var selectedYear = document.getElementById('yearFilter').value;
             var rows = document.querySelectorAll('#quotaTable tbody tr');
 
-            rows.forEach(function(row) {
+            rows.forEach(function (row) {
                 if (selectedYear === '' || row.getAttribute('data-year') === selectedYear) {
                     row.style.display = '';
                 } else {
@@ -178,6 +477,7 @@
             });
         }
 
+        // Confirm delete
         function confirmDelete(id, department, year) {
             document.getElementById('deleteDepartment').textContent = department;
             document.getElementById('deleteYear').textContent = year;
@@ -186,5 +486,13 @@
             var deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
             deleteModal.show();
         }
+
+        // Show loading on form submit
+        document.querySelectorAll('form').forEach(function (form) {
+            form.addEventListener('submit', function () {
+                document.getElementById('loadingOverlay').classList.add('active');
+            });
+        });
     </script>
-}
+</body>
+</html>
