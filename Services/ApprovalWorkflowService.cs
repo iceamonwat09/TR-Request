@@ -190,6 +190,14 @@ namespace TrainingRequestApp.Services
                 // หา Status ถัดไป
                 string nextStatus = GetNextApprovalStatus(previousStatus);
 
+                // ⭐ ถ้า previousStatus = "Revision Admin" และ HRD Admin อนุมัติ
+                // ต้อง Reset Status_HRDConfirmation และ Status_ManagingDirector เป็น Pending
+                if (previousStatus == "Revision Admin" && approverRole == "HRDAdmin")
+                {
+                    Console.WriteLine($"🔄 Revision Admin → WAITING_FOR_HRD_CONFIRMATION: Resetting HRD Confirmation & Managing Director status");
+                    await ResetApprovalStatus(docNo, "HRDAdmin");
+                }
+
                 // อัพเดท Status หลัก
                 await UpdateMainStatus(docNo, nextStatus, userEmail);
 

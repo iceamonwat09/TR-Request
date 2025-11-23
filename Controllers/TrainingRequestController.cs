@@ -309,6 +309,22 @@ namespace TrainingRequestApp.Controllers
 
                 string connectionString = _configuration.GetConnectionString("DefaultConnection");
 
+                // 🔍 ดึง Status เดิมก่อน UPDATE (เพื่อตรวจสอบว่าเป็น Revise หรือไม่)
+                string previousStatus = null;
+                using (SqlConnection conn = new SqlConnection(connectionString))
+                {
+                    await conn.OpenAsync();
+                    string query = "SELECT Status FROM [HRDSYSTEM].[dbo].[TrainingRequests] WHERE DocNo = @DocNo AND IsActive = 1";
+                    using (SqlCommand cmd = new SqlCommand(query, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@DocNo", docNo);
+                        var result = await cmd.ExecuteScalarAsync();
+                        previousStatus = result?.ToString();
+                    }
+                }
+
+                Console.WriteLine($"📋 Previous Status: {previousStatus}");
+
                 using (SqlConnection conn = new SqlConnection(connectionString))
                 {
                     await conn.OpenAsync();
@@ -345,13 +361,6 @@ namespace TrainingRequestApp.Controllers
 
                             transaction.Commit();
                             Console.WriteLine("✅ Transaction committed");
-
-                            return Json(new
-                            {
-                                success = true,
-                                message = "✅ อัพเดทข้อมูลสำเร็จ",
-                                docNo = docNo
-                            });
                         }
                         catch (Exception ex)
                         {
@@ -362,6 +371,47 @@ namespace TrainingRequestApp.Controllers
                         }
                     }
                 }
+
+                // ⭐ ตรวจสอบว่า Status เดิมเป็น "Revise" หรือไม่
+                // ถ้าใช่ → Reset Status และส่งกลับเข้า Workflow ใหม่
+                if (previousStatus == "Revise")
+                {
+                    Console.WriteLine($"\n🔄 Detected Revise → Re-submitting to workflow...");
+
+                    // Reset Status_XXX และ ApproveInfo_XXX เป็น Pending/NULL
+                    await _approvalWorkflowService.ResetApprovalStatus(docNo, null);
+                    Console.WriteLine($"✅ Approval Status Reset");
+
+                    // เริ่ม Workflow ใหม่ (Status → WAITING_FOR_SECTION_MANAGER + ส่ง Email)
+                    bool workflowStarted = await _approvalWorkflowService.StartWorkflow(docNo);
+
+                    if (workflowStarted)
+                    {
+                        Console.WriteLine($"✅ Workflow restarted successfully");
+                        return Json(new
+                        {
+                            success = true,
+                            message = "✅ อัพเดทข้อมูลสำเร็จ และส่งเข้าสู่การอนุมัติใหม่",
+                            docNo = docNo
+                        });
+                    }
+                    else
+                    {
+                        Console.WriteLine($"❌ Failed to restart workflow");
+                        return Json(new
+                        {
+                            success = false,
+                            message = "❌ อัพเดทข้อมูลสำเร็จ แต่ไม่สามารถส่งเข้าสู่การอนุมัติได้"
+                        });
+                    }
+                }
+
+                return Json(new
+                {
+                    success = true,
+                    message = "✅ อัพเดทข้อมูลสำเร็จ",
+                    docNo = docNo
+                });
             }
             catch (Exception ex)
             {
