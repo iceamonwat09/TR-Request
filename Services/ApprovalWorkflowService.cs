@@ -661,21 +661,28 @@ namespace TrainingRequestApp.Services
 </body>
 </html>";
 
-            // ส่งให้ CreatedBy
-            await _emailService.SendEmailAsync(request.CreatedBy, subject, body, request.Id, "RETRY_EMAIL_NOTIFICATION", request.DocNo);
+            // ส่งให้ CreatedBy (To) + CC + HRD Admin (CC field) ในฉบับเดียว
+            var ccList = new System.Collections.Generic.List<string>();
 
-            // ส่งให้ CCEmail
             if (!string.IsNullOrEmpty(request.CCEmail))
             {
-                var ccEmails = request.CCEmail.Split(',').Select(e => e.Trim()).ToArray();
-                await _emailService.SendEmailToMultipleAsync(ccEmails, subject, body, request.Id, "RETRY_EMAIL_NOTIFICATION", request.DocNo);
+                ccList.AddRange(request.CCEmail.Split(',').Select(e => e.Trim()));
             }
 
-            // ส่งให้ HRD Admin
             if (!string.IsNullOrEmpty(request.HRDAdminId))
             {
-                await _emailService.SendEmailAsync(request.HRDAdminId, subject, body, request.Id, "RETRY_EMAIL_NOTIFICATION", request.DocNo);
+                ccList.Add(request.HRDAdminId);
             }
+
+            await _emailService.SendEmailWithCCAsync(
+                request.CreatedBy,
+                ccList.Count > 0 ? ccList.ToArray() : null,
+                subject,
+                body,
+                request.Id,
+                "RETRY_EMAIL_NOTIFICATION",
+                request.DocNo
+            );
         }
 
         /// <summary>
@@ -1025,15 +1032,12 @@ namespace TrainingRequestApp.Services
 </body>
 </html>";
 
-            // ส่งให้ CreatedBy
-            await _emailService.SendEmailAsync(request.CreatedBy, subject, body, request.Id, "APPROVAL_NOTIFICATION", request.DocNo);
+            // ส่งให้ CreatedBy + CC ในฉบับเดียว
+            var ccEmails = !string.IsNullOrEmpty(request.CCEmail)
+                ? request.CCEmail.Split(',').Select(e => e.Trim()).ToArray()
+                : null;
 
-            // ส่งให้ CCEmail
-            if (!string.IsNullOrEmpty(request.CCEmail))
-            {
-                var ccEmails = request.CCEmail.Split(',').Select(e => e.Trim()).ToArray();
-                await _emailService.SendEmailToMultipleAsync(ccEmails, subject, body, request.Id, "APPROVAL_NOTIFICATION", request.DocNo);
-            }
+            await _emailService.SendEmailWithCCAsync(request.CreatedBy, ccEmails, subject, body, request.Id, "APPROVAL_NOTIFICATION", request.DocNo);
         }
 
         private async Task SendPendingNotificationEmail(TrainingRequestEditViewModel request)
@@ -1071,15 +1075,12 @@ namespace TrainingRequestApp.Services
 </body>
 </html>";
 
-            // ส่งให้ CreatedBy
-            await _emailService.SendEmailAsync(request.CreatedBy, subject, body, request.Id, "PENDING_NOTIFICATION", request.DocNo);
+            // ส่งให้ CreatedBy + CC ในฉบับเดียว
+            var ccEmails = !string.IsNullOrEmpty(request.CCEmail)
+                ? request.CCEmail.Split(',').Select(e => e.Trim()).ToArray()
+                : null;
 
-            // ส่งให้ CCEmail
-            if (!string.IsNullOrEmpty(request.CCEmail))
-            {
-                var ccEmails = request.CCEmail.Split(',').Select(e => e.Trim()).ToArray();
-                await _emailService.SendEmailToMultipleAsync(ccEmails, subject, body, request.Id, "PENDING_NOTIFICATION", request.DocNo);
-            }
+            await _emailService.SendEmailWithCCAsync(request.CreatedBy, ccEmails, subject, body, request.Id, "PENDING_NOTIFICATION", request.DocNo);
         }
 
         private async Task SendReviseEmail(TrainingRequestEditViewModel request, string approverRole, string comment)
@@ -1120,15 +1121,12 @@ namespace TrainingRequestApp.Services
 </body>
 </html>";
 
-            // ส่งให้ CreatedBy
-            await _emailService.SendEmailAsync(request.CreatedBy, subject, body, request.Id, "REVISE_NOTIFICATION", request.DocNo);
+            // ส่งให้ CreatedBy + CC ในฉบับเดียว
+            var ccEmails = !string.IsNullOrEmpty(request.CCEmail)
+                ? request.CCEmail.Split(',').Select(e => e.Trim()).ToArray()
+                : null;
 
-            // ส่งให้ CCEmail
-            if (!string.IsNullOrEmpty(request.CCEmail))
-            {
-                var ccEmails = request.CCEmail.Split(',').Select(e => e.Trim()).ToArray();
-                await _emailService.SendEmailToMultipleAsync(ccEmails, subject, body, request.Id, "REVISE_NOTIFICATION", request.DocNo);
-            }
+            await _emailService.SendEmailWithCCAsync(request.CreatedBy, ccEmails, subject, body, request.Id, "REVISE_NOTIFICATION", request.DocNo);
         }
 
         private async Task SendRevisionAdminEmail(TrainingRequestEditViewModel request, string approverRole, string comment)
@@ -1169,20 +1167,18 @@ namespace TrainingRequestApp.Services
 </body>
 </html>";
 
-            // ส่งให้ HRD Admin
+            // ส่งให้ HRD Admin (To) + CreatedBy + CC (CC field) ในฉบับเดียว
             if (!string.IsNullOrEmpty(request.HRDAdminId))
             {
-                await _emailService.SendEmailAsync(request.HRDAdminId, subject, body, request.Id, "REVISION_ADMIN_NOTIFICATION", request.DocNo);
-            }
+                // สร้าง CC list: CreatedBy + CC
+                var ccList = new System.Collections.Generic.List<string> { request.CreatedBy };
 
-            // ส่งให้ CreatedBy
-            await _emailService.SendEmailAsync(request.CreatedBy, subject, body, request.Id, "REVISION_ADMIN_NOTIFICATION", request.DocNo);
+                if (!string.IsNullOrEmpty(request.CCEmail))
+                {
+                    ccList.AddRange(request.CCEmail.Split(',').Select(e => e.Trim()));
+                }
 
-            // ส่งให้ CCEmail
-            if (!string.IsNullOrEmpty(request.CCEmail))
-            {
-                var ccEmails = request.CCEmail.Split(',').Select(e => e.Trim()).ToArray();
-                await _emailService.SendEmailToMultipleAsync(ccEmails, subject, body, request.Id, "REVISION_ADMIN_NOTIFICATION", request.DocNo);
+                await _emailService.SendEmailWithCCAsync(request.HRDAdminId, ccList.ToArray(), subject, body, request.Id, "REVISION_ADMIN_NOTIFICATION", request.DocNo);
             }
         }
 
@@ -1225,15 +1221,12 @@ namespace TrainingRequestApp.Services
 </body>
 </html>";
 
-            // ส่งให้ CreatedBy
-            await _emailService.SendEmailAsync(request.CreatedBy, subject, body, request.Id, "REJECT_NOTIFICATION", request.DocNo);
+            // ส่งให้ CreatedBy + CC ในฉบับเดียว
+            var ccEmails = !string.IsNullOrEmpty(request.CCEmail)
+                ? request.CCEmail.Split(',').Select(e => e.Trim()).ToArray()
+                : null;
 
-            // ส่งให้ CCEmail
-            if (!string.IsNullOrEmpty(request.CCEmail))
-            {
-                var ccEmails = request.CCEmail.Split(',').Select(e => e.Trim()).ToArray();
-                await _emailService.SendEmailToMultipleAsync(ccEmails, subject, body, request.Id, "REJECT_NOTIFICATION", request.DocNo);
-            }
+            await _emailService.SendEmailWithCCAsync(request.CreatedBy, ccEmails, subject, body, request.Id, "REJECT_NOTIFICATION", request.DocNo);
         }
 
         private async Task SendFinalApprovalEmail(TrainingRequestEditViewModel request)
