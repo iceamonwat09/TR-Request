@@ -301,9 +301,8 @@
         }
 
         @* ปุ่ม Retry Email - สำหรับ Admin/System Admin เท่านั้น *@
+        @* แสดงในทุกสถานะ ยกเว้น REJECTED (เพราะเอกสารถูกปฏิเสธแล้ว ไม่มีผู้อนุมัติ) *@
         @if (isAdmin &&
-             !string.Equals(Model.Status, "Pending", StringComparison.OrdinalIgnoreCase) &&
-             !string.Equals(Model.Status, "APPROVED", StringComparison.OrdinalIgnoreCase) &&
              !string.Equals(Model.Status, "REJECTED", StringComparison.OrdinalIgnoreCase))
         {
             <button id="btnRetryEmail" class="send-email-btn" style="background: #17a2b8; margin-left: 10px;">

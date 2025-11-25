@@ -570,10 +570,12 @@ namespace TrainingRequestApp.Services
                 Console.WriteLine($"📋 Current Status: {currentStatus}");
 
                 // ตรวจสอบว่า Status สามารถ Retry Email ได้หรือไม่
-                if (currentStatus == "Pending" || currentStatus == "APPROVED" || currentStatus == "REJECTED")
+                // ⚠️ Block เฉพาะ REJECTED (เพราะเอกสารถูกปฏิเสธแล้ว ไม่มีผู้อนุมัติ)
+                // Pending, APPROVED, WAITING_XXX, Revise, Revision Admin → ส่งได้
+                if (string.Equals(currentStatus, "REJECTED", StringComparison.OrdinalIgnoreCase))
                 {
-                    result.Message = $"ไม่สามารถ Retry Email สำหรับ Status: {currentStatus}";
-                    Console.WriteLine($"⚠️ Cannot retry email for status: {currentStatus}");
+                    result.Message = $"ไม่สามารถ Retry Email สำหรับเอกสารที่ถูกปฏิเสธ (REJECTED)";
+                    Console.WriteLine($"⚠️ Cannot retry email for REJECTED status");
                     return result;
                 }
 
