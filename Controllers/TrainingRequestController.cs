@@ -603,10 +603,14 @@ namespace TrainingRequestApp.Controllers
                 }
 
                 // ดึง UserEmail จาก Session
-                string userEmail = HttpContext.Session.GetString("UserEmail") ?? "";
+                string userEmail = HttpContext.Session.GetString("UserEmail");
                 if (string.IsNullOrEmpty(userEmail))
                 {
-                    return Json(new { success = false, message = "ไม่พบข้อมูลผู้ใช้ กรุณาล็อกอินใหม่" });
+                    return Json(new {
+                        success = false,
+                        message = "⚠️ Session หมดอายุ กรุณา Refresh หน้าเว็บ (F5) แล้วลองใหม่อีกครั้ง",
+                        sessionExpired = true
+                    });
                 }
 
                 // ดึง IP Address
@@ -683,11 +687,26 @@ namespace TrainingRequestApp.Controllers
                 Console.WriteLine($"╚════════════════════════════════════════╝");
                 Console.WriteLine($"DocNo: {docNo}");
 
+                // ตรวจสอบว่ามี Session หรือไม่
+                string userEmail = HttpContext.Session.GetString("UserEmail");
+                string userRole = HttpContext.Session.GetString("UserRole");
+
+                // ⚠️ ถ้าไม่มี Session → Session หมดอายุ
+                if (string.IsNullOrEmpty(userEmail) || string.IsNullOrEmpty(userRole))
+                {
+                    Console.WriteLine($"❌ Session expired or not found");
+                    return Json(new {
+                        success = false,
+                        message = "⚠️ Session หมดอายุ กรุณา Refresh หน้าเว็บ (F5) แล้วลองใหม่อีกครั้ง",
+                        sessionExpired = true
+                    });
+                }
+
                 // ตรวจสอบสิทธิ์ว่าเป็น Admin หรือ System Admin
-                string userRole = HttpContext.Session.GetString("UserRole") ?? "User";
                 bool isAdmin = userRole.Contains("Admin", StringComparison.OrdinalIgnoreCase) ||
                                userRole.Contains("System Admin", StringComparison.OrdinalIgnoreCase);
 
+                Console.WriteLine($"User Email: {userEmail}");
                 Console.WriteLine($"User Role: {userRole}");
                 Console.WriteLine($"Is Admin: {isAdmin}");
 

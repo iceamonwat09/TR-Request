@@ -684,6 +684,7 @@ $(document).ready(function() {
                 console.log('Response Object:', response);
                 console.log('   success:', response.success);
                 console.log('   message:', response.message);
+                console.log('   sessionExpired:', response.sessionExpired);
 
                 if (response.success) {
                     console.log('%c✅ Retry Email sent successfully!', 'color: #4CAF50; font-weight: bold;');
@@ -692,8 +693,19 @@ $(document).ready(function() {
                 } else {
                     console.error('%c❌ Retry Email failed!', 'color: #f44336; font-weight: bold;');
                     console.error('Error Message:', response.message);
-                    alert('❌ ' + response.message);
-                    $btn.prop('disabled', false).html(originalText);
+
+                    // ⚠️ ถ้า Session หมดอายุ → แจ้งเตือนและ Redirect
+                    if (response.sessionExpired === true) {
+                        console.error('%c🔒 Session Expired!', 'color: #ff9800; font-weight: bold;');
+                        alert('⚠️ ' + response.message);
+
+                        // Redirect ไป Login พร้อม ReturnUrl
+                        var returnUrl = encodeURIComponent(window.location.pathname + window.location.search);
+                        window.location.href = '/Login/Index?returnUrl=' + returnUrl;
+                    } else {
+                        alert('❌ ' + response.message);
+                        $btn.prop('disabled', false).html(originalText);
+                    }
                 }
             },
             error: function(xhr, status, error) {

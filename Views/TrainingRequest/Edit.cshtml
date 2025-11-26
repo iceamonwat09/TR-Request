@@ -1030,10 +1030,17 @@
                         alert(response.message);
                         window.location.href = '/Home';
                     } else {
-                        alert(response.message);
-                        isProcessing = false;
-                        $('#btnApprove, #btnRevise, #btnReject').prop('disabled', false);
-                        $btn.html(originalText);
+                        // ⚠️ ถ้า Session หมดอายุ → Redirect ไป Login
+                        if (response.sessionExpired === true) {
+                            alert('⚠️ ' + response.message);
+                            var returnUrl = encodeURIComponent(window.location.pathname + window.location.search);
+                            window.location.href = '/Login/Index?returnUrl=' + returnUrl;
+                        } else {
+                            alert(response.message);
+                            isProcessing = false;
+                            $('#btnApprove, #btnRevise, #btnReject').prop('disabled', false);
+                            $btn.html(originalText);
+                        }
                     }
                 },
                 error: function(xhr, status, error) {
