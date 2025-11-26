@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using TrainingRequestApp.Models;
 using TrainingRequestApp.Services;
+using TrainingRequestApp.Filters;
 
 namespace TrainingRequestApp.Controllers
 {
@@ -136,6 +137,7 @@ namespace TrainingRequestApp.Controllers
         // GET: /TrainingRequest/Edit/{docNo}
         // ====================================================================
         [HttpGet]
+        [RequireSession(LoginRoute = "/Login/Index", Message = "กรุณาล็อกอินเพื่อดูรายละเอียดเอกสาร")]
         public async Task<IActionResult> Edit(string docNo)
         {
             if (string.IsNullOrEmpty(docNo))
@@ -430,6 +432,7 @@ namespace TrainingRequestApp.Controllers
         /// แสดงหน้า Timeline ของ Approval Flow
         /// </summary>
         [HttpGet]
+        [RequireSession(LoginRoute = "/Login/Index", Message = "กรุณาล็อกอินเพื่อดู Approval Flow")]
         public async Task<IActionResult> ApprovalFlow(string docNo)
         {
             if (string.IsNullOrEmpty(docNo))

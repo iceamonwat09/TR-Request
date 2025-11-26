@@ -38,16 +38,32 @@ namespace TrainingRequestApp.Controllers
 
         // 🔹 GET: หน้า Login
         [HttpGet]
-        public IActionResult Index()
+        public IActionResult Index(string returnUrl = null)
         {
             Console.WriteLine("🔵 Login Page Loaded");
+
+            // บันทึก ReturnUrl ใน ViewBag เพื่อส่งให้ View
+            ViewBag.ReturnUrl = returnUrl;
+
+            // แสดงข้อความจาก TempData (ถ้ามี)
+            if (TempData["Info"] != null)
+            {
+                ViewBag.InfoMessage = TempData["Info"];
+                Console.WriteLine($"ℹ️ Info Message: {TempData["Info"]}");
+            }
+
+            if (!string.IsNullOrEmpty(returnUrl))
+            {
+                Console.WriteLine($"🔄 ReturnUrl: {returnUrl}");
+            }
+
             return View("Login");
         }
 
         // 🔹 POST: ทำการล็อกอิน
         [HttpPost]
         [ValidateAntiForgeryToken] // ✅ ป้องกัน CSRF
-        public IActionResult Authenticate(LoginViewModel model)
+        public IActionResult Authenticate(LoginViewModel model, string returnUrl = null)
         {
             try
             {
@@ -144,8 +160,17 @@ namespace TrainingRequestApp.Controllers
                                         });
                                     }
 
-                                    // ✅ Redirect ไป Home/Index (แสดงเมนูตาม Role)
-                                    return RedirectToAction("Index", "Home");
+                                    // ✅ Redirect: ถ้ามี ReturnUrl → ไปที่ ReturnUrl, ไม่งั้น → Home/Index
+                                    if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+                                    {
+                                        Console.WriteLine($"🔄 Redirecting to ReturnUrl: {returnUrl}");
+                                        return Redirect(returnUrl);
+                                    }
+                                    else
+                                    {
+                                        Console.WriteLine("🏠 Redirecting to Home/Index");
+                                        return RedirectToAction("Index", "Home");
+                                    }
                                 }
                                 else
                                 {
