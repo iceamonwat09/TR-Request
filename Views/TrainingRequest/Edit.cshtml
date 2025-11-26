@@ -34,11 +34,33 @@
                 }
                 else if (isViewMode)
                 {
-                    <div class="alert alert-warning alert-dismissible fade show" role="alert">
-                        <strong><i class="fa fa-eye"></i> โหมดอ่านอย่างเดียว</strong><br>
-                        คุณไม่สามารถแก้ไขเอกสารนี้ได้ (สถานะปัจจุบัน: @Model.Status)
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>
+                    @* ⚠️ เช็คว่ามี Session แต่ไม่มีสิทธิ์อนุมัติ → Login ผิด Email *@
+                    @if (!string.IsNullOrEmpty(ViewBag.CurrentUserEmail?.ToString()) && !canApprove)
+                    {
+                        <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                            <strong><i class="fas fa-exclamation-triangle"></i> คุณไม่มีสิทธิ์อนุมัติเอกสารนี้</strong><br>
+                            <hr>
+                            <p class="mb-2">🔐 <strong>คุณ Login ด้วย Email:</strong> <code>@ViewBag.CurrentUserEmail</code></p>
+                            <p class="mb-2">📊 <strong>สถานะปัจจุบัน:</strong> @Model.Status</p>
+                            <hr>
+                            <p class="mb-0">
+                                <i class="fas fa-info-circle"></i>
+                                Email นี้ไม่ตรงกับผู้อนุมัติในระดับปัจจุบัน<br>
+                                <strong>💡 แนะนำ:</strong> กรุณา
+                                <a href="/Login/Logout" class="alert-link fw-bold">Logout</a>
+                                แล้ว Login ใหม่ด้วย Email ที่ได้รับมอบหมายให้เป็นผู้อนุมัติ
+                            </p>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-info alert-dismissible fade show" role="alert">
+                            <strong><i class="fa fa-eye"></i> โหมดอ่านอย่างเดียว</strong><br>
+                            คุณไม่สามารถแก้ไขเอกสารนี้ได้ (สถานะปัจจุบัน: @Model.Status)
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    }
                 }
                 else if (pageMode == "Edit")
                 {
