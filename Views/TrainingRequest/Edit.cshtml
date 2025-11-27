@@ -2064,7 +2064,7 @@
             modal.hide();
 
             // ✅ คำนวณงบประมาณใหม่สำหรับ Public (จำนวนคนเพิ่มขึ้น)
-            const trainingType = document.querySelector('input[name="TrainingType"]:checked')?.value;
+            // ใช้ trainingType ที่ประกาศไว้แล้วด้านบน (บรรทัด 2024)
             if (trainingType?.toUpperCase() === 'PUBLIC') {
                 if (typeof calculateTotalBudgetPublic === 'function') {
                     calculateTotalBudgetPublic();
