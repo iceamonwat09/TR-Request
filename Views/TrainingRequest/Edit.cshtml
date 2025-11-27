@@ -414,18 +414,20 @@
                                         console.log('✅ Auto-clear setup for', autoClearInputs.length, 'inputs');
 
                                         // ============================================================
-                                        // 💰 คำนวณงบประมาณอัตโนมัติ (Public) - คำนวณจาก ค่าใช้จ่ายต่อคน
+                                        // 💰 คำนวณงบประมาณอัตโนมัติ (Public) - คูณด้วยจำนวนคน
                                         // ============================================================
 
-                                        const costPerPersonPublic = document.getElementById('CostPerPerson_Public');
+                                        // ✅ แก้ไข: ใช้ ID ที่ถูกต้องและเพิ่มการคูณจำนวนคน
+                                        const costPerPersonPublic = document.getElementById('CostPerPerson');
+                                        const participantCountPublic = document.getElementById('ParticipantCount');
                                         const totalCostDisplayPublic = document.getElementById('totalCostDisplayPublic');
 
                                         function calculateTotalBudgetPublic() {
-                                            let total = 0;
+                                            let costPerPerson = parseFloat(costPerPersonPublic?.value) || 0;
+                                            let participantCount = parseFloat(participantCountPublic?.value) || 0;
 
-                                            if (costPerPersonPublic) {
-                                                total = parseFloat(costPerPersonPublic.value) || 0;
-                                            }
+                                            // ✅ คูณ: ค่าใช้จ่ายต่อคน × จำนวนคน (สำหรับ Public เท่านั้น)
+                                            let total = costPerPerson * participantCount;
 
                                             if (totalCostDisplayPublic) {
                                                 totalCostDisplayPublic.textContent = total.toLocaleString('th-TH', {
@@ -434,15 +436,30 @@
                                                 });
                                             }
 
-                                            console.log('💰 Total Budget (Public):', total.toFixed(2));
+                                            console.log('💰 Total Budget (Public) [Edit Mode]:', {
+                                                costPerPerson,
+                                                participantCount,
+                                                total: total.toFixed(2)
+                                            });
 
                                             return total;
                                         }
 
+                                        // ✅ Event Listeners สำหรับ CostPerPerson
                                         if (costPerPersonPublic) {
                                             costPerPersonPublic.addEventListener('input', calculateTotalBudgetPublic);
                                             costPerPersonPublic.addEventListener('change', calculateTotalBudgetPublic);
                                         }
+
+                                        // ✅ Event Listeners สำหรับ ParticipantCount (สำคัญมาก!)
+                                        // รองรับการเพิ่ม/ลดจำนวนคนในหน้า Edit → คำนวณใหม่ทันที
+                                        if (participantCountPublic) {
+                                            participantCountPublic.addEventListener('input', calculateTotalBudgetPublic);
+                                            participantCountPublic.addEventListener('change', calculateTotalBudgetPublic);
+                                        }
+
+                                        // ✅ คำนวณครั้งแรกเมื่อโหลดหน้า (สำหรับ Edit Mode)
+                                        calculateTotalBudgetPublic();
 
                                         // ============================================================
                                         // 💰 คำนวณงบประมาณอัตโนมัติ (In House) - 6 ช่อง
