@@ -125,6 +125,132 @@ namespace TrainingRequestApp.Services
             return allSuccess;
         }
 
+        public async Task<bool> SendEmailWithCCAsync(string toEmail, string[]? ccEmails, string subject, string htmlBody, int? trainingRequestId = null, string? emailType = null, string? docNo = null)
+        {
+            if (string.IsNullOrWhiteSpace(toEmail))
+            {
+                Console.WriteLine("⚠️ Email recipient is empty");
+                return false;
+            }
+
+            try
+            {
+                // ดึงค่า Email Settings จาก appsettings.json
+                var emailSettings = _configuration.GetSection("EmailSettings");
+
+                string smtpServer = emailSettings["SmtpServer"] ?? "smtp.gmail.com";
+                int smtpPort = int.Parse(emailSettings["SmtpPort"] ?? "587");
+                string smtpUsername = emailSettings["SmtpUsername"] ?? "";
+                string smtpPassword = emailSettings["SmtpPassword"] ?? "";
+                string fromEmail = emailSettings["FromEmail"] ?? "noreply@company.com";
+                string fromName = emailSettings["FromName"] ?? "Training Request System";
+                bool enableSsl = bool.Parse(emailSettings["EnableSsl"] ?? "true");
+
+                // ⭐ Debug logging
+                Console.WriteLine("📧 Email Configuration (With CC):");
+                Console.WriteLine($"   SMTP Server: {smtpServer}:{smtpPort}");
+                Console.WriteLine($"   To: {toEmail}");
+                if (ccEmails != null && ccEmails.Length > 0)
+                {
+                    Console.WriteLine($"   CC: {string.Join(", ", ccEmails)}");
+                }
+
+                // สร้าง SMTP Client
+                using (var smtpClient = new SmtpClient(smtpServer, smtpPort))
+                {
+                    smtpClient.Credentials = new NetworkCredential(smtpUsername, smtpPassword);
+                    smtpClient.EnableSsl = enableSsl;
+
+                    // สร้าง Mail Message
+                    var mailMessage = new MailMessage
+                    {
+                        From = new MailAddress(fromEmail, fromName),
+                        Subject = subject,
+                        Body = htmlBody,
+                        IsBodyHtml = true
+                    };
+
+                    // เพิ่ม To
+                    mailMessage.To.Add(toEmail);
+
+                    // เพิ่ม CC
+                    if (ccEmails != null && ccEmails.Length > 0)
+                    {
+                        foreach (var cc in ccEmails)
+                        {
+                            if (!string.IsNullOrWhiteSpace(cc))
+                            {
+                                mailMessage.CC.Add(cc.Trim());
+                            }
+                        }
+                    }
+
+                    Console.WriteLine("📤 Attempting to send email with CC...");
+
+                    // ส่ง Email
+                    await smtpClient.SendMailAsync(mailMessage);
+
+                    Console.WriteLine($"✅ Email sent successfully");
+                    Console.WriteLine($"   To: {toEmail}");
+                    if (ccEmails != null && ccEmails.Length > 0)
+                    {
+                        Console.WriteLine($"   CC: {string.Join(", ", ccEmails)}");
+                    }
+
+                    // ⭐ บันทึก Log สำหรับ To
+                    await LogEmail(trainingRequestId, docNo, toEmail, emailType ?? "UNKNOWN", subject, "SENT", null);
+
+                    // ⭐ บันทึก Log สำหรับแต่ละ CC
+                    if (ccEmails != null && ccEmails.Length > 0)
+                    {
+                        foreach (var cc in ccEmails)
+                        {
+                            if (!string.IsNullOrWhiteSpace(cc))
+                            {
+                                await LogEmail(trainingRequestId, docNo, cc.Trim(), $"{emailType ?? "UNKNOWN"}_CC", subject, "SENT", null);
+                            }
+                        }
+                    }
+
+                    return true;
+                }
+            }
+            catch (SmtpException smtpEx)
+            {
+                Console.WriteLine($"❌ SMTP Error: {smtpEx.Message}");
+                Console.WriteLine($"   StatusCode: {smtpEx.StatusCode}");
+                Console.WriteLine($"   To: {toEmail}");
+                if (ccEmails != null && ccEmails.Length > 0)
+                {
+                    Console.WriteLine($"   CC: {string.Join(", ", ccEmails)}");
+                }
+                if (smtpEx.InnerException != null)
+                {
+                    Console.WriteLine($"   Inner: {smtpEx.InnerException.Message}");
+                }
+
+                // ⭐ บันทึก Log ที่ล้มเหลว
+                await LogEmail(trainingRequestId, docNo, toEmail, emailType ?? "UNKNOWN", subject, "FAILED",
+                    $"SMTP Error: {smtpEx.StatusCode} - {smtpEx.Message}");
+
+                return false;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Email Error: {ex.Message}");
+                Console.WriteLine($"   To: {toEmail}");
+                if (ccEmails != null && ccEmails.Length > 0)
+                {
+                    Console.WriteLine($"   CC: {string.Join(", ", ccEmails)}");
+                }
+
+                // ⭐ บันทึก Log ที่ล้มเหลว
+                await LogEmail(trainingRequestId, docNo, toEmail, emailType ?? "UNKNOWN", subject, "FAILED", ex.Message);
+
+                return false;
+            }
+        }
+
         /// <summary>
         /// บันทึก Email Log ลง Database
         /// </summary>

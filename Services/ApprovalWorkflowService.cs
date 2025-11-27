@@ -544,11 +544,11 @@ namespace TrainingRequestApp.Services
         #region Retry Email
 
         /// <summary>
-        /// Retry Email - ส่ง Email ซ้ำตาม Status ปัจจุบัน
+        /// Retry Email - ส่ง Email ขออนุมัติซ้ำ (1 ฉบับเดียว)
         /// สำหรับ Admin/System Admin เท่านั้น
-        /// ส่งไปยัง: ผู้อนุมัติคนปัจจุบัน + CreatedBy + CC + HRD Admin
+        /// ส่งหา: Approver (To) + CreatedBy + CC + Admin ที่กด (CC)
         /// </summary>
-        public async Task<WorkflowResult> RetryEmail(string docNo)
+        public async Task<WorkflowResult> RetryEmail(string docNo, string adminEmail, string ipAddress)
         {
             var result = new WorkflowResult { Success = false };
 
@@ -556,6 +556,8 @@ namespace TrainingRequestApp.Services
             {
                 Console.WriteLine($"\n========================================");
                 Console.WriteLine($"🔄 RetryEmail STARTED: {docNo}");
+                Console.WriteLine($"  Admin: {adminEmail}");
+                Console.WriteLine($"  IP: {ipAddress}");
                 Console.WriteLine($"========================================\n");
 
                 var request = await GetTrainingRequest(docNo);
@@ -570,10 +572,12 @@ namespace TrainingRequestApp.Services
                 Console.WriteLine($"📋 Current Status: {currentStatus}");
 
                 // ตรวจสอบว่า Status สามารถ Retry Email ได้หรือไม่
-                if (currentStatus == "Pending" || currentStatus == "APPROVED" || currentStatus == "REJECTED")
+                // ⚠️ Block เฉพาะ REJECTED (เพราะเอกสารถูกปฏิเสธแล้ว ไม่มีผู้อนุมัติ)
+                // Pending, APPROVED, WAITING_XXX, Revise, Revision Admin → ส่งได้
+                if (string.Equals(currentStatus, "REJECTED", StringComparison.OrdinalIgnoreCase))
                 {
-                    result.Message = $"ไม่สามารถ Retry Email สำหรับ Status: {currentStatus}";
-                    Console.WriteLine($"⚠️ Cannot retry email for status: {currentStatus}");
+                    result.Message = $"ไม่สามารถ Retry Email สำหรับเอกสารที่ถูกปฏิเสธ (REJECTED)";
+                    Console.WriteLine($"⚠️ Cannot retry email for REJECTED status");
                     return result;
                 }
 
@@ -581,23 +585,28 @@ namespace TrainingRequestApp.Services
                 string nextApproverEmail = GetNextApproverEmail(request, currentStatus);
                 Console.WriteLine($"📧 Next Approver: {nextApproverEmail ?? "N/A"}");
 
-                // ส่ง Email #1: แจ้ง CreatedBy + CCEmail + HRD Admin
-                Console.WriteLine($"\n📧 Sending notification to CreatedBy + CC + HRD Admin...");
-                await SendRetryNotificationEmail(request, currentStatus);
-
-                // ส่ง Email #2: ขออนุมัติจากผู้อนุมัติคนปัจจุบัน
+                // ส่ง Email ขออนุมัติ (1 ฉบับเดียว) พร้อม CC ทุกคน
                 if (!string.IsNullOrEmpty(nextApproverEmail))
                 {
-                    Console.WriteLine($"\n📧 Sending approval request to {nextApproverEmail}...");
-                    await SendApprovalRequestEmail(request, nextApproverEmail, currentStatus);
+                    Console.WriteLine($"\n📧 Sending approval request with CC...");
+                    Console.WriteLine($"   To: {nextApproverEmail}");
+                    Console.WriteLine($"   CC: CreatedBy + CC + Admin ({adminEmail})");
+
+                    await SendApprovalRequestEmailWithCC(request, nextApproverEmail, currentStatus, adminEmail);
                 }
                 else
                 {
                     Console.WriteLine($"\n⚠️ No approver email found for status: {currentStatus}");
+                    result.Message = $"ไม่พบ Email ของผู้อนุมัติสำหรับสถานะ: {currentStatus}";
+                    return result;
                 }
 
+                // บันทึก Retry History
+                Console.WriteLine($"\n💾 Saving Retry History...");
+                await SaveRetryHistory(request.Id, docNo, adminEmail, currentStatus, nextApproverEmail, ipAddress);
+
                 result.Success = true;
-                result.Message = $"✅ ส่ง Email ซ้ำสำเร็จ (Status: {currentStatus})";
+                result.Message = $"✅ ส่ง Email ซ้ำสำเร็จ (ผู้อนุมัติ: {nextApproverEmail})";
 
                 Console.WriteLine($"\n========================================");
                 Console.WriteLine($"✅ RetryEmail SUCCESS: {docNo}");
@@ -615,66 +624,6 @@ namespace TrainingRequestApp.Services
 
                 result.Message = $"เกิดข้อผิดพลาด: {ex.Message}";
                 return result;
-            }
-        }
-
-        /// <summary>
-        /// ส่ง Email แจ้ง CreatedBy + CC + HRD Admin ว่ามีการ Retry Email
-        /// </summary>
-        private async Task SendRetryNotificationEmail(TrainingRequestEditViewModel request, string currentStatus)
-        {
-            string statusDisplay = GetStatusDisplayName(currentStatus);
-            string subject = $"🔄 Retry Email - {request.TrainingType} {request.DocNo}";
-            string docLink = $"{_baseUrl}/TrainingRequest/Edit?docNo={request.DocNo}";
-
-            string body = $@"
-<!DOCTYPE html>
-<html>
-<body style='font-family: Arial, sans-serif;'>
-    <div style='max-width: 600px; margin: 0 auto; padding: 20px;'>
-        <div style='background: #17a2b8; color: white; padding: 20px; text-align: center; border-radius: 10px 10px 0 0;'>
-            <h2>🔄 Retry Email Notification</h2>
-        </div>
-        <div style='background: #ffffff; padding: 20px; border: 1px solid #e0e0e0;'>
-            <p>เรียน ผู้เกี่ยวข้อง</p>
-
-            <p>ระบบได้ทำการส่ง Email ซ้ำสำหรับเอกสารฉบับนี้</p>
-
-            <div style='background: #d1ecf1; padding: 15px; border-left: 4px solid #17a2b8; margin: 15px 0;'>
-                <strong>📄 เลขที่เอกสาร:</strong> {request.DocNo}<br>
-                <strong>📖 หัวข้อ:</strong> {request.SeminarTitle}<br>
-                <strong>📊 Status ปัจจุบัน:</strong> {statusDisplay}<br>
-                <strong>🔄 Email ส่งไปยัง:</strong> ผู้อนุมัติคนปัจจุบัน
-            </div>
-
-            <p>กรุณาตรวจสอบอีเมลและดำเนินการอนุมัติหากท่านเป็นผู้อนุมัติ</p>
-
-            <div style='text-align: center; margin: 20px 0;'>
-                <a href='{docLink}' style='display: inline-block; padding: 12px 30px; background: #17a2b8; color: white; text-decoration: none; border-radius: 5px;'>ดูรายละเอียดเอกสาร</a>
-            </div>
-        </div>
-        <div style='background: #f8f9fa; padding: 20px; text-align: center; border-radius: 0 0 10px 10px; color: #666;'>
-            <p>ระบบ Training Request Management</p>
-            <p><small>Email นี้ถูกส่งอัตโนมัติ กรุณาอย่าตอบกลับ</small></p>
-        </div>
-    </div>
-</body>
-</html>";
-
-            // ส่งให้ CreatedBy
-            await _emailService.SendEmailAsync(request.CreatedBy, subject, body, request.Id, "RETRY_EMAIL_NOTIFICATION", request.DocNo);
-
-            // ส่งให้ CCEmail
-            if (!string.IsNullOrEmpty(request.CCEmail))
-            {
-                var ccEmails = request.CCEmail.Split(',').Select(e => e.Trim()).ToArray();
-                await _emailService.SendEmailToMultipleAsync(ccEmails, subject, body, request.Id, "RETRY_EMAIL_NOTIFICATION", request.DocNo);
-            }
-
-            // ส่งให้ HRD Admin
-            if (!string.IsNullOrEmpty(request.HRDAdminId))
-            {
-                await _emailService.SendEmailAsync(request.HRDAdminId, subject, body, request.Id, "RETRY_EMAIL_NOTIFICATION", request.DocNo);
             }
         }
 
@@ -901,6 +850,40 @@ namespace TrainingRequestApp.Services
             }
         }
 
+        private async Task SaveRetryHistory(int trainingRequestId, string docNo, string retryBy, string statusAtRetry, string approverEmail, string ipAddress)
+        {
+            try
+            {
+                using (var conn = new SqlConnection(_connectionString))
+                {
+                    await conn.OpenAsync();
+
+                    string query = @"
+                        INSERT INTO [HRDSYSTEM].[dbo].[RetryEmailHistory]
+                        (TrainingRequestId, DocNo, RetryBy, RetryDate, StatusAtRetry, ApproverEmail, IPAddress)
+                        VALUES
+                        (@TrainingRequestId, @DocNo, @RetryBy, GETDATE(), @StatusAtRetry, @ApproverEmail, @IPAddress)";
+
+                    using (var cmd = new SqlCommand(query, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@TrainingRequestId", trainingRequestId);
+                        cmd.Parameters.AddWithValue("@DocNo", docNo);
+                        cmd.Parameters.AddWithValue("@RetryBy", retryBy);
+                        cmd.Parameters.AddWithValue("@StatusAtRetry", statusAtRetry);
+                        cmd.Parameters.AddWithValue("@ApproverEmail", approverEmail ?? (object)DBNull.Value);
+                        cmd.Parameters.AddWithValue("@IPAddress", ipAddress ?? (object)DBNull.Value);
+
+                        await cmd.ExecuteNonQueryAsync();
+                        Console.WriteLine($"✅ SaveRetryHistory: {docNo} by {retryBy} (Status: {statusAtRetry})");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"⚠️ SaveRetryHistory Error: {ex.Message}");
+            }
+        }
+
         #endregion
 
         #region Email Methods
@@ -988,6 +971,113 @@ namespace TrainingRequestApp.Services
             await _emailService.SendEmailAsync(approverEmail, subject, body, request.Id, "APPROVAL_REQUEST", request.DocNo);
         }
 
+        /// <summary>
+        /// ส่ง Email ขออนุมัติพร้อม CC (สำหรับ Retry Email)
+        /// ส่งหา: Approver (To) + CreatedBy + CC + Admin ที่กด (CC)
+        /// </summary>
+        private async Task SendApprovalRequestEmailWithCC(TrainingRequestEditViewModel request, string approverEmail, string statusWaitingFor, string adminRetryEmail = null)
+        {
+            // ⭐ Validation: เช็คว่ามี approver email หรือไม่
+            if (string.IsNullOrWhiteSpace(approverEmail))
+            {
+                Console.WriteLine($"⚠️ SendApprovalRequestEmailWithCC: Approver email is NULL or EMPTY!");
+                Console.WriteLine($"   DocNo: {request.DocNo}");
+                Console.WriteLine($"   Status: {statusWaitingFor}");
+                Console.WriteLine($"   ❌ Cannot send approval email - Please assign approver first!");
+                return;
+            }
+
+            string approverRoleName = statusWaitingFor switch
+            {
+                "WAITING_FOR_SECTION_MANAGER" => "ผู้จัดการแผนก (Section Manager)",
+                "WAITING_FOR_DEPARTMENT_MANAGER" => "ผู้จัดการฝ่าย (Department Manager)",
+                "WAITING_FOR_HRD_ADMIN" => "เจ้าหน้าที่พัฒนาบุคลากร (HRD Admin)",
+                "WAITING_FOR_HRD_CONFIRMATION" => "ผู้รับรองการฝึกอบรม (HRD Confirmation)",
+                "WAITING_FOR_MANAGING_DIRECTOR" => "กรรมการผู้จัดการ (Managing Director)",
+                _ => "ผู้อนุมัติ"
+            };
+
+            string subject = $"🔄 Retry Email - ขออนุมัติ {request.TrainingType} {request.DocNo}";
+            string approvalLink = $"{_baseUrl}/TrainingRequest/Edit?docNo={request.DocNo}";
+
+            // เพิ่มข้อความแจ้ง Admin ที่กด Retry
+            string retryInfoHtml = !string.IsNullOrEmpty(adminRetryEmail)
+                ? $"<div style='background: #d1ecf1; padding: 15px; border-left: 4px solid #17a2b8; margin: 15px 0;'><strong>🔄 Retry Email:</strong> ถูกส่งโดย Admin: {adminRetryEmail}</div>"
+                : "";
+
+            string body = $@"
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }}
+        .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+        .header {{ background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }}
+        .content {{ background: #ffffff; padding: 30px; border-left: 1px solid #e0e0e0; border-right: 1px solid #e0e0e0; }}
+        .btn {{ display: inline-block; padding: 12px 30px; background: #667eea; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }}
+        .info-box {{ background: #f8f9fa; padding: 15px; border-left: 4px solid #667eea; margin: 15px 0; }}
+        .footer {{ background: #f8f9fa; padding: 20px; text-align: center; border-radius: 0 0 10px 10px; color: #666; }}
+        .status-badge {{ display: inline-block; padding: 5px 10px; border-radius: 3px; font-size: 12px; }}
+        .status-pending {{ background: #ffc107; color: #000; }}
+        .status-approved {{ background: #28a745; color: #fff; }}
+    </style>
+</head>
+<body>
+    <div class='container'>
+        <div class='header'>
+            <h2>📧 แจ้งขออนุมัติคำขอฝึกอบรม</h2>
+        </div>
+        <div class='content'>
+            {retryInfoHtml}
+
+            <p>เรียน <strong>{approverRoleName}</strong></p>
+
+            <p>มีคำขอฝึกอบรมรอการอนุมัติจากท่าน</p>
+
+            <div class='info-box'>
+                <strong>📄 เลขที่เอกสาร:</strong> {request.DocNo}<br>
+                <strong>🏢 บริษัท:</strong> {request.Company}<br>
+                <strong>📚 ประเภท:</strong> {request.TrainingType}<br>
+                <strong>📖 หัวข้อ:</strong> {request.SeminarTitle}<br>
+                <strong>📍 สถานที่:</strong> {request.TrainingLocation}<br>
+                <strong>💰 ค่าใช้จ่าย:</strong> {request.TotalCost:N2} บาท<br>
+                <strong>🎯 วัตถุประสงค์:</strong> {request.TrainingObjective}<br>
+                <strong>✨ ผลที่คาดว่าจะได้รับ:</strong> {request.ExpectedOutcome}
+            </div>
+
+            <div style='text-align: center;'>
+                <a href='{approvalLink}' class='btn'>คลิกที่นี่เพื่อดูรายละเอียดและอนุมัติ</a>
+            </div>
+
+            <hr style='margin: 30px 0;'>
+
+            <h3>📊 สถานะการอนุมัติ</h3>
+            {GenerateApprovalStatusHtml(request)}
+        </div>
+        <div class='footer'>
+            <p>ระบบ Training Request Management</p>
+            <p><small>Email นี้ถูกส่งอัตโนมัติ กรุณาอย่าตอบกลับ</small></p>
+        </div>
+    </div>
+</body>
+</html>";
+
+            // สร้าง CC List: CreatedBy + CC + Admin ที่กด
+            var ccList = new System.Collections.Generic.List<string> { request.CreatedBy };
+
+            if (!string.IsNullOrEmpty(request.CCEmail))
+            {
+                ccList.AddRange(request.CCEmail.Split(',').Select(e => e.Trim()));
+            }
+
+            if (!string.IsNullOrEmpty(adminRetryEmail))
+            {
+                ccList.Add(adminRetryEmail);
+            }
+
+            await _emailService.SendEmailWithCCAsync(approverEmail, ccList.ToArray(), subject, body, request.Id, "RETRY_APPROVAL_REQUEST", request.DocNo);
+        }
+
         private async Task SendApprovalNotificationEmail(TrainingRequestEditViewModel request, string approverRole, string comment)
         {
             string approverRoleName = GetApproverRoleName(approverRole);
@@ -1025,15 +1115,12 @@ namespace TrainingRequestApp.Services
 </body>
 </html>";
 
-            // ส่งให้ CreatedBy
-            await _emailService.SendEmailAsync(request.CreatedBy, subject, body, request.Id, "APPROVAL_NOTIFICATION", request.DocNo);
+            // ส่งให้ CreatedBy + CC ในฉบับเดียว
+            var ccEmails = !string.IsNullOrEmpty(request.CCEmail)
+                ? request.CCEmail.Split(',').Select(e => e.Trim()).ToArray()
+                : null;
 
-            // ส่งให้ CCEmail
-            if (!string.IsNullOrEmpty(request.CCEmail))
-            {
-                var ccEmails = request.CCEmail.Split(',').Select(e => e.Trim()).ToArray();
-                await _emailService.SendEmailToMultipleAsync(ccEmails, subject, body, request.Id, "APPROVAL_NOTIFICATION", request.DocNo);
-            }
+            await _emailService.SendEmailWithCCAsync(request.CreatedBy, ccEmails, subject, body, request.Id, "APPROVAL_NOTIFICATION", request.DocNo);
         }
 
         private async Task SendPendingNotificationEmail(TrainingRequestEditViewModel request)
@@ -1071,15 +1158,12 @@ namespace TrainingRequestApp.Services
 </body>
 </html>";
 
-            // ส่งให้ CreatedBy
-            await _emailService.SendEmailAsync(request.CreatedBy, subject, body, request.Id, "PENDING_NOTIFICATION", request.DocNo);
+            // ส่งให้ CreatedBy + CC ในฉบับเดียว
+            var ccEmails = !string.IsNullOrEmpty(request.CCEmail)
+                ? request.CCEmail.Split(',').Select(e => e.Trim()).ToArray()
+                : null;
 
-            // ส่งให้ CCEmail
-            if (!string.IsNullOrEmpty(request.CCEmail))
-            {
-                var ccEmails = request.CCEmail.Split(',').Select(e => e.Trim()).ToArray();
-                await _emailService.SendEmailToMultipleAsync(ccEmails, subject, body, request.Id, "PENDING_NOTIFICATION", request.DocNo);
-            }
+            await _emailService.SendEmailWithCCAsync(request.CreatedBy, ccEmails, subject, body, request.Id, "PENDING_NOTIFICATION", request.DocNo);
         }
 
         private async Task SendReviseEmail(TrainingRequestEditViewModel request, string approverRole, string comment)
@@ -1120,15 +1204,12 @@ namespace TrainingRequestApp.Services
 </body>
 </html>";
 
-            // ส่งให้ CreatedBy
-            await _emailService.SendEmailAsync(request.CreatedBy, subject, body, request.Id, "REVISE_NOTIFICATION", request.DocNo);
+            // ส่งให้ CreatedBy + CC ในฉบับเดียว
+            var ccEmails = !string.IsNullOrEmpty(request.CCEmail)
+                ? request.CCEmail.Split(',').Select(e => e.Trim()).ToArray()
+                : null;
 
-            // ส่งให้ CCEmail
-            if (!string.IsNullOrEmpty(request.CCEmail))
-            {
-                var ccEmails = request.CCEmail.Split(',').Select(e => e.Trim()).ToArray();
-                await _emailService.SendEmailToMultipleAsync(ccEmails, subject, body, request.Id, "REVISE_NOTIFICATION", request.DocNo);
-            }
+            await _emailService.SendEmailWithCCAsync(request.CreatedBy, ccEmails, subject, body, request.Id, "REVISE_NOTIFICATION", request.DocNo);
         }
 
         private async Task SendRevisionAdminEmail(TrainingRequestEditViewModel request, string approverRole, string comment)
@@ -1169,20 +1250,18 @@ namespace TrainingRequestApp.Services
 </body>
 </html>";
 
-            // ส่งให้ HRD Admin
+            // ส่งให้ HRD Admin (To) + CreatedBy + CC (CC field) ในฉบับเดียว
             if (!string.IsNullOrEmpty(request.HRDAdminId))
             {
-                await _emailService.SendEmailAsync(request.HRDAdminId, subject, body, request.Id, "REVISION_ADMIN_NOTIFICATION", request.DocNo);
-            }
+                // สร้าง CC list: CreatedBy + CC
+                var ccList = new System.Collections.Generic.List<string> { request.CreatedBy };
 
-            // ส่งให้ CreatedBy
-            await _emailService.SendEmailAsync(request.CreatedBy, subject, body, request.Id, "REVISION_ADMIN_NOTIFICATION", request.DocNo);
+                if (!string.IsNullOrEmpty(request.CCEmail))
+                {
+                    ccList.AddRange(request.CCEmail.Split(',').Select(e => e.Trim()));
+                }
 
-            // ส่งให้ CCEmail
-            if (!string.IsNullOrEmpty(request.CCEmail))
-            {
-                var ccEmails = request.CCEmail.Split(',').Select(e => e.Trim()).ToArray();
-                await _emailService.SendEmailToMultipleAsync(ccEmails, subject, body, request.Id, "REVISION_ADMIN_NOTIFICATION", request.DocNo);
+                await _emailService.SendEmailWithCCAsync(request.HRDAdminId, ccList.ToArray(), subject, body, request.Id, "REVISION_ADMIN_NOTIFICATION", request.DocNo);
             }
         }
 
@@ -1225,15 +1304,12 @@ namespace TrainingRequestApp.Services
 </body>
 </html>";
 
-            // ส่งให้ CreatedBy
-            await _emailService.SendEmailAsync(request.CreatedBy, subject, body, request.Id, "REJECT_NOTIFICATION", request.DocNo);
+            // ส่งให้ CreatedBy + CC ในฉบับเดียว
+            var ccEmails = !string.IsNullOrEmpty(request.CCEmail)
+                ? request.CCEmail.Split(',').Select(e => e.Trim()).ToArray()
+                : null;
 
-            // ส่งให้ CCEmail
-            if (!string.IsNullOrEmpty(request.CCEmail))
-            {
-                var ccEmails = request.CCEmail.Split(',').Select(e => e.Trim()).ToArray();
-                await _emailService.SendEmailToMultipleAsync(ccEmails, subject, body, request.Id, "REJECT_NOTIFICATION", request.DocNo);
-            }
+            await _emailService.SendEmailWithCCAsync(request.CreatedBy, ccEmails, subject, body, request.Id, "REJECT_NOTIFICATION", request.DocNo);
         }
 
         private async Task SendFinalApprovalEmail(TrainingRequestEditViewModel request)
