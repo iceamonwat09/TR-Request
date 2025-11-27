@@ -706,8 +706,15 @@ namespace TrainingRequestApp.Controllers
                     });
                 }
 
+                // ดึง Email ของ Admin ที่กด Retry
+                string adminEmail = HttpContext.Session.GetString("UserEmail") ?? "unknown@admin.com";
+                string ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
+
+                Console.WriteLine($"Admin Email: {adminEmail}");
+                Console.WriteLine($"IP Address: {ipAddress}");
                 Console.WriteLine($"✅ Calling RetryEmail Service...");
-                var result = await _approvalWorkflowService.RetryEmail(docNo);
+
+                var result = await _approvalWorkflowService.RetryEmail(docNo, adminEmail, ipAddress);
 
                 Console.WriteLine($"Service returned: {result.Success}");
 
