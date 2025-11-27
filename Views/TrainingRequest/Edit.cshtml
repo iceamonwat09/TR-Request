@@ -414,19 +414,23 @@
                                         console.log('✅ Auto-clear setup for', autoClearInputs.length, 'inputs');
 
                                         // ============================================================
-                                        // 💰 คำนวณงบประมาณอัตโนมัติ (Public) - คูณด้วยจำนวนคน
+                                        // 💰 คำนวณงบประมาณอัตโนมัติ (Public) - นับจำนวนคนจากตาราง
                                         // ============================================================
 
-                                        // ✅ แก้ไข: ใช้ ID ที่ถูกต้องและเพิ่มการคูณจำนวนคน
                                         const costPerPersonPublic = document.getElementById('CostPerPerson');
-                                        const participantCountPublic = document.getElementById('ParticipantCount');
                                         const totalCostDisplayPublic = document.getElementById('totalCostDisplayPublic');
 
+                                        // ✅ Global function: คำนวณงบประมาณ Public
                                         function calculateTotalBudgetPublic() {
                                             let costPerPerson = parseFloat(costPerPersonPublic?.value) || 0;
-                                            let participantCount = parseFloat(participantCountPublic?.value) || 0;
 
-                                            // ✅ คูณ: ค่าใช้จ่ายต่อคน × จำนวนคน (สำหรับ Public เท่านั้น)
+                                            // ✅ นับจำนวนคนจากตารางพนักงาน (employeeManager.employees.length)
+                                            let participantCount = 0;
+                                            if (typeof employeeManager !== 'undefined' && employeeManager.employees) {
+                                                participantCount = employeeManager.employees.length;
+                                            }
+
+                                            // ✅ คูณ: ค่าใช้จ่ายต่อคน × จำนวนคนในตาราง
                                             let total = costPerPerson * participantCount;
 
                                             if (totalCostDisplayPublic) {
@@ -439,6 +443,7 @@
                                             console.log('💰 Total Budget (Public) [Edit Mode]:', {
                                                 costPerPerson,
                                                 participantCount,
+                                                source: 'employeeManager.employees.length',
                                                 total: total.toFixed(2)
                                             });
 
@@ -451,15 +456,11 @@
                                             costPerPersonPublic.addEventListener('change', calculateTotalBudgetPublic);
                                         }
 
-                                        // ✅ Event Listeners สำหรับ ParticipantCount (สำคัญมาก!)
-                                        // รองรับการเพิ่ม/ลดจำนวนคนในหน้า Edit → คำนวณใหม่ทันที
-                                        if (participantCountPublic) {
-                                            participantCountPublic.addEventListener('input', calculateTotalBudgetPublic);
-                                            participantCountPublic.addEventListener('change', calculateTotalBudgetPublic);
-                                        }
-
                                         // ✅ คำนวณครั้งแรกเมื่อโหลดหน้า (สำหรับ Edit Mode)
-                                        calculateTotalBudgetPublic();
+                                        // รอให้ employeeManager โหลดข้อมูลเสร็จก่อน
+                                        setTimeout(function() {
+                                            calculateTotalBudgetPublic();
+                                        }, 500);
 
                                         // ============================================================
                                         // 💰 คำนวณงบประมาณอัตโนมัติ (In House) - 6 ช่อง
@@ -2062,6 +2063,14 @@
             const modal = bootstrap.Modal.getInstance(document.getElementById('employeeSearchModal'));
             modal.hide();
 
+            // ✅ คำนวณงบประมาณใหม่สำหรับ Public (จำนวนคนเพิ่มขึ้น)
+            const trainingType = document.querySelector('input[name="TrainingType"]:checked')?.value;
+            if (trainingType?.toUpperCase() === 'PUBLIC') {
+                if (typeof calculateTotalBudgetPublic === 'function') {
+                    calculateTotalBudgetPublic();
+                }
+            }
+
             this.showSuccessToast('✅ เพิ่มพนักงานเรียบร้อยแล้ว');
         }
 
@@ -2164,6 +2173,10 @@
                     // ✅ คำนวณใหม่หลังจากลบพนักงาน (เฉพาะ Public)
                     if (trainingType?.toUpperCase() === 'PUBLIC') {
                         this.recalculateAllRemainingQuota();
+                        // ✅ คำนวณงบประมาณใหม่ (จำนวนคนลดลง)
+                        if (typeof calculateTotalBudgetPublic === 'function') {
+                            calculateTotalBudgetPublic();
+                        }
                     }
 
                     this.showSuccessToast('✅ ลบพนักงานเรียบร้อยแล้ว');
