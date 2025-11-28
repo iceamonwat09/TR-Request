@@ -60,6 +60,15 @@ namespace TrainingRequestApp.Controllers
                 string userEmail = HttpContext.Session.GetString("UserEmail") ?? "System";
                 Console.WriteLine($"✅ CreatedBy: {userEmail}");
 
+                // ✅ Validate TotalCost ก่อนบันทึก
+                if (!ValidateTotalCost(formData, out string errorMessage))
+                {
+                    return Json(new {
+                        success = false,
+                        message = $"❌ {errorMessage}"
+                    });
+                }
+
                 string connectionString = _configuration.GetConnectionString("DefaultConnection");
 
                 using (SqlConnection conn = new SqlConnection(connectionString))
@@ -306,6 +315,15 @@ namespace TrainingRequestApp.Controllers
                 // ✅ ดึง Email ของผู้ใช้จาก Session
                 string userEmail = HttpContext.Session.GetString("UserEmail") ?? "System";
                 Console.WriteLine($"✅ UpdatedBy: {userEmail}");
+
+                // ✅ Validate TotalCost ก่อนอัพเดท
+                if (!ValidateTotalCost(formData, out string errorMessage))
+                {
+                    return Json(new {
+                        success = false,
+                        message = $"❌ {errorMessage}"
+                    });
+                }
 
                 string connectionString = _configuration.GetConnectionString("DefaultConnection");
 
@@ -1865,6 +1883,81 @@ namespace TrainingRequestApp.Controllers
                 ".zip" => "application/zip",
                 _ => "application/octet-stream"
             };
+        }
+
+        // ====================================================================
+        // ✅ Helper Method: Validate TotalCost
+        // ====================================================================
+        private bool ValidateTotalCost(TrainingRequestFormData formData, out string errorMessage)
+        {
+            errorMessage = "";
+
+            try
+            {
+                if (formData.TrainingType == "Public")
+                {
+                    // ✅ Public: TotalCost = CostPerPerson × จำนวนคนในตาราง (EmployeesJson)
+                    decimal costPerPerson = formData.CostPerPerson ?? 0;
+
+                    // ✅ นับจำนวนคนจาก EmployeesJson
+                    int participantCount = 0;
+                    if (!string.IsNullOrEmpty(formData.EmployeesJson))
+                    {
+                        try
+                        {
+                            var employees = JsonSerializer.Deserialize<List<EmployeeData>>(formData.EmployeesJson);
+                            participantCount = employees?.Count ?? 0;
+                            Console.WriteLine($"📊 Public: Parsed {participantCount} employees from EmployeesJson");
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"⚠️ Failed to parse EmployeesJson: {ex.Message}");
+                        }
+                    }
+
+                    decimal expectedTotal = costPerPerson * participantCount;
+                    decimal actualTotal = formData.TotalCost ?? 0;
+
+                    // อนุญาตให้ต่างกันได้ 0.01 บาท (rounding error)
+                    if (Math.Abs(expectedTotal - actualTotal) > 0.01m)
+                    {
+                        errorMessage = $"งบประมาณไม่ถูกต้อง (Public): Expected {expectedTotal:N2}, Got {actualTotal:N2}";
+                        Console.WriteLine($"❌ Validation Failed: {errorMessage}");
+                        Console.WriteLine($"   CostPerPerson: {costPerPerson}, EmployeeCount: {participantCount}");
+                        return false;
+                    }
+
+                    Console.WriteLine($"✅ Validation Passed (Public): CostPerPerson={costPerPerson:N2}, EmployeeCount={participantCount}, TotalCost={actualTotal:N2}");
+                }
+                else if (formData.TrainingType == "In House")
+                {
+                    // ✅ In House: TotalCost = รวมทุกค่าใช้จ่าย (ไม่คูณจำนวนคน)
+                    decimal sum = (formData.RegistrationCost ?? 0) +
+                                 (formData.InstructorFee ?? 0) +
+                                 (formData.EquipmentCost ?? 0) +
+                                 (formData.FoodCost ?? 0) +
+                                 (formData.OtherCost ?? 0);
+
+                    decimal actualTotal = formData.TotalCost ?? 0;
+
+                    if (Math.Abs(sum - actualTotal) > 0.01m)
+                    {
+                        errorMessage = $"งบประมาณไม่ถูกต้อง (In House): Expected {sum:N2}, Got {actualTotal:N2}";
+                        Console.WriteLine($"❌ Validation Failed: {errorMessage}");
+                        return false;
+                    }
+
+                    Console.WriteLine($"✅ Validation Passed (In House): Sum={sum:N2}, TotalCost={actualTotal:N2}");
+                }
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                errorMessage = $"เกิดข้อผิดพลาดในการ Validate: {ex.Message}";
+                Console.WriteLine($"❌ Validation Error: {ex.Message}");
+                return false;
+            }
         }
 
     }
