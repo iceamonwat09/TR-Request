@@ -338,7 +338,7 @@
                                         const totalCostDisplayPublic = document.getElementById('totalCostDisplayPublic');
 
                                         // ✅ Global function: คำนวณงบประมาณ Public
-                                        function calculateTotalBudgetPublic() {
+                                        window.calculateTotalBudgetPublic = function() {
                                             let costPerPerson = parseFloat(costPerPersonPublic?.value) || 0;
 
                                             // ✅ นับจำนวนคนจากตารางพนักงาน (employeeManager.employees.length)
@@ -366,7 +366,7 @@
                                             });
 
                                             return total;
-                                        }
+                                        };
 
                                         // ✅ Event Listeners สำหรับ CostPerPerson
                                         if (costPerPersonPublic) {
