@@ -1896,9 +1896,25 @@ namespace TrainingRequestApp.Controllers
             {
                 if (formData.TrainingType == "Public")
                 {
-                    // ✅ Public: TotalCost = CostPerPerson × ParticipantCount
+                    // ✅ Public: TotalCost = CostPerPerson × จำนวนคนในตาราง (EmployeesJson)
                     decimal costPerPerson = formData.CostPerPerson ?? 0;
-                    int participantCount = int.Parse(formData.ParticipantCount ?? "0");
+
+                    // ✅ นับจำนวนคนจาก EmployeesJson
+                    int participantCount = 0;
+                    if (!string.IsNullOrEmpty(formData.EmployeesJson))
+                    {
+                        try
+                        {
+                            var employees = JsonSerializer.Deserialize<List<EmployeeData>>(formData.EmployeesJson);
+                            participantCount = employees?.Count ?? 0;
+                            Console.WriteLine($"📊 Public: Parsed {participantCount} employees from EmployeesJson");
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"⚠️ Failed to parse EmployeesJson: {ex.Message}");
+                        }
+                    }
+
                     decimal expectedTotal = costPerPerson * participantCount;
                     decimal actualTotal = formData.TotalCost ?? 0;
 
@@ -1907,10 +1923,11 @@ namespace TrainingRequestApp.Controllers
                     {
                         errorMessage = $"งบประมาณไม่ถูกต้อง (Public): Expected {expectedTotal:N2}, Got {actualTotal:N2}";
                         Console.WriteLine($"❌ Validation Failed: {errorMessage}");
+                        Console.WriteLine($"   CostPerPerson: {costPerPerson}, EmployeeCount: {participantCount}");
                         return false;
                     }
 
-                    Console.WriteLine($"✅ Validation Passed (Public): CostPerPerson={costPerPerson:N2}, ParticipantCount={participantCount}, TotalCost={actualTotal:N2}");
+                    Console.WriteLine($"✅ Validation Passed (Public): CostPerPerson={costPerPerson:N2}, EmployeeCount={participantCount}, TotalCost={actualTotal:N2}");
                 }
                 else if (formData.TrainingType == "In House")
                 {
