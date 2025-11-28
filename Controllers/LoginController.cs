@@ -38,16 +38,20 @@ namespace TrainingRequestApp.Controllers
 
         // 🔹 GET: หน้า Login
         [HttpGet]
-        public IActionResult Index()
+        public IActionResult Index(string returnUrl = null)
         {
-            Console.WriteLine("🔵 Login Page Loaded");
+            Console.WriteLine($"🔵 Login Page Loaded. ReturnUrl: {returnUrl ?? "(none)"}");
+
+            // ส่ง returnUrl ไปยัง View ผ่าน ViewBag
+            ViewBag.ReturnUrl = returnUrl;
+
             return View("Login");
         }
 
         // 🔹 POST: ทำการล็อกอิน
         [HttpPost]
         [ValidateAntiForgeryToken] // ✅ ป้องกัน CSRF
-        public IActionResult Authenticate(LoginViewModel model)
+        public IActionResult Authenticate(LoginViewModel model, string returnUrl = null)
         {
             try
             {
@@ -144,7 +148,25 @@ namespace TrainingRequestApp.Controllers
                                         });
                                     }
 
-                                    // ✅ Redirect ไป Home/Index (แสดงเมนูตาม Role)
+                                    // ✅ Version 1: Redirect with ReturnUrl Validation
+                                    if (!string.IsNullOrEmpty(returnUrl))
+                                    {
+                                        // ✅ 1. Validate returnUrl อย่างเข้มงวด (ป้องกัน Open Redirect)
+                                        if (IsValidReturnUrl(returnUrl))
+                                        {
+                                            Console.WriteLine($"✅ Valid ReturnUrl detected. Redirecting to: {returnUrl}");
+                                            return Redirect(returnUrl);
+                                        }
+                                        else
+                                        {
+                                            // ⚠️ Log suspicious redirect attempt
+                                            Console.WriteLine($"⚠️ Invalid/Suspicious ReturnUrl rejected: {returnUrl}");
+                                            Console.WriteLine($"   - Reason: Failed security validation");
+                                        }
+                                    }
+
+                                    // ✅ Default redirect ไป Home/Index
+                                    Console.WriteLine($"🟢 Redirecting to default: Home/Index");
                                     return RedirectToAction("Index", "Home");
                                 }
                                 else
@@ -193,6 +215,60 @@ namespace TrainingRequestApp.Controllers
             HttpContext.Session.Clear();
             Response.Cookies.Delete("UserEmail");
             return RedirectToAction("Index", "Login");
+        }
+
+        // ====================================================================
+        // ✅ Version 1: Helper Method - Validate ReturnUrl (ป้องกัน Open Redirect)
+        // ====================================================================
+        private bool IsValidReturnUrl(string returnUrl)
+        {
+            if (string.IsNullOrEmpty(returnUrl))
+            {
+                return false;
+            }
+
+            try
+            {
+                // ✅ 1. ตรวจสอบว่าเป็น Local URL (ไม่มี protocol เช่น http://, https://)
+                if (!Url.IsLocalUrl(returnUrl))
+                {
+                    Console.WriteLine($"   - IsLocalUrl check failed");
+                    return false;
+                }
+
+                // ✅ 2. ตรวจสอบว่าไม่มี protocol หรือ // (ป้องกัน protocol-relative URLs)
+                if (returnUrl.Contains("://") || returnUrl.StartsWith("//"))
+                {
+                    Console.WriteLine($"   - Contains protocol or //");
+                    return false;
+                }
+
+                // ✅ 3. Whitelist: ตรวจสอบว่า URL เริ่มต้นด้วย path ที่อนุญาต
+                var allowedPaths = new[]
+                {
+                    "/TrainingRequest/Edit",
+                    "/TrainingRequest/Details",
+                    "/TrainingRequest/ApprovalFlow",
+                    "/Home/MonthlyRequests",
+                    "/Home/Index"
+                };
+
+                foreach (var allowedPath in allowedPaths)
+                {
+                    if (returnUrl.StartsWith(allowedPath, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return true;
+                    }
+                }
+
+                Console.WriteLine($"   - Path not in whitelist");
+                return false;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"   - Exception: {ex.Message}");
+                return false;
+            }
         }
     }
 }

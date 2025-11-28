@@ -28,6 +28,13 @@
             <!-- 🛠️ Form -->
             <form method="post" action="/Login/Authenticate" onsubmit="return validateLogin()">
                 @Html.AntiForgeryToken() <!-- ✅ ป้องกัน CSRF -->
+
+                @* ✅ Version 1: ส่ง returnUrl กลับไปยัง Authenticate action *@
+                @if (!string.IsNullOrEmpty(ViewBag.ReturnUrl))
+                {
+                    <input type="hidden" name="returnUrl" value="@ViewBag.ReturnUrl" />
+                }
+
                 <!-- 🆔 UserID Input -->
                 <div class="input-group">
                     <span class="input-icon"><i class="fas fa-user"></i></span>

@@ -152,6 +152,21 @@ namespace TrainingRequestApp.Controllers
                 return RedirectToAction("Index", "Home");
             }
 
+            // ✅ Version 1: Session Check + ReturnUrl (Minimal Changes)
+            // ตรวจสอบ Session ก่อนเข้าหน้า Edit
+            string userEmail = HttpContext.Session.GetString("UserEmail");
+
+            if (string.IsNullOrEmpty(userEmail))
+            {
+                // เก็บ Full URL รวม Query String สำหรับ returnUrl
+                string returnUrl = HttpContext.Request.Path + HttpContext.Request.QueryString;
+
+                Console.WriteLine($"⚠️ Edit Action: No session found. Redirecting to Login with returnUrl={returnUrl}");
+
+                // Redirect to Login with returnUrl
+                return RedirectToAction("Index", "Login", new { returnUrl = returnUrl });
+            }
+
             try
             {
                 string connectionString = _configuration.GetConnectionString("DefaultConnection");
