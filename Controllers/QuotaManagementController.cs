@@ -46,59 +46,81 @@ namespace TrainingRequestApp.Controllers
         [ValidateAntiForgeryToken]
         public IActionResult Create(TrainingRequestCost model)
         {
-            if (ModelState.IsValid)
+            // 🔍 Debug: ตรวจสอบ ModelState
+            if (!ModelState.IsValid)
             {
-                // ตรวจสอบว่ามีข้อมูลซ้ำหรือไม่
-                if (IsDuplicateQuota(model.Department, model.Year, 0))
-                {
-                    ModelState.AddModelError("", $"มีข้อมูลโควต้าสำหรับฝ่าย {model.Department} ปี {model.Year} อยู่แล้ว");
-                    ViewBag.Departments = GetDepartments();
-                    ViewBag.Years = GetYearList();
-                    return View(model);
-                }
-
-                try
-                {
-                    // บันทึกข้อมูล
-                    string userName = HttpContext.Session.GetString("UserId") ?? "System";
-                    model.CreatedBy = userName;
-                    string connectionString = _configuration.GetConnectionString("DefaultConnection");
-
-                    using (SqlConnection connection = new SqlConnection(connectionString))
-                    {
-                        connection.Open();
-                        string query = @"
-                            INSERT INTO [HRDSYSTEM].[dbo].[TrainingRequest_Cost]
-                            (Department, Year, Qhours, Cost, CreatedBy)
-                            VALUES (@Department, @Year, @Qhours, @Cost, @CreatedBy)";
-
-                        using (SqlCommand command = new SqlCommand(query, connection))
-                        {
-                            command.Parameters.AddWithValue("@Department", model.Department);
-                            command.Parameters.AddWithValue("@Year", model.Year);
-                            command.Parameters.AddWithValue("@Qhours", model.Qhours);
-                            command.Parameters.AddWithValue("@Cost", model.Cost);
-                            command.Parameters.AddWithValue("@CreatedBy", (object?)userName ?? DBNull.Value);
-
-                            command.ExecuteNonQuery();
-                        }
-                    }
-
-                    TempData["SuccessMessage"] = "เพิ่มข้อมูลโควต้าเรียบร้อยแล้ว";
-                    return RedirectToAction(nameof(Index), new { yearFilter = model.Year });
-                }
-                catch (Exception ex)
-                {
-                    TempData["ErrorMessage"] = $"เกิดข้อผิดพลาดในการบันทึกข้อมูล: {ex.Message}";
-                    ViewBag.Departments = GetDepartments();
-                    ViewBag.Years = GetYearList();
-                    return View(model);
-                }
+                // แสดง validation errors ทั้งหมด
+                var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
+                TempData["ErrorMessage"] = $"ข้อมูลไม่ถูกต้อง: {string.Join(", ", errors)}";
+                ViewBag.Departments = GetDepartments();
+                ViewBag.Years = GetYearList();
+                return View(model);
             }
 
-            ViewBag.Departments = GetDepartments();
-            ViewBag.Years = GetYearList();
-            return View(model);
+            // ตรวจสอบว่ามีข้อมูลซ้ำหรือไม่
+            if (IsDuplicateQuota(model.Department, model.Year, 0))
+            {
+                ModelState.AddModelError("", $"มีข้อมูลโควต้าสำหรับฝ่าย {model.Department} ปี {model.Year} อยู่แล้ว");
+                ViewBag.Departments = GetDepartments();
+                ViewBag.Years = GetYearList();
+                return View(model);
+            }
+
+            try
+            {
+                // บันทึกข้อมูล
+                string userName = HttpContext.Session.GetString("UserId") ?? "System";
+                model.CreatedBy = userName;
+                string connectionString = _configuration.GetConnectionString("DefaultConnection");
+
+                using (SqlConnection connection = new SqlConnection(connectionString))
+                {
+                    connection.Open();
+                    string query = @"
+                        INSERT INTO [HRDSYSTEM].[dbo].[TrainingRequest_Cost]
+                        (Department, Year, Qhours, Cost, CreatedBy)
+                        VALUES (@Department, @Year, @Qhours, @Cost, @CreatedBy)";
+
+                    using (SqlCommand command = new SqlCommand(query, connection))
+                    {
+                        command.Parameters.AddWithValue("@Department", model.Department ?? "");
+                        command.Parameters.AddWithValue("@Year", model.Year ?? "");
+                        command.Parameters.AddWithValue("@Qhours", model.Qhours);
+                        command.Parameters.AddWithValue("@Cost", model.Cost);
+                        command.Parameters.AddWithValue("@CreatedBy", (object?)userName ?? DBNull.Value);
+
+                        int rowsAffected = command.ExecuteNonQuery();
+
+                        // 🔍 Debug: ตรวจสอบว่าบันทึกสำเร็จไหม
+                        if (rowsAffected == 0)
+                        {
+                            TempData["ErrorMessage"] = "ไม่สามารถบันทึกข้อมูลได้ (0 rows affected)";
+                            ViewBag.Departments = GetDepartments();
+                            ViewBag.Years = GetYearList();
+                            return View(model);
+                        }
+                    }
+                }
+
+                TempData["SuccessMessage"] = "เพิ่มข้อมูลโควต้าเรียบร้อยแล้ว";
+                return RedirectToAction(nameof(Index), new { yearFilter = model.Year });
+            }
+            catch (SqlException sqlEx)
+            {
+                // 🔍 Debug: แสดง SQL error แบบละเอียด
+                TempData["ErrorMessage"] = $"SQL Error: {sqlEx.Message} (Code: {sqlEx.Number})";
+                ViewBag.Departments = GetDepartments();
+                ViewBag.Years = GetYearList();
+                return View(model);
+            }
+            catch (Exception ex)
+            {
+                // 🔍 Debug: แสดง error ทั่วไป
+                TempData["ErrorMessage"] = $"เกิดข้อผิดพลาด: {ex.Message} | Type: {ex.GetType().Name}";
+                ViewBag.Departments = GetDepartments();
+                ViewBag.Years = GetYearList();
+                return View(model);
+            }
         }
 
         // GET: QuotaManagement/Edit/5
