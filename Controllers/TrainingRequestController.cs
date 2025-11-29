@@ -259,7 +259,7 @@ namespace TrainingRequestApp.Controllers
                                 model.Employees = await GetEmployeesForRequest(conn, model.Id);
 
                                 // ✅ Multi-Mode Logic
-                                string userEmail = HttpContext.Session.GetString("UserEmail") ?? "";
+                                // userEmail already retrieved at line 157, use it directly
                                 string userRole = HttpContext.Session.GetString("UserRole") ?? "User";
                                 bool isAdmin = userRole.Contains("Admin", StringComparison.OrdinalIgnoreCase);
                                 bool isHRDAdmin = string.Equals(userEmail, model.HRDAdminId, StringComparison.OrdinalIgnoreCase);
