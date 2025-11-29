@@ -645,12 +645,14 @@
                 const labels = result.data.map(d => d.status);
                 const counts = result.data.map(d => d.count);
                 // 🎨 Material Design Colors - ปรับให้ชัดเจนและเหมาะสมกับแต่ละสถานะ
+                // แก้ไข: เพิ่ม toUpperCase() เพื่อจัดการ case-insensitive
                 const colors = labels.map(status => {
-                    if (status.includes('APPROVED') || status.includes('COMPLETE')) return '#4CAF50'; // Green 500 - สำเร็จ
-                    if (status.includes('REJECTED')) return '#F44336'; // Red 500 - ปฏิเสธ
-                    if (status.includes('WAITING') || status.includes('Pending')) return '#FFC107'; // Amber 500 - รอดำเนินการ
-                    if (status.includes('Revise')) return '#FF9800'; // Orange 500 - ต้องแก้ไข
-                    if (status.includes('RESCHEDULED')) return '#2196F3'; // Blue 500 - เลื่อนกำหนดการ
+                    const statusUpper = status.toUpperCase(); // แปลงเป็น uppercase ก่อนเช็ค
+                    if (statusUpper.includes('APPROVED') || statusUpper.includes('COMPLETE')) return '#4CAF50'; // Green 500 - สำเร็จ
+                    if (statusUpper.includes('REJECTED')) return '#F44336'; // Red 500 - ปฏิเสธ
+                    if (statusUpper.includes('WAITING') || statusUpper.includes('PENDING')) return '#FFC107'; // Amber 500 - รอดำเนินการ
+                    if (statusUpper.includes('REVISE')) return '#FF9800'; // Orange 500 - ต้องแก้ไข
+                    if (statusUpper.includes('RESCHEDULED')) return '#2196F3'; // Blue 500 - เลื่อนกำหนดการ
                     return '#9E9E9E'; // Grey 500 - อื่นๆ
                 });
 
