@@ -31,9 +31,6 @@ namespace TrainingRequestApp.Models
 
         [StringLength(100)]
         [Display(Name = "สร้างโดย")]
-        [NotMapped]  // ✅ ไม่ map กับ database
         public string? CreatedBy { get; set; }
-
-        // ✅ ลบ CreatedDate, UpdatedBy, UpdatedDate ออก (ไม่มีใน database)
     }
 }

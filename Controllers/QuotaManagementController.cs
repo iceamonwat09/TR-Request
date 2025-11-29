@@ -57,32 +57,43 @@ namespace TrainingRequestApp.Controllers
                     return View(model);
                 }
 
-                // บันทึกข้อมูล
-                string userName = HttpContext.Session.GetString("UserId") ?? "System";
-                model.CreatedBy = userName; // เก็บไว้ใน memory เฉพาะ session นี้
-                string connectionString = _configuration.GetConnectionString("DefaultConnection");
-
-                using (SqlConnection connection = new SqlConnection(connectionString))
+                try
                 {
-                    connection.Open();
-                    string query = @"
-                        INSERT INTO [HRDSYSTEM].[dbo].[TrainingRequest_Cost]
-                        (Department, Year, Qhours, Cost)
-                        VALUES (@Department, @Year, @Qhours, @Cost)";
+                    // บันทึกข้อมูล
+                    string userName = HttpContext.Session.GetString("UserId") ?? "System";
+                    model.CreatedBy = userName;
+                    string connectionString = _configuration.GetConnectionString("DefaultConnection");
 
-                    using (SqlCommand command = new SqlCommand(query, connection))
+                    using (SqlConnection connection = new SqlConnection(connectionString))
                     {
-                        command.Parameters.AddWithValue("@Department", model.Department);
-                        command.Parameters.AddWithValue("@Year", model.Year);
-                        command.Parameters.AddWithValue("@Qhours", model.Qhours);
-                        command.Parameters.AddWithValue("@Cost", model.Cost);
+                        connection.Open();
+                        string query = @"
+                            INSERT INTO [HRDSYSTEM].[dbo].[TrainingRequest_Cost]
+                            (Department, Year, Qhours, Cost, CreatedBy)
+                            VALUES (@Department, @Year, @Qhours, @Cost, @CreatedBy)";
 
-                        command.ExecuteNonQuery();
+                        using (SqlCommand command = new SqlCommand(query, connection))
+                        {
+                            command.Parameters.AddWithValue("@Department", model.Department);
+                            command.Parameters.AddWithValue("@Year", model.Year);
+                            command.Parameters.AddWithValue("@Qhours", model.Qhours);
+                            command.Parameters.AddWithValue("@Cost", model.Cost);
+                            command.Parameters.AddWithValue("@CreatedBy", (object?)userName ?? DBNull.Value);
+
+                            command.ExecuteNonQuery();
+                        }
                     }
-                }
 
-                TempData["SuccessMessage"] = "เพิ่มข้อมูลโควต้าเรียบร้อยแล้ว";
-                return RedirectToAction(nameof(Index), new { yearFilter = model.Year });
+                    TempData["SuccessMessage"] = "เพิ่มข้อมูลโควต้าเรียบร้อยแล้ว";
+                    return RedirectToAction(nameof(Index), new { yearFilter = model.Year });
+                }
+                catch (Exception ex)
+                {
+                    TempData["ErrorMessage"] = $"เกิดข้อผิดพลาดในการบันทึกข้อมูล: {ex.Message}";
+                    ViewBag.Departments = GetDepartments();
+                    ViewBag.Years = GetYearList();
+                    return View(model);
+                }
             }
 
             ViewBag.Departments = GetDepartments();
@@ -125,34 +136,44 @@ namespace TrainingRequestApp.Controllers
                     return View(model);
                 }
 
-                // อัพเดตข้อมูล
-                string connectionString = _configuration.GetConnectionString("DefaultConnection");
-
-                using (SqlConnection connection = new SqlConnection(connectionString))
+                try
                 {
-                    connection.Open();
-                    string query = @"
-                        UPDATE [HRDSYSTEM].[dbo].[TrainingRequest_Cost]
-                        SET Department = @Department,
-                            Year = @Year,
-                            Qhours = @Qhours,
-                            Cost = @Cost
-                        WHERE ID = @ID";
+                    // อัพเดตข้อมูล
+                    string connectionString = _configuration.GetConnectionString("DefaultConnection");
 
-                    using (SqlCommand command = new SqlCommand(query, connection))
+                    using (SqlConnection connection = new SqlConnection(connectionString))
                     {
-                        command.Parameters.AddWithValue("@ID", id);
-                        command.Parameters.AddWithValue("@Department", model.Department);
-                        command.Parameters.AddWithValue("@Year", model.Year);
-                        command.Parameters.AddWithValue("@Qhours", model.Qhours);
-                        command.Parameters.AddWithValue("@Cost", model.Cost);
+                        connection.Open();
+                        string query = @"
+                            UPDATE [HRDSYSTEM].[dbo].[TrainingRequest_Cost]
+                            SET Department = @Department,
+                                Year = @Year,
+                                Qhours = @Qhours,
+                                Cost = @Cost
+                            WHERE ID = @ID";
 
-                        command.ExecuteNonQuery();
+                        using (SqlCommand command = new SqlCommand(query, connection))
+                        {
+                            command.Parameters.AddWithValue("@ID", id);
+                            command.Parameters.AddWithValue("@Department", model.Department);
+                            command.Parameters.AddWithValue("@Year", model.Year);
+                            command.Parameters.AddWithValue("@Qhours", model.Qhours);
+                            command.Parameters.AddWithValue("@Cost", model.Cost);
+
+                            command.ExecuteNonQuery();
+                        }
                     }
-                }
 
-                TempData["SuccessMessage"] = "อัพเดตข้อมูลโควต้าเรียบร้อยแล้ว";
-                return RedirectToAction(nameof(Index), new { yearFilter = model.Year });
+                    TempData["SuccessMessage"] = "อัพเดตข้อมูลโควต้าเรียบร้อยแล้ว";
+                    return RedirectToAction(nameof(Index), new { yearFilter = model.Year });
+                }
+                catch (Exception ex)
+                {
+                    TempData["ErrorMessage"] = $"เกิดข้อผิดพลาดในการอัพเดตข้อมูล: {ex.Message}";
+                    ViewBag.Departments = GetDepartments();
+                    ViewBag.Years = GetYearList();
+                    return View(model);
+                }
             }
 
             ViewBag.Departments = GetDepartments();
@@ -193,7 +214,7 @@ namespace TrainingRequestApp.Controllers
             {
                 connection.Open();
                 string query = @"
-                    SELECT ID, Department, Year, Qhours, Cost
+                    SELECT ID, Department, Year, Qhours, Cost, CreatedBy
                     FROM [HRDSYSTEM].[dbo].[TrainingRequest_Cost]
                     WHERE Year = @Year
                     ORDER BY Department";
@@ -212,7 +233,8 @@ namespace TrainingRequestApp.Controllers
                                 Department = reader["Department"].ToString() ?? "",
                                 Year = reader["Year"].ToString() ?? "",
                                 Qhours = Convert.ToInt32(reader["Qhours"]),
-                                Cost = Convert.ToDecimal(reader["Cost"])
+                                Cost = Convert.ToDecimal(reader["Cost"]),
+                                CreatedBy = reader["CreatedBy"]?.ToString()
                             });
                         }
                     }
@@ -230,7 +252,7 @@ namespace TrainingRequestApp.Controllers
             {
                 connection.Open();
                 string query = @"
-                    SELECT ID, Department, Year, Qhours, Cost
+                    SELECT ID, Department, Year, Qhours, Cost, CreatedBy
                     FROM [HRDSYSTEM].[dbo].[TrainingRequest_Cost]
                     WHERE ID = @ID";
 
@@ -248,7 +270,8 @@ namespace TrainingRequestApp.Controllers
                                 Department = reader["Department"].ToString() ?? "",
                                 Year = reader["Year"].ToString() ?? "",
                                 Qhours = Convert.ToInt32(reader["Qhours"]),
-                                Cost = Convert.ToDecimal(reader["Cost"])
+                                Cost = Convert.ToDecimal(reader["Cost"]),
+                                CreatedBy = reader["CreatedBy"]?.ToString()
                             };
                         }
                     }
