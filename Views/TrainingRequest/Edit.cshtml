@@ -1454,58 +1454,83 @@
         // ====================================================================
         function calculateTotalCost() {
             try {
-                // ดึงค่าจาก In House Fields
-                const registrationCost = parseFloat(document.getElementById('RegistrationCost')?.value || 0);
-                const instructorFee = parseFloat(document.getElementById('InstructorFee')?.value || 0);
-                const instructorCommission = parseFloat(document.getElementById('InstructorCommission')?.value || 0);
-                const equipmentCost = parseFloat(document.getElementById('EquipmentCost')?.value || 0);
-                const foodCost = parseFloat(document.getElementById('FoodCost')?.value || 0);
-                const otherCost = parseFloat(document.getElementById('OtherCost')?.value || 0);
+                // ตรวจสอบประเภทการอบรมที่เลือก
+                const trainingTypeRadio = document.querySelector('input[name="TrainingType"]:checked');
+                const trainingType = trainingTypeRadio?.value || '';
 
-                // ดึงค่าจาก Public Fields
-                const costPerPerson = parseFloat(document.getElementById('CostPerPerson')?.value || 0);
-                const trainingHours = parseFloat(document.getElementById('TrainingHours')?.value || 0);
+                let total = 0;
 
-                // คำนวณยอดรวมแต่ละส่วน
-                const inHouseTotal = registrationCost + instructorFee + instructorCommission +
-                                    equipmentCost + foodCost + otherCost;
-                const publicTotal = costPerPerson ;
-                const total = inHouseTotal + publicTotal;
+                if (trainingType === 'Public') {
+                    // ========================================
+                    // 📌 Public: ค่าใช้จ่ายต่อคน × จำนวนคนในตาราง
+                    // ========================================
+                    const costPerPerson = parseFloat(document.getElementById('CostPerPerson')?.value || 0);
 
-                // Log ข้อมูลเพื่อ Debug
-                console.log('💰 Calculating Total:', {
-                    inHouse: {
+                    // ✅ Public นับจำนวนคนจากตารางพนักงาน (employeeManager.employees.length)
+                    let participantCount = 0;
+                    if (typeof employeeManager !== 'undefined' && employeeManager.employees) {
+                        participantCount = employeeManager.employees.length;
+                    }
+
+                    // ✅ Public ต้องคูณด้วยจำนวนคน
+                    total = costPerPerson * participantCount;
+
+                    console.log('💰 Calculating Total (Public):', {
+                        trainingType,
+                        costPerPerson,
+                        participantCount,
+                        source: 'employeeManager.employees.length',
+                        total: total.toFixed(2)
+                    });
+
+                } else if (trainingType === 'In House') {
+                    // ========================================
+                    // 📌 In House: รวมทุกค่าใช้จ่าย (ไม่คูณจำนวนคน)
+                    // User กรอกค่ารวมมาแล้ว
+                    // ========================================
+                    const registrationCost = parseFloat(document.getElementById('RegistrationCost')?.value || 0);
+                    const instructorFee = parseFloat(document.getElementById('InstructorFee')?.value || 0);
+                    const instructorCommission = parseFloat(document.getElementById('InstructorCommission')?.value || 0);
+                    const equipmentCost = parseFloat(document.getElementById('EquipmentCost')?.value || 0);
+                    const foodCost = parseFloat(document.getElementById('FoodCost')?.value || 0);
+                    const otherCost = parseFloat(document.getElementById('OtherCost')?.value || 0);
+
+                    // ✅ In House แค่รวม ไม่ต้องคูณ
+                    total = registrationCost + instructorFee + instructorCommission +
+                            equipmentCost + foodCost + otherCost;
+
+                    console.log('💰 Calculating Total (In House):', {
+                        trainingType,
                         registrationCost,
                         instructorFee,
                         instructorCommission,
                         equipmentCost,
                         foodCost,
                         otherCost,
-                        subtotal: inHouseTotal
-                    },
-                    public: {
-                        costPerPerson,
+                        total: total.toFixed(2)
+                    });
+                }
 
-                        subtotal: publicTotal
-                    },
-                    grandTotal: total
-                });
-
-                // อัปเดตช่องแสดงผลทั้งหมด
-                const displayConfigs = [
-                    { id: 'totalCostDisplay', label: 'In House Display' },
-                    { id: 'totalCostDisplayPublic', label: 'Public Display' }
-                ];
-
-                displayConfigs.forEach(config => {
-                    const element = document.getElementById(config.id);
-                    if (element) {
-                        element.textContent = total.toLocaleString('th-TH', {
+                // ========================================
+                // อัปเดตช่องแสดงผลตามประเภท
+                // ========================================
+                if (trainingType === 'Public') {
+                    const displayPublic = document.getElementById('totalCostDisplayPublic');
+                    if (displayPublic) {
+                        displayPublic.textContent = total.toLocaleString('th-TH', {
                             minimumFractionDigits: 2,
                             maximumFractionDigits: 2
                         });
                     }
-                });
+                } else if (trainingType === 'In House') {
+                    const displayInHouse = document.getElementById('totalCostDisplay');
+                    if (displayInHouse) {
+                        displayInHouse.textContent = total.toLocaleString('th-TH', {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2
+                        });
+                    }
+                }
 
                 // อัปเดต Hidden Input สำหรับส่งไป Backend
                 const inputElement = document.getElementById('totalCostInput');
