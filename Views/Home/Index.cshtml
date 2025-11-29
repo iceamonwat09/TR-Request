@@ -320,6 +320,9 @@
                     <button class="btn btn-sm btn-secondary" onclick="resetFilters()">
                         <i class="fa fa-redo"></i> Reset
                     </button>
+                    <button class="btn btn-sm btn-success ms-2" onclick="exportDashboardData()">
+                        <i class="fa fa-file-excel"></i> Export ข้อมูล
+                    </button>
                     <span class="text-muted ms-3" id="filterStatus">Showing: All Data</span>
                 </div>
             </div>
@@ -641,13 +644,14 @@
             if (result.success) {
                 const labels = result.data.map(d => d.status);
                 const counts = result.data.map(d => d.count);
+                // 🎨 Material Design Colors - ปรับให้ชัดเจนและเหมาะสมกับแต่ละสถานะ
                 const colors = labels.map(status => {
-                    if (status.includes('APPROVED') || status.includes('COMPLETE')) return 'rgba(165, 214, 167, 0.85)';
-                    if (status.includes('REJECTED')) return 'rgba(239, 154, 154, 0.85)';
-                    if (status.includes('WAITING') || status.includes('Pending')) return 'rgba(255, 224, 130, 0.85)';
-                    if (status.includes('Revise')) return 'rgba(255, 183, 77, 0.85)';
-                    if (status.includes('RESCHEDULED')) return 'rgba(179, 229, 252, 0.85)';
-                    return 'rgba(189, 189, 189, 0.85)';
+                    if (status.includes('APPROVED') || status.includes('COMPLETE')) return '#4CAF50'; // Green 500 - สำเร็จ
+                    if (status.includes('REJECTED')) return '#F44336'; // Red 500 - ปฏิเสธ
+                    if (status.includes('WAITING') || status.includes('Pending')) return '#FFC107'; // Amber 500 - รอดำเนินการ
+                    if (status.includes('Revise')) return '#FF9800'; // Orange 500 - ต้องแก้ไข
+                    if (status.includes('RESCHEDULED')) return '#2196F3'; // Blue 500 - เลื่อนกำหนดการ
+                    return '#9E9E9E'; // Grey 500 - อื่นๆ
                 });
 
                 // Destroy existing chart
@@ -947,6 +951,31 @@
             document.getElementById('filterStatus').textContent = 'Showing: All Data';
 
             loadDashboard();
+        }
+
+        // ====================================================================
+        // Export Dashboard Data
+        // ====================================================================
+        function exportDashboardData() {
+            // สร้าง URL สำหรับ Export พร้อม Filter parameters
+            const params = new URLSearchParams(currentFilters);
+            const exportUrl = `/Home/ExportDashboardData?${params}`;
+
+            console.log('📥 Exporting data with filters:', currentFilters);
+            console.log('Export URL:', exportUrl);
+
+            // เปิด URL ในหน้าต่างใหม่ -> Browser จะ auto download file
+            window.location.href = exportUrl;
+
+            // แสดง notification (optional)
+            const filterStatus = document.getElementById('filterStatus');
+            const originalText = filterStatus.textContent;
+            filterStatus.innerHTML = '<span class="text-success"><i class="fa fa-download"></i> กำลัง Export ข้อมูล...</span>';
+
+            // Reset notification หลัง 3 วินาที
+            setTimeout(() => {
+                filterStatus.textContent = originalText;
+            }, 3000);
         }
 
         // ====================================================================
