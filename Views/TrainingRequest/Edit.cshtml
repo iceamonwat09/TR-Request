@@ -493,6 +493,12 @@
                                                 });
                                             }
 
+                                            // ✅ อัพเดท Hidden Input สำหรับส่งไป Backend
+                                            const totalCostInput = document.getElementById('totalCostInput');
+                                            if (totalCostInput) {
+                                                totalCostInput.value = total.toFixed(2);
+                                            }
+
                                             console.log('💰 Total Budget (In House):', total.toFixed(2));
 
                                             return total;
