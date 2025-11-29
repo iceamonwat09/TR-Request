@@ -46,40 +46,66 @@ namespace TrainingRequestApp.Controllers
         [ValidateAntiForgeryToken]
         public IActionResult Create(TrainingRequestCost model)
         {
+            Console.WriteLine("========================================");
+            Console.WriteLine("QuotaManagement/Create - Start");
+            Console.WriteLine($"Department: {model.Department ?? "NULL"}");
+            Console.WriteLine($"Year: {model.Year ?? "NULL"}");
+            Console.WriteLine($"Qhours: {model.Qhours}");
+            Console.WriteLine($"Cost: {model.Cost}");
+            Console.WriteLine("========================================");
+
             // 🔍 Debug: ตรวจสอบ ModelState
             if (!ModelState.IsValid)
             {
                 // แสดง validation errors ทั้งหมด
                 var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
-                TempData["ErrorMessage"] = $"ข้อมูลไม่ถูกต้อง: {string.Join(", ", errors)}";
+                var errorMsg = $"ข้อมูลไม่ถูกต้อง: {string.Join(", ", errors)}";
+
+                Console.WriteLine("❌ ModelState INVALID!");
+                Console.WriteLine($"Errors: {errorMsg}");
+
+                TempData["ErrorMessage"] = errorMsg;
                 ViewBag.Departments = GetDepartments();
                 ViewBag.Years = GetYearList();
                 return View(model);
             }
 
+            Console.WriteLine("✅ ModelState is VALID");
+
             // ตรวจสอบว่ามีข้อมูลซ้ำหรือไม่
             if (IsDuplicateQuota(model.Department, model.Year, 0))
             {
+                Console.WriteLine($"❌ DUPLICATE: {model.Department} - {model.Year}");
                 ModelState.AddModelError("", $"มีข้อมูลโควต้าสำหรับฝ่าย {model.Department} ปี {model.Year} อยู่แล้ว");
                 ViewBag.Departments = GetDepartments();
                 ViewBag.Years = GetYearList();
                 return View(model);
             }
 
+            Console.WriteLine("✅ No duplicate found");
+
             try
             {
                 // บันทึกข้อมูล
                 string userName = HttpContext.Session.GetString("UserId") ?? "System";
                 model.CreatedBy = userName;
+
+                Console.WriteLine($"CreatedBy: {userName}");
+
                 string connectionString = _configuration.GetConnectionString("DefaultConnection");
 
                 using (SqlConnection connection = new SqlConnection(connectionString))
                 {
                     connection.Open();
+                    Console.WriteLine("✅ Database connection opened");
+
                     string query = @"
                         INSERT INTO [HRDSYSTEM].[dbo].[TrainingRequest_Cost]
                         (Department, Year, Qhours, Cost, CreatedBy)
                         VALUES (@Department, @Year, @Qhours, @Cost, @CreatedBy)";
+
+                    Console.WriteLine("SQL Query:");
+                    Console.WriteLine(query);
 
                     using (SqlCommand command = new SqlCommand(query, connection))
                     {
@@ -89,11 +115,21 @@ namespace TrainingRequestApp.Controllers
                         command.Parameters.AddWithValue("@Cost", model.Cost);
                         command.Parameters.AddWithValue("@CreatedBy", (object?)userName ?? DBNull.Value);
 
+                        Console.WriteLine("Parameters:");
+                        Console.WriteLine($"  @Department = {model.Department ?? "EMPTY"}");
+                        Console.WriteLine($"  @Year = {model.Year ?? "EMPTY"}");
+                        Console.WriteLine($"  @Qhours = {model.Qhours}");
+                        Console.WriteLine($"  @Cost = {model.Cost}");
+                        Console.WriteLine($"  @CreatedBy = {userName}");
+
                         int rowsAffected = command.ExecuteNonQuery();
+
+                        Console.WriteLine($"Rows affected: {rowsAffected}");
 
                         // 🔍 Debug: ตรวจสอบว่าบันทึกสำเร็จไหม
                         if (rowsAffected == 0)
                         {
+                            Console.WriteLine("❌ INSERT failed: 0 rows affected");
                             TempData["ErrorMessage"] = "ไม่สามารถบันทึกข้อมูลได้ (0 rows affected)";
                             ViewBag.Departments = GetDepartments();
                             ViewBag.Years = GetYearList();
@@ -102,12 +138,20 @@ namespace TrainingRequestApp.Controllers
                     }
                 }
 
+                Console.WriteLine("✅ INSERT successful!");
                 TempData["SuccessMessage"] = "เพิ่มข้อมูลโควต้าเรียบร้อยแล้ว";
                 return RedirectToAction(nameof(Index), new { yearFilter = model.Year });
             }
             catch (SqlException sqlEx)
             {
                 // 🔍 Debug: แสดง SQL error แบบละเอียด
+                Console.WriteLine("❌ SQL EXCEPTION:");
+                Console.WriteLine($"Message: {sqlEx.Message}");
+                Console.WriteLine($"Number: {sqlEx.Number}");
+                Console.WriteLine($"State: {sqlEx.State}");
+                Console.WriteLine($"Source: {sqlEx.Source}");
+                Console.WriteLine($"StackTrace: {sqlEx.StackTrace}");
+
                 TempData["ErrorMessage"] = $"SQL Error: {sqlEx.Message} (Code: {sqlEx.Number})";
                 ViewBag.Departments = GetDepartments();
                 ViewBag.Years = GetYearList();
@@ -116,6 +160,11 @@ namespace TrainingRequestApp.Controllers
             catch (Exception ex)
             {
                 // 🔍 Debug: แสดง error ทั่วไป
+                Console.WriteLine("❌ EXCEPTION:");
+                Console.WriteLine($"Type: {ex.GetType().Name}");
+                Console.WriteLine($"Message: {ex.Message}");
+                Console.WriteLine($"StackTrace: {ex.StackTrace}");
+
                 TempData["ErrorMessage"] = $"เกิดข้อผิดพลาด: {ex.Message} | Type: {ex.GetType().Name}";
                 ViewBag.Departments = GetDepartments();
                 ViewBag.Years = GetYearList();
