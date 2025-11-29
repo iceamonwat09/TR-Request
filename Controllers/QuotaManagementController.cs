@@ -46,12 +46,24 @@ namespace TrainingRequestApp.Controllers
         [ValidateAntiForgeryToken]
         public IActionResult Create(TrainingRequestCost model)
         {
+            // 🔍 Log to file
+            var logFile = "quota_debug.log";
+            var logMessage = $"\n========================================\n" +
+                            $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] QuotaManagement/Create - Start\n" +
+                            $"Department: {model.Department ?? "NULL"}\n" +
+                            $"Year: {model.Year ?? "NULL"}\n" +
+                            $"Qhours: {model.Qhours}\n" +
+                            $"Cost: {model.Cost}\n" +
+                            $"========================================\n";
+            System.IO.File.AppendAllText(logFile, logMessage);
+
             Console.WriteLine("========================================");
             Console.WriteLine("QuotaManagement/Create - Start");
             Console.WriteLine($"Department: {model.Department ?? "NULL"}");
             Console.WriteLine($"Year: {model.Year ?? "NULL"}");
             Console.WriteLine($"Qhours: {model.Qhours}");
             Console.WriteLine($"Cost: {model.Cost}");
+            Console.WriteLine($"💾 Log file: {logFile}");
             Console.WriteLine("========================================");
 
             // 🔍 Debug: ตรวจสอบ ModelState
@@ -61,6 +73,8 @@ namespace TrainingRequestApp.Controllers
                 var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
                 var errorMsg = $"ข้อมูลไม่ถูกต้อง: {string.Join(", ", errors)}";
 
+                var msg = $"❌ ModelState INVALID!\nErrors: {errorMsg}\n";
+                System.IO.File.AppendAllText("quota_debug.log", msg);
                 Console.WriteLine("❌ ModelState INVALID!");
                 Console.WriteLine($"Errors: {errorMsg}");
 
@@ -70,11 +84,13 @@ namespace TrainingRequestApp.Controllers
                 return View(model);
             }
 
+            System.IO.File.AppendAllText("quota_debug.log", "✅ ModelState is VALID\n");
             Console.WriteLine("✅ ModelState is VALID");
 
             // ตรวจสอบว่ามีข้อมูลซ้ำหรือไม่
             if (IsDuplicateQuota(model.Department, model.Year, 0))
             {
+                System.IO.File.AppendAllText("quota_debug.log", $"❌ DUPLICATE: {model.Department} - {model.Year}\n");
                 Console.WriteLine($"❌ DUPLICATE: {model.Department} - {model.Year}");
                 ModelState.AddModelError("", $"มีข้อมูลโควต้าสำหรับฝ่าย {model.Department} ปี {model.Year} อยู่แล้ว");
                 ViewBag.Departments = GetDepartments();
@@ -82,6 +98,7 @@ namespace TrainingRequestApp.Controllers
                 return View(model);
             }
 
+            System.IO.File.AppendAllText("quota_debug.log", "✅ No duplicate found\n");
             Console.WriteLine("✅ No duplicate found");
 
             try
@@ -138,6 +155,7 @@ namespace TrainingRequestApp.Controllers
                     }
                 }
 
+                System.IO.File.AppendAllText("quota_debug.log", "✅ INSERT successful!\n");
                 Console.WriteLine("✅ INSERT successful!");
                 TempData["SuccessMessage"] = "เพิ่มข้อมูลโควต้าเรียบร้อยแล้ว";
                 return RedirectToAction(nameof(Index), new { yearFilter = model.Year });
@@ -145,6 +163,9 @@ namespace TrainingRequestApp.Controllers
             catch (SqlException sqlEx)
             {
                 // 🔍 Debug: แสดง SQL error แบบละเอียด
+                var errMsg = $"❌ SQL EXCEPTION:\nMessage: {sqlEx.Message}\nNumber: {sqlEx.Number}\nState: {sqlEx.State}\nStackTrace: {sqlEx.StackTrace}\n";
+                System.IO.File.AppendAllText("quota_debug.log", errMsg);
+
                 Console.WriteLine("❌ SQL EXCEPTION:");
                 Console.WriteLine($"Message: {sqlEx.Message}");
                 Console.WriteLine($"Number: {sqlEx.Number}");
@@ -160,6 +181,9 @@ namespace TrainingRequestApp.Controllers
             catch (Exception ex)
             {
                 // 🔍 Debug: แสดง error ทั่วไป
+                var errMsg = $"❌ EXCEPTION:\nType: {ex.GetType().Name}\nMessage: {ex.Message}\nStackTrace: {ex.StackTrace}\n";
+                System.IO.File.AppendAllText("quota_debug.log", errMsg);
+
                 Console.WriteLine("❌ EXCEPTION:");
                 Console.WriteLine($"Type: {ex.GetType().Name}");
                 Console.WriteLine($"Message: {ex.Message}");
