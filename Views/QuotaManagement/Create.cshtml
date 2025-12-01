@@ -390,13 +390,20 @@
             const form = document.getElementById('quotaForm');
             if (form) {
                 form.addEventListener('submit', function(e) {
-                    // 🔍 DEBUG: Log form values before submit
-                    const dept = document.querySelector('select[name="Department"]')?.value;
-                    const year = document.querySelector('select[name="Year"]')?.value;
-                    const qhours = document.querySelector('input[name="Qhours"]')?.value;
-                    const cost = document.querySelector('input[name="Cost"]')?.value;
+                    // 🔍 DEBUG: Use FormData to get all form values
+                    const formData = new FormData(form);
+
+                    // Get values from FormData
+                    const dept = formData.get('Department') || '';
+                    const year = formData.get('Year') || '';
+                    const qhours = formData.get('Qhours') || '';
+                    const cost = formData.get('Cost') || '';
 
                     console.log('=== Form Submit ===');
+                    console.log('📋 FormData entries:');
+                    for (let [key, value] of formData.entries()) {
+                        console.log(`  ${key}: [${value}]`);
+                    }
                     console.log('Department:', dept);
                     console.log('Year:', year);
                     console.log('Qhours:', qhours);
@@ -429,6 +436,8 @@
                         console.error('❌ Validation failed:', errorMessage);
                         return false;
                     }
+
+                    console.log('✅ Validation passed! Submitting form...');
 
                     // Show loading overlay
                     const loadingOverlay = document.getElementById('loadingOverlay');
