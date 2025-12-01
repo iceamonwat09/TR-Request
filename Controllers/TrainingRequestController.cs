@@ -1538,12 +1538,24 @@ namespace TrainingRequestApp.Controllers
             string? company = null,
             string? status = null)
         {
+            // 🔍 DEBUG: Log request parameters
+            Console.WriteLine("=== GetMonthlyRequests API Called ===");
+            Console.WriteLine($"startDate: {startDate}");
+            Console.WriteLine($"endDate: {endDate}");
+            Console.WriteLine($"docNo: {docNo}");
+            Console.WriteLine($"company: {company}");
+            Console.WriteLine($"status: {status}");
+
             try
             {
                 // ✅ ดึง UserRole และ UserEmail จาก Session
                 string userEmail = HttpContext.Session.GetString("UserEmail") ?? "System";
                 string userRole = HttpContext.Session.GetString("UserRole") ?? "User";
                 bool isAdmin = userRole.Contains("Admin", StringComparison.OrdinalIgnoreCase); // System Admin หรือ Admin
+
+                Console.WriteLine($"UserEmail: {userEmail}");
+                Console.WriteLine($"UserRole: {userRole}");
+                Console.WriteLine($"IsAdmin: {isAdmin}");
 
                 string connectionString = _configuration.GetConnectionString("DefaultConnection");
                 var requests = new List<dynamic>();
@@ -1611,6 +1623,9 @@ namespace TrainingRequestApp.Controllers
                         if (!string.IsNullOrEmpty(status))
                             cmd.Parameters.AddWithValue("@Status", status);
 
+                        Console.WriteLine($"📝 Executing SQL query...");
+                        Console.WriteLine($"Query: {query}");
+
                         using (SqlDataReader reader = await cmd.ExecuteReaderAsync())
                         {
                             while (await reader.ReadAsync())
@@ -1632,10 +1647,13 @@ namespace TrainingRequestApp.Controllers
                     }
                 }
 
+                Console.WriteLine($"✅ Found {requests.Count} records");
                 return Json(new { success = true, data = requests, count = requests.Count });
             }
             catch (Exception ex)
             {
+                Console.WriteLine($"❌ GetMonthlyRequests Error: {ex.Message}");
+                Console.WriteLine($"StackTrace: {ex.StackTrace}");
                 return Json(new { success = false, message = ex.Message });
             }
         }
