@@ -265,7 +265,21 @@
                         <form asp-action="Create" method="post" id="quotaForm">
                             @Html.AntiForgeryToken()
 
-                            <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+                            <!-- แสดง Validation Errors ทั้งหมด -->
+                            @if (!ViewData.ModelState.IsValid)
+                            {
+                                <div class="alert alert-danger" role="alert">
+                                    <h6 class="alert-heading">
+                                        <i class="fas fa-exclamation-triangle"></i> พบข้อผิดพลาด
+                                    </h6>
+                                    <ul class="mb-0">
+                                        @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                                        {
+                                            <li>@error.ErrorMessage</li>
+                                        }
+                                    </ul>
+                                </div>
+                            }
 
                             <!-- Department Dropdown -->
                             <div class="mb-3">
@@ -372,10 +386,51 @@
                 document.querySelector('.help-card').classList.add('show');
             }, 100);
 
-            // Form submission with loading overlay
+            // Form submission with loading overlay and validation
             const form = document.getElementById('quotaForm');
             if (form) {
                 form.addEventListener('submit', function(e) {
+                    // 🔍 DEBUG: Log form values before submit
+                    const dept = document.querySelector('select[name="Department"]')?.value;
+                    const year = document.querySelector('select[name="Year"]')?.value;
+                    const qhours = document.querySelector('input[name="Qhours"]')?.value;
+                    const cost = document.querySelector('input[name="Cost"]')?.value;
+
+                    console.log('=== Form Submit ===');
+                    console.log('Department:', dept);
+                    console.log('Year:', year);
+                    console.log('Qhours:', qhours);
+                    console.log('Cost:', cost);
+
+                    // Validate required fields
+                    let isValid = true;
+                    let errorMessage = '';
+
+                    if (!dept || dept === '') {
+                        isValid = false;
+                        errorMessage += '- กรุณาเลือกฝ่าย\n';
+                    }
+                    if (!year || year === '') {
+                        isValid = false;
+                        errorMessage += '- กรุณาเลือกปี\n';
+                    }
+                    if (!qhours || qhours === '') {
+                        isValid = false;
+                        errorMessage += '- กรุณากรอกจำนวนชั่วโมง\n';
+                    }
+                    if (!cost || cost === '') {
+                        isValid = false;
+                        errorMessage += '- กรุณากรอกงบประมาณ\n';
+                    }
+
+                    if (!isValid) {
+                        e.preventDefault();
+                        alert('⚠️ กรุณากรอกข้อมูลให้ครบถ้วน:\n\n' + errorMessage);
+                        console.error('❌ Validation failed:', errorMessage);
+                        return false;
+                    }
+
+                    // Show loading overlay
                     const loadingOverlay = document.getElementById('loadingOverlay');
                     if (loadingOverlay) {
                         loadingOverlay.classList.add('active');

@@ -46,6 +46,31 @@ namespace TrainingRequestApp.Controllers
         [ValidateAntiForgeryToken]
         public IActionResult Create(TrainingRequestCost model)
         {
+            // 🔍 DEBUG: Log incoming data
+            Console.WriteLine("=== QuotaManagement Create POST ===");
+            Console.WriteLine($"Department: [{model.Department}]");
+            Console.WriteLine($"Year: [{model.Year}]");
+            Console.WriteLine($"Qhours: [{model.Qhours}]");
+            Console.WriteLine($"Cost: [{model.Cost}]");
+            Console.WriteLine($"ModelState.IsValid: {ModelState.IsValid}");
+
+            // 🔍 DEBUG: Log validation errors if any
+            if (!ModelState.IsValid)
+            {
+                Console.WriteLine("❌ ModelState Validation Errors:");
+                foreach (var key in ModelState.Keys)
+                {
+                    var errors = ModelState[key]?.Errors;
+                    if (errors != null && errors.Count > 0)
+                    {
+                        foreach (var error in errors)
+                        {
+                            Console.WriteLine($"  - {key}: {error.ErrorMessage}");
+                        }
+                    }
+                }
+            }
+
             if (ModelState.IsValid)
             {
                 // ตรวจสอบว่ามีข้อมูลซ้ำหรือไม่
