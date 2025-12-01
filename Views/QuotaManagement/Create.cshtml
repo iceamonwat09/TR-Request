@@ -283,10 +283,10 @@
 
                             <!-- Department Dropdown -->
                             <div class="mb-3">
-                                <label asp-for="Department" class="form-label">
+                                <label for="Department" class="form-label">
                                     <i class="fas fa-building"></i> ฝ่าย <span class="text-danger">*</span>
                                 </label>
-                                <select asp-for="Department" class="form-select" required>
+                                <select id="Department" name="Department" class="form-select" required>
                                     <option value="">-- เลือกฝ่าย --</option>
                                     @if (ViewBag.Departments != null)
                                     {
@@ -296,15 +296,15 @@
                                         }
                                     }
                                 </select>
-                                <span asp-validation-for="Department" class="text-danger"></span>
+                                <span class="text-danger"></span>
                             </div>
 
                             <!-- Year Dropdown -->
                             <div class="mb-3">
-                                <label asp-for="Year" class="form-label">
+                                <label for="Year" class="form-label">
                                     <i class="fas fa-calendar-alt"></i> ปี <span class="text-danger">*</span>
                                 </label>
-                                <select asp-for="Year" class="form-select" required>
+                                <select id="Year" name="Year" class="form-select" required>
                                     <option value="">-- เลือกปี --</option>
                                     @if (ViewBag.Years != null)
                                     {
@@ -314,17 +314,17 @@
                                         }
                                     }
                                 </select>
-                                <span asp-validation-for="Year" class="text-danger"></span>
+                                <span class="text-danger"></span>
                             </div>
 
                             <!-- Quota Hours Input -->
                             <div class="mb-3">
-                                <label asp-for="Qhours" class="form-label">
+                                <label for="Qhours" class="form-label">
                                     <i class="fas fa-clock"></i> โควต้าชั่วโมง (ชม.) <span class="text-danger">*</span>
                                 </label>
-                                <input asp-for="Qhours" type="number" class="form-control"
+                                <input id="Qhours" name="Qhours" type="number" class="form-control"
                                        min="0" step="1" placeholder="กรอกจำนวนชั่วโมง" required />
-                                <span asp-validation-for="Qhours" class="text-danger"></span>
+                                <span class="text-danger"></span>
                                 <div class="form-text">
                                     <i class="fas fa-info-circle"></i> ระบุจำนวนชั่วโมงที่จัดสรรให้กับฝ่ายในปีนี้
                                 </div>
@@ -332,12 +332,12 @@
 
                             <!-- Cost Input -->
                             <div class="mb-3">
-                                <label asp-for="Cost" class="form-label">
+                                <label for="Cost" class="form-label">
                                     <i class="fas fa-money-bill-wave"></i> โควต้าเงิน (บาท) <span class="text-danger">*</span>
                                 </label>
-                                <input asp-for="Cost" type="number" class="form-control"
+                                <input id="Cost" name="Cost" type="number" class="form-control"
                                        min="0" step="0.01" placeholder="กรอกจำนวนเงิน" required />
-                                <span asp-validation-for="Cost" class="text-danger"></span>
+                                <span class="text-danger"></span>
                                 <div class="form-text">
                                     <i class="fas fa-info-circle"></i> ระบุงบประมาณที่จัดสรรให้กับฝ่ายในปีนี้
                                 </div>
