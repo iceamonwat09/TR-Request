@@ -850,7 +850,6 @@ namespace TrainingRequestApp.Controllers
                         FROM Employees
                         WHERE Level = 'Department Manager'
                         AND Department = @Department
-                        AND Position = @Position
                         AND (Name LIKE @Search OR Email LIKE @Search)
                         ORDER BY Name";
 
