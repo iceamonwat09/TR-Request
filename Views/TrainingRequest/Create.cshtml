@@ -1689,8 +1689,8 @@
                 this.totalCostUsedInForm += costPerPerson;
             } else {
                 // In House ยังคงคำนวณแบบเดิม (Individual)
-                this.currentEmployee.remainingHours = 12 - (this.currentEmployee.currentYearHours + trainingHours);
-                this.currentEmployee.remainingCost = 10000 - (this.currentEmployee.currentYearCost + costPerPerson);
+                this.currentEmployee.remainingHours = 0 ;
+                this.currentEmployee.remainingCost = 0 ;
             }
 
             console.log('✅ Updated employee:', {
