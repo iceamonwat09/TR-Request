@@ -320,6 +320,9 @@
                     <button class="btn btn-sm btn-secondary" onclick="resetFilters()">
                         <i class="fa fa-redo"></i> Reset
                     </button>
+                    <button class="btn btn-sm btn-success ms-2" onclick="exportDashboardData()">
+                        <i class="fa fa-file-excel"></i> Export ข้อมูล
+                    </button>
                     <span class="text-muted ms-3" id="filterStatus">Showing: All Data</span>
                 </div>
             </div>
@@ -641,13 +644,43 @@
             if (result.success) {
                 const labels = result.data.map(d => d.status);
                 const counts = result.data.map(d => d.count);
+
+                // 🎨 Material Design Colors - รองรับสถานะทั้งหมด 12 สถานะ (Case Insensitive)
+                // ✅ APPROVED, COMPLETE → เขียว
+                // ❌ REJECTED → แดง
+                // ⏳ Pending, WAITING_* (6 สถานะ) → เหลือง
+                // ✏️ Revise, Revision Admin → ส้ม
+                // 📅 RESCHEDULED → ฟ้า
                 const colors = labels.map(status => {
-                    if (status.includes('APPROVED') || status.includes('COMPLETE')) return 'rgba(165, 214, 167, 0.85)';
-                    if (status.includes('REJECTED')) return 'rgba(239, 154, 154, 0.85)';
-                    if (status.includes('WAITING') || status.includes('Pending')) return 'rgba(255, 224, 130, 0.85)';
-                    if (status.includes('Revise')) return 'rgba(255, 183, 77, 0.85)';
-                    if (status.includes('RESCHEDULED')) return 'rgba(179, 229, 252, 0.85)';
-                    return 'rgba(189, 189, 189, 0.85)';
+                    const statusUpper = status.toUpperCase();
+
+                    // ✅ กลุ่มสำเร็จ (เขียว)
+                    if (statusUpper.includes('APPROVED') || statusUpper.includes('COMPLETE')) {
+                        return '#4CAF50'; // Green 500
+                    }
+
+                    // ❌ กลุ่มปฏิเสธ (แดง)
+                    if (statusUpper.includes('REJECTED')) {
+                        return '#F44336'; // Red 500
+                    }
+
+                    // ⏳ กลุ่มรออนุมัติ (เหลือง)
+                    if (statusUpper.includes('WAITING') || statusUpper.includes('PENDING')) {
+                        return '#FFC107'; // Amber 500
+                    }
+
+                    // ✏️ กลุ่มต้องแก้ไข (ส้ม)
+                    if (statusUpper.includes('REVISE') || statusUpper.includes('REVISION')) {
+                        return '#FF9800'; // Orange 500
+                    }
+
+                    // 📅 เลื่อนกำหนดการ (ฟ้า)
+                    if (statusUpper.includes('RESCHEDULED')) {
+                        return '#2196F3'; // Blue 500
+                    }
+
+                    // ⚪ อื่นๆ (เทา)
+                    return '#9E9E9E'; // Grey 500
                 });
 
                 // Destroy existing chart
@@ -947,6 +980,26 @@
             document.getElementById('filterStatus').textContent = 'Showing: All Data';
 
             loadDashboard();
+        }
+
+        // ====================================================================
+        // Export Dashboard Data to CSV
+        // ====================================================================
+        function exportDashboardData() {
+            const params = new URLSearchParams(currentFilters);
+            const exportUrl = `/Home/ExportDashboardData?${params}`;
+
+            console.log('📥 Exporting data with filters:', currentFilters);
+            window.location.href = exportUrl;
+
+            // แสดง feedback ให้ผู้ใช้
+            const filterStatus = document.getElementById('filterStatus');
+            const originalText = filterStatus.textContent;
+            filterStatus.innerHTML = '<span class="text-success"><i class="fa fa-download"></i> กำลัง Export ข้อมูล...</span>';
+
+            setTimeout(() => {
+                filterStatus.textContent = originalText;
+            }, 3000);
         }
 
         // ====================================================================

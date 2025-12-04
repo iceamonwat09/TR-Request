@@ -609,5 +609,202 @@ namespace TrainingRequestApp.Controllers
                 return Json(new { success = false, message = ex.Message });
             }
         }
+
+        /// <summary>
+        /// API: Export Dashboard Data to CSV
+        /// GET: /Home/ExportDashboardData?year=2025&startDate=...&endDate=...&department=...
+        /// </summary>
+        [HttpGet]
+        public async Task<IActionResult> ExportDashboardData(int? year, DateTime? startDate, DateTime? endDate, string? department)
+        {
+            try
+            {
+                int selectedYear = year ?? DateTime.Now.Year;
+                DateTime dateStart = startDate ?? new DateTime(selectedYear, 1, 1);
+                DateTime dateEnd = endDate ?? new DateTime(selectedYear, 12, 31);
+
+                string connectionString = _configuration.GetConnectionString("DefaultConnection");
+
+                using (SqlConnection conn = new SqlConnection(connectionString))
+                {
+                    await conn.OpenAsync();
+
+                    // SQL Query: Join TrainingRequests with TrainingRequestEmployees (44 columns total)
+                    string query = @"
+                        SELECT
+                            tr.DocNo, tr.Company, tr.TrainingType, tr.Factory, tr.CCEmail,
+                            tr.Position, tr.Department, tr.StartDate, tr.EndDate, tr.SeminarTitle,
+                            tr.TrainingLocation, tr.Instructor,
+                            tr.RegistrationCost, tr.InstructorFee, tr.EquipmentCost,
+                            tr.FoodCost, tr.OtherCost, tr.OtherCostDescription, tr.TotalCost,
+                            tr.CostPerPerson, tr.TrainingHours, tr.TrainingObjective,
+                            tr.OtherObjective, tr.URLSource, tr.AdditionalNotes, tr.ExpectedOutcome,
+                            tr.ParticipantCount,
+                            tr.SectionManagerId, tr.Status_SectionManager, tr.Comment_SectionManager, tr.ApproveInfo_SectionManager,
+                            tr.DepartmentManagerId, tr.Status_DepartmentManager, tr.Comment_DepartmentManager, tr.ApproveInfo_DepartmentManager,
+                            tr.HRDAdminId, tr.Status_HRDAdmin, tr.Comment_HRDAdmin, tr.ApproveInfo_HRDAdmin,
+                            tr.HRDConfirmationId, tr.Status_HRDConfirmation, tr.Comment_HRDConfirmation, tr.ApproveInfo_HRDConfirmation,
+                            tr.ManagingDirectorId, tr.Status_ManagingDirector, tr.Comment_ManagingDirector, tr.ApproveInfo_ManagingDirector,
+                            tr.Status, tr.CreatedDate, tr.CreatedBy,
+                            emp.EmployeeCode, emp.EmployeeName, emp.Position AS EmpPosition, emp.Level,
+                            emp.Department AS EmpDepartment, emp.PreviousTrainingHours, emp.PreviousTrainingCost,
+                            emp.CurrentTrainingHours, emp.CurrentTrainingCost, emp.RemainingHours,
+                            emp.RemainingCost, emp.Notes
+                        FROM [TrainingRequests] tr
+                        INNER JOIN [TrainingRequestEmployees] emp
+                            ON emp.TrainingRequestId = tr.Id
+                        WHERE tr.StartDate >= @StartDate
+                          AND tr.StartDate <= @EndDate
+                          AND tr.IsActive = 1"
+                        + (string.IsNullOrEmpty(department) ? "" : " AND tr.Department = @Department")
+                        + @"
+                        ORDER BY tr.CreatedDate DESC, emp.EmployeeCode";
+
+                    using (SqlCommand cmd = new SqlCommand(query, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@StartDate", dateStart);
+                        cmd.Parameters.AddWithValue("@EndDate", dateEnd);
+                        if (!string.IsNullOrEmpty(department))
+                            cmd.Parameters.AddWithValue("@Department", department);
+
+                        var csv = new System.Text.StringBuilder();
+
+                        // CSV Header (44 columns + Employee fields = 63 columns total)
+                        csv.AppendLine(string.Join(",", new[]
+                        {
+                            "DocNo", "Company", "TrainingType", "Factory", "CCEmail",
+                            "Position", "Department", "StartDate", "EndDate", "SeminarTitle",
+                            "TrainingLocation", "Instructor",
+                            "RegistrationCost", "InstructorFee", "EquipmentCost",
+                            "FoodCost", "OtherCost", "OtherCostDescription", "TotalCost",
+                            "CostPerPerson", "TrainingHours", "TrainingObjective",
+                            "OtherObjective", "URLSource", "AdditionalNotes", "ExpectedOutcome",
+                            "ParticipantCount",
+                            "SectionManagerId", "Status_SectionManager", "Comment_SectionManager", "ApproveInfo_SectionManager",
+                            "DepartmentManagerId", "Status_DepartmentManager", "Comment_DepartmentManager", "ApproveInfo_DepartmentManager",
+                            "HRDAdminId", "Status_HRDAdmin", "Comment_HRDAdmin", "ApproveInfo_HRDAdmin",
+                            "HRDConfirmationId", "Status_HRDConfirmation", "Comment_HRDConfirmation", "ApproveInfo_HRDConfirmation",
+                            "ManagingDirectorId", "Status_ManagingDirector", "Comment_ManagingDirector", "ApproveInfo_ManagingDirector",
+                            "Status", "CreatedDate", "CreatedBy",
+                            "EmployeeCode", "EmployeeName", "EmpPosition", "Level",
+                            "EmpDepartment", "PreviousTrainingHours", "PreviousTrainingCost",
+                            "CurrentTrainingHours", "CurrentTrainingCost", "RemainingHours",
+                            "RemainingCost", "Notes"
+                        }));
+
+                        using (var reader = await cmd.ExecuteReaderAsync())
+                        {
+                            while (await reader.ReadAsync())
+                            {
+                                var row = new[]
+                                {
+                                    EscapeCsvValue(reader["DocNo"]?.ToString()),
+                                    EscapeCsvValue(reader["Company"]?.ToString()),
+                                    EscapeCsvValue(reader["TrainingType"]?.ToString()),
+                                    EscapeCsvValue(reader["Factory"]?.ToString()),
+                                    EscapeCsvValue(reader["CCEmail"]?.ToString()),
+                                    EscapeCsvValue(reader["Position"]?.ToString()),
+                                    EscapeCsvValue(reader["Department"]?.ToString()),
+                                    EscapeCsvValue(reader["StartDate"]?.ToString()),
+                                    EscapeCsvValue(reader["EndDate"]?.ToString()),
+                                    EscapeCsvValue(reader["SeminarTitle"]?.ToString()),
+                                    EscapeCsvValue(reader["TrainingLocation"]?.ToString()),
+                                    EscapeCsvValue(reader["Instructor"]?.ToString()),
+                                    EscapeCsvValue(reader["RegistrationCost"]?.ToString()),
+                                    EscapeCsvValue(reader["InstructorFee"]?.ToString()),
+                                    EscapeCsvValue(reader["EquipmentCost"]?.ToString()),
+                                    EscapeCsvValue(reader["FoodCost"]?.ToString()),
+                                    EscapeCsvValue(reader["OtherCost"]?.ToString()),
+                                    EscapeCsvValue(reader["OtherCostDescription"]?.ToString()),
+                                    EscapeCsvValue(reader["TotalCost"]?.ToString()),
+                                    EscapeCsvValue(reader["CostPerPerson"]?.ToString()),
+                                    EscapeCsvValue(reader["TrainingHours"]?.ToString()),
+                                    EscapeCsvValue(reader["TrainingObjective"]?.ToString()),
+                                    EscapeCsvValue(reader["OtherObjective"]?.ToString()),
+                                    EscapeCsvValue(reader["URLSource"]?.ToString()),
+                                    EscapeCsvValue(reader["AdditionalNotes"]?.ToString()),
+                                    EscapeCsvValue(reader["ExpectedOutcome"]?.ToString()),
+                                    EscapeCsvValue(reader["ParticipantCount"]?.ToString()),
+                                    EscapeCsvValue(reader["SectionManagerId"]?.ToString()),
+                                    EscapeCsvValue(reader["Status_SectionManager"]?.ToString()),
+                                    EscapeCsvValue(reader["Comment_SectionManager"]?.ToString()),
+                                    EscapeCsvValue(reader["ApproveInfo_SectionManager"]?.ToString()),
+                                    EscapeCsvValue(reader["DepartmentManagerId"]?.ToString()),
+                                    EscapeCsvValue(reader["Status_DepartmentManager"]?.ToString()),
+                                    EscapeCsvValue(reader["Comment_DepartmentManager"]?.ToString()),
+                                    EscapeCsvValue(reader["ApproveInfo_DepartmentManager"]?.ToString()),
+                                    EscapeCsvValue(reader["HRDAdminId"]?.ToString()),
+                                    EscapeCsvValue(reader["Status_HRDAdmin"]?.ToString()),
+                                    EscapeCsvValue(reader["Comment_HRDAdmin"]?.ToString()),
+                                    EscapeCsvValue(reader["ApproveInfo_HRDAdmin"]?.ToString()),
+                                    EscapeCsvValue(reader["HRDConfirmationId"]?.ToString()),
+                                    EscapeCsvValue(reader["Status_HRDConfirmation"]?.ToString()),
+                                    EscapeCsvValue(reader["Comment_HRDConfirmation"]?.ToString()),
+                                    EscapeCsvValue(reader["ApproveInfo_HRDConfirmation"]?.ToString()),
+                                    EscapeCsvValue(reader["ManagingDirectorId"]?.ToString()),
+                                    EscapeCsvValue(reader["Status_ManagingDirector"]?.ToString()),
+                                    EscapeCsvValue(reader["Comment_ManagingDirector"]?.ToString()),
+                                    EscapeCsvValue(reader["ApproveInfo_ManagingDirector"]?.ToString()),
+                                    EscapeCsvValue(reader["Status"]?.ToString()),
+                                    EscapeCsvValue(reader["CreatedDate"]?.ToString()),
+                                    EscapeCsvValue(reader["CreatedBy"]?.ToString()),
+                                    EscapeCsvValue(reader["EmployeeCode"]?.ToString()),
+                                    EscapeCsvValue(reader["EmployeeName"]?.ToString()),
+                                    EscapeCsvValue(reader["EmpPosition"]?.ToString()),
+                                    EscapeCsvValue(reader["Level"]?.ToString()),
+                                    EscapeCsvValue(reader["EmpDepartment"]?.ToString()),
+                                    EscapeCsvValue(reader["PreviousTrainingHours"]?.ToString()),
+                                    EscapeCsvValue(reader["PreviousTrainingCost"]?.ToString()),
+                                    EscapeCsvValue(reader["CurrentTrainingHours"]?.ToString()),
+                                    EscapeCsvValue(reader["CurrentTrainingCost"]?.ToString()),
+                                    EscapeCsvValue(reader["RemainingHours"]?.ToString()),
+                                    EscapeCsvValue(reader["RemainingCost"]?.ToString()),
+                                    EscapeCsvValue(reader["Notes"]?.ToString())
+                                };
+
+                                csv.AppendLine(string.Join(",", row));
+                            }
+                        }
+                    }
+
+                    // Create filename with timestamp
+                    string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+                    string deptFilter = string.IsNullOrEmpty(department) ? "All" : department;
+                    string fileName = $"Dashboard_Export_{selectedYear}_{deptFilter}_{timestamp}.csv";
+
+                    // Add UTF-8 BOM for Thai language support
+                    byte[] csvBytes = System.Text.Encoding.UTF8.GetPreamble()
+                        .Concat(System.Text.Encoding.UTF8.GetBytes(csv.ToString()))
+                        .ToArray();
+
+                    Console.WriteLine($"✅ Exported {csv.ToString().Split('\n').Length - 2} rows to {fileName}");
+
+                    return File(csvBytes, "text/csv", fileName);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Error in ExportDashboardData: {ex.Message}");
+                return BadRequest($"Export failed: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Helper: Escape CSV values to prevent CSV injection
+        /// </summary>
+        private string EscapeCsvValue(string? value)
+        {
+            if (string.IsNullOrEmpty(value))
+                return "";
+
+            // Escape quotes and wrap in quotes if contains comma, quote, or newline
+            if (value.Contains(",") || value.Contains("\"") || value.Contains("\n") || value.Contains("\r"))
+            {
+                value = value.Replace("\"", "\"\"");
+                return $"\"{value}\"";
+            }
+
+            return value;
+        }
     }
 }
