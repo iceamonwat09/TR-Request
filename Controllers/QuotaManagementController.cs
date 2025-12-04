@@ -46,6 +46,31 @@ namespace TrainingRequestApp.Controllers
         [ValidateAntiForgeryToken]
         public IActionResult Create(TrainingRequestCost model)
         {
+            // 🔍 DEBUG: Log incoming data
+            Console.WriteLine("=== QuotaManagement Create POST ===");
+            Console.WriteLine($"Department: [{model.Department}]");
+            Console.WriteLine($"Year: [{model.Year}]");
+            Console.WriteLine($"Qhours: [{model.Qhours}]");
+            Console.WriteLine($"Cost: [{model.Cost}]");
+            Console.WriteLine($"ModelState.IsValid: {ModelState.IsValid}");
+
+            // 🔍 DEBUG: Log validation errors if any
+            if (!ModelState.IsValid)
+            {
+                Console.WriteLine("❌ ModelState Validation Errors:");
+                foreach (var key in ModelState.Keys)
+                {
+                    var errors = ModelState[key]?.Errors;
+                    if (errors != null && errors.Count > 0)
+                    {
+                        foreach (var error in errors)
+                        {
+                            Console.WriteLine($"  - {key}: {error.ErrorMessage}");
+                        }
+                    }
+                }
+            }
+
             if (ModelState.IsValid)
             {
                 // ตรวจสอบว่ามีข้อมูลซ้ำหรือไม่
@@ -57,32 +82,68 @@ namespace TrainingRequestApp.Controllers
                     return View(model);
                 }
 
-                // บันทึกข้อมูล
+                // บันทึกข้อมูลพร้อม Error Handling & Transaction
                 string userName = HttpContext.Session.GetString("UserId") ?? "System";
-                model.CreatedBy = userName; // เก็บไว้ใน memory เฉพาะ session นี้
+                model.CreatedBy = userName;
                 string connectionString = _configuration.GetConnectionString("DefaultConnection");
 
-                using (SqlConnection connection = new SqlConnection(connectionString))
+                try
                 {
-                    connection.Open();
-                    string query = @"
-                        INSERT INTO [HRDSYSTEM].[dbo].[TrainingRequest_Cost]
-                        (Department, Year, Qhours, Cost)
-                        VALUES (@Department, @Year, @Qhours, @Cost)";
-
-                    using (SqlCommand command = new SqlCommand(query, connection))
+                    using (SqlConnection connection = new SqlConnection(connectionString))
                     {
-                        command.Parameters.AddWithValue("@Department", model.Department);
-                        command.Parameters.AddWithValue("@Year", model.Year);
-                        command.Parameters.AddWithValue("@Qhours", model.Qhours);
-                        command.Parameters.AddWithValue("@Cost", model.Cost);
+                        connection.Open();
+                        using (SqlTransaction transaction = connection.BeginTransaction())
+                        {
+                            try
+                            {
+                                string query = @"
+                                    INSERT INTO [HRDSYSTEM].[dbo].[TrainingRequest_Cost]
+                                    (Department, Year, Qhours, Cost, CreatedBy)
+                                    VALUES (@Department, @Year, @Qhours, @Cost, @CreatedBy)";
 
-                        command.ExecuteNonQuery();
+                                using (SqlCommand command = new SqlCommand(query, connection, transaction))
+                                {
+                                    command.Parameters.AddWithValue("@Department", model.Department);
+                                    command.Parameters.AddWithValue("@Year", model.Year);
+                                    command.Parameters.AddWithValue("@Qhours", model.Qhours);
+                                    command.Parameters.AddWithValue("@Cost", model.Cost);
+                                    command.Parameters.AddWithValue("@CreatedBy", (object?)model.CreatedBy ?? DBNull.Value);
+
+                                    int rowsAffected = command.ExecuteNonQuery();
+
+                                    if (rowsAffected > 0)
+                                    {
+                                        transaction.Commit();
+                                        Console.WriteLine($"[QuotaManagement] Created quota - Dept: {model.Department}, Year: {model.Year}, By: {userName}");
+                                        TempData["SuccessMessage"] = "เพิ่มข้อมูลโควต้าเรียบร้อยแล้ว";
+                                        return RedirectToAction(nameof(Index), new { yearFilter = model.Year });
+                                    }
+                                    else
+                                    {
+                                        transaction.Rollback();
+                                        ModelState.AddModelError("", "ไม่สามารถบันทึกข้อมูลได้ กรุณาลองใหม่อีกครั้ง");
+                                    }
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                transaction.Rollback();
+                                Console.WriteLine($"[QuotaManagement] Transaction Error: {ex.Message}");
+                                throw;
+                            }
+                        }
                     }
                 }
-
-                TempData["SuccessMessage"] = "เพิ่มข้อมูลโควต้าเรียบร้อยแล้ว";
-                return RedirectToAction(nameof(Index), new { yearFilter = model.Year });
+                catch (SqlException sqlEx)
+                {
+                    Console.WriteLine($"[QuotaManagement] SQL Error: {sqlEx.Message} | Number: {sqlEx.Number}");
+                    ModelState.AddModelError("", $"เกิดข้อผิดพลาดในการเชื่อมต่อฐานข้อมูล: {sqlEx.Message}");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[QuotaManagement] Unexpected Error: {ex.Message}");
+                    ModelState.AddModelError("", $"เกิดข้อผิดพลาด: {ex.Message}");
+                }
             }
 
             ViewBag.Departments = GetDepartments();
@@ -125,34 +186,69 @@ namespace TrainingRequestApp.Controllers
                     return View(model);
                 }
 
-                // อัพเดตข้อมูล
+                // อัพเดตข้อมูลพร้อม Error Handling & Transaction
                 string connectionString = _configuration.GetConnectionString("DefaultConnection");
 
-                using (SqlConnection connection = new SqlConnection(connectionString))
+                try
                 {
-                    connection.Open();
-                    string query = @"
-                        UPDATE [HRDSYSTEM].[dbo].[TrainingRequest_Cost]
-                        SET Department = @Department,
-                            Year = @Year,
-                            Qhours = @Qhours,
-                            Cost = @Cost
-                        WHERE ID = @ID";
-
-                    using (SqlCommand command = new SqlCommand(query, connection))
+                    using (SqlConnection connection = new SqlConnection(connectionString))
                     {
-                        command.Parameters.AddWithValue("@ID", id);
-                        command.Parameters.AddWithValue("@Department", model.Department);
-                        command.Parameters.AddWithValue("@Year", model.Year);
-                        command.Parameters.AddWithValue("@Qhours", model.Qhours);
-                        command.Parameters.AddWithValue("@Cost", model.Cost);
+                        connection.Open();
+                        using (SqlTransaction transaction = connection.BeginTransaction())
+                        {
+                            try
+                            {
+                                string query = @"
+                                    UPDATE [HRDSYSTEM].[dbo].[TrainingRequest_Cost]
+                                    SET Department = @Department,
+                                        Year = @Year,
+                                        Qhours = @Qhours,
+                                        Cost = @Cost
+                                    WHERE ID = @ID";
 
-                        command.ExecuteNonQuery();
+                                using (SqlCommand command = new SqlCommand(query, connection, transaction))
+                                {
+                                    command.Parameters.AddWithValue("@ID", id);
+                                    command.Parameters.AddWithValue("@Department", model.Department);
+                                    command.Parameters.AddWithValue("@Year", model.Year);
+                                    command.Parameters.AddWithValue("@Qhours", model.Qhours);
+                                    command.Parameters.AddWithValue("@Cost", model.Cost);
+
+                                    int rowsAffected = command.ExecuteNonQuery();
+
+                                    if (rowsAffected > 0)
+                                    {
+                                        transaction.Commit();
+                                        Console.WriteLine($"[QuotaManagement] Updated quota ID: {id} - Dept: {model.Department}, Year: {model.Year}");
+                                        TempData["SuccessMessage"] = "อัพเดตข้อมูลโควต้าเรียบร้อยแล้ว";
+                                        return RedirectToAction(nameof(Index), new { yearFilter = model.Year });
+                                    }
+                                    else
+                                    {
+                                        transaction.Rollback();
+                                        ModelState.AddModelError("", "ไม่พบข้อมูลที่ต้องการแก้ไข");
+                                    }
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                transaction.Rollback();
+                                Console.WriteLine($"[QuotaManagement] Transaction Error: {ex.Message}");
+                                throw;
+                            }
+                        }
                     }
                 }
-
-                TempData["SuccessMessage"] = "อัพเดตข้อมูลโควต้าเรียบร้อยแล้ว";
-                return RedirectToAction(nameof(Index), new { yearFilter = model.Year });
+                catch (SqlException sqlEx)
+                {
+                    Console.WriteLine($"[QuotaManagement] SQL Error: {sqlEx.Message} | Number: {sqlEx.Number}");
+                    ModelState.AddModelError("", $"เกิดข้อผิดพลาดในการเชื่อมต่อฐานข้อมูล: {sqlEx.Message}");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[QuotaManagement] Unexpected Error: {ex.Message}");
+                    ModelState.AddModelError("", $"เกิดข้อผิดพลาด: {ex.Message}");
+                }
             }
 
             ViewBag.Departments = GetDepartments();
