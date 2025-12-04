@@ -515,6 +515,7 @@
 
                                         const budgetPublicCard = document.getElementById('budgetPublicCard');
                                         const budgetInHouseCard = document.getElementById('budgetInHouseCard');
+                                        const trainingHistorySection = document.getElementById('trainingHistorySection');
                                         const trainingTypeRadios = document.querySelectorAll('input[name="TrainingType"]');
 
                                         function toggleBudgetCards() {
@@ -524,7 +525,8 @@
                                             if (!selectedType) {
                                                 if (budgetPublicCard) budgetPublicCard.style.display = 'none';
                                                 if (budgetInHouseCard) budgetInHouseCard.style.display = 'none';
-                                                console.log('🔄 No training type selected - hiding all budget cards');
+                                                if (trainingHistorySection) trainingHistorySection.style.display = 'none';
+                                                console.log('🔄 No training type selected - hiding all budget cards and training history table');
                                                 return;
                                             }
 
@@ -533,6 +535,7 @@
                                             if (typeValue === 'Public') {
                                                 if (budgetPublicCard) budgetPublicCard.style.display = 'block';
                                                 if (budgetInHouseCard) budgetInHouseCard.style.display = 'none';
+                                                if (trainingHistorySection) trainingHistorySection.style.display = 'block';
 
                                                 // ✅ แก้ปัญหา: ปิด validation สำหรับ ParticipantCount เมื่อเลือก Public
                                                 if (participantCountField) {
@@ -541,11 +544,12 @@
                                                     participantCountField.value = '0';
                                                 }
 
-                                                console.log('✅ Showing Public budget card (2 fields)');
+                                                console.log('✅ Showing Public budget card (2 fields) + Training History Table');
                                                 calculateTotalBudgetPublic();
                                             } else if (typeValue === 'In House') {
                                                 if (budgetPublicCard) budgetPublicCard.style.display = 'none';
                                                 if (budgetInHouseCard) budgetInHouseCard.style.display = 'block';
+                                                if (trainingHistorySection) trainingHistorySection.style.display = 'none';
 
                                                 // ✅ แก้ปัญหา: เปิด validation สำหรับ ParticipantCount เมื่อเลือก In House
                                                 if (participantCountField) {
@@ -555,7 +559,7 @@
                                                     }
                                                 }
 
-                                                console.log('✅ Showing In House budget card (7 fields)');
+                                                console.log('✅ Showing In House budget card (7 fields) + Hiding Training History Table');
                                                 calculateTotalBudgetInHouse();
                                             }
                                         }
@@ -716,7 +720,7 @@
                                 </div>
 
                                 <!-- ตารางประวัติการอบรม -->
-                                <div class="mt-5">
+                                <div class="mt-5" id="trainingHistorySection">
                                     <div class="card border-0 shadow-lg" style="border-radius: 15px;">
                                         <div class="card-header bg-secondary py-3" style="border-radius: 15px 15px 0 0;">
                                             <div class="d-flex justify-content-between align-items-center">
