@@ -609,5 +609,180 @@ namespace TrainingRequestApp.Controllers
                 return Json(new { success = false, message = ex.Message });
             }
         }
+
+        /// <summary>
+        /// API: Export Dashboard Data เป็น CSV
+        /// GET: /Home/ExportDashboardData?year=2025&startDate=...&endDate=...&department=...
+        /// </summary>
+        [HttpGet]
+        public async Task<IActionResult> ExportDashboardData(int? year, DateTime? startDate, DateTime? endDate, string? department)
+        {
+            try
+            {
+                int selectedYear = year ?? DateTime.Now.Year;
+                DateTime dateStart = startDate ?? new DateTime(selectedYear, 1, 1);
+                DateTime dateEnd = endDate ?? new DateTime(selectedYear, 12, 31);
+
+                string connectionString = _configuration.GetConnectionString("DefaultConnection");
+
+                using (SqlConnection conn = new SqlConnection(connectionString))
+                {
+                    await conn.OpenAsync();
+
+                    // SQL Query ตามที่ผู้ใช้ระบุ - JOIN TrainingRequests กับ TrainingRequestEmployees
+                    string query = @"
+                        SELECT
+                            tr.DocNo, tr.Company, tr.TrainingType, tr.Factory, tr.CCEmail,
+                            tr.Position, tr.Department, tr.StartDate, tr.EndDate, tr.SeminarTitle,
+                            tr.TrainingLocation, tr.Instructor, tr.TotalCost, tr.CostPerPerson,
+                            tr.PerPersonTrainingHours, tr.TrainingObjective, tr.OtherObjective,
+                            tr.URLSource, tr.AdditionalNotes, tr.ExpectedOutcome, tr.AttachedFilePath,
+                            tr.Status, tr.CreatedDate, tr.CreatedBy, tr.UpdatedDate, tr.UpdatedBy,
+                            tr.RegistrationCost, tr.InstructorFee, tr.EquipmentCost, tr.FoodCost,
+                            tr.OtherCost, tr.OtherCostDescription, tr.TotalPeople,
+                            emp.EmployeeCode, emp.EmployeeName, emp.Position AS EmployeePosition,
+                            emp.PreviousTrainingHours, emp.PreviousTrainingCost,
+                            emp.CurrentTrainingHours, emp.CurrentTrainingCost, emp.Notes,
+                            emp.Level, emp.Department AS EmployeeDepartment,
+                            emp.RemainingHours, emp.RemainingCost
+                        FROM [HRDSYSTEM].[dbo].[TrainingRequests] tr
+                        INNER JOIN [HRDSYSTEM].[dbo].[TrainingRequestEmployees] emp
+                            ON emp.TrainingRequestId = tr.Id
+                        WHERE tr.StartDate >= @StartDate
+                          AND tr.StartDate <= @EndDate
+                          AND tr.IsActive = 1"
+                        + (string.IsNullOrEmpty(department) ? "" : " AND tr.Department = @Department")
+                        + @"
+                        ORDER BY tr.CreatedDate DESC, emp.EmployeeCode";
+
+                    using (SqlCommand cmd = new SqlCommand(query, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@StartDate", dateStart);
+                        cmd.Parameters.AddWithValue("@EndDate", dateEnd);
+                        if (!string.IsNullOrEmpty(department))
+                            cmd.Parameters.AddWithValue("@Department", department);
+
+                        using (var reader = await cmd.ExecuteReaderAsync())
+                        {
+                            // สร้าง CSV ด้วย StringBuilder (รวดเร็วและประหยัด memory)
+                            var csv = new System.Text.StringBuilder();
+
+                            // 🔹 Header Row (ชื่อคอลัมน์ภาษาไทย + อังกฤษ)
+                            csv.AppendLine(string.Join(",", new[]
+                            {
+                                "เลขที่เอกสาร", "บริษัท", "ประเภทการอบรม", "โรงงาน", "CC Email",
+                                "ตำแหน่ง", "ฝ่าย", "วันที่เริ่ม", "วันที่สิ้นสุด", "หัวข้ออบรม",
+                                "สถานที่อบรม", "วิทยากร", "ค่าใช้จ่ายรวม", "ค่าใช้จ่ายต่อคน",
+                                "ชั่วโมงอบรมต่อคน", "วัตถุประสงค์", "วัตถุประสงค์อื่นๆ",
+                                "แหล่งข้อมูล", "หมายเหตุเพิ่มเติม", "ผลที่คาดหวัง", "ไฟล์แนบ",
+                                "สถานะ", "วันที่สร้าง", "ผู้สร้าง", "วันที่แก้ไข", "ผู้แก้ไข",
+                                "ค่าลงทะเบียน", "ค่าวิทยากร", "ค่าอุปกรณ์", "ค่าอาหาร",
+                                "ค่าใช้จ่ายอื่น", "รายละเอียดค่าใช้จ่ายอื่น", "จำนวนคนทั้งหมด",
+                                "รหัสพนักงาน", "ชื่อพนักงาน", "ตำแหน่งพนักงาน",
+                                "ชั่วโมงอบรมก่อนหน้า", "ค่าใช้จ่ายอบรมก่อนหน้า",
+                                "ชั่วโมงอบรมปัจจุบัน", "ค่าใช้จ่ายอบรมปัจจุบัน", "หมายเหตุพนักงาน",
+                                "ระดับ", "ฝ่ายพนักงาน", "ชั่วโมงคงเหลือ", "ค่าใช้จ่ายคงเหลือ"
+                            }));
+
+                            // 🔹 Data Rows
+                            int rowCount = 0;
+                            while (await reader.ReadAsync())
+                            {
+                                rowCount++;
+                                var row = new[]
+                                {
+                                    EscapeCsvValue(reader["DocNo"]?.ToString()),
+                                    EscapeCsvValue(reader["Company"]?.ToString()),
+                                    EscapeCsvValue(reader["TrainingType"]?.ToString()),
+                                    EscapeCsvValue(reader["Factory"]?.ToString()),
+                                    EscapeCsvValue(reader["CCEmail"]?.ToString()),
+                                    EscapeCsvValue(reader["Position"]?.ToString()),
+                                    EscapeCsvValue(reader["Department"]?.ToString()),
+                                    reader["StartDate"] != DBNull.Value ? Convert.ToDateTime(reader["StartDate"]).ToString("yyyy-MM-dd") : "",
+                                    reader["EndDate"] != DBNull.Value ? Convert.ToDateTime(reader["EndDate"]).ToString("yyyy-MM-dd") : "",
+                                    EscapeCsvValue(reader["SeminarTitle"]?.ToString()),
+                                    EscapeCsvValue(reader["TrainingLocation"]?.ToString()),
+                                    EscapeCsvValue(reader["Instructor"]?.ToString()),
+                                    reader["TotalCost"]?.ToString() ?? "0",
+                                    reader["CostPerPerson"]?.ToString() ?? "0",
+                                    reader["PerPersonTrainingHours"]?.ToString() ?? "0",
+                                    EscapeCsvValue(reader["TrainingObjective"]?.ToString()),
+                                    EscapeCsvValue(reader["OtherObjective"]?.ToString()),
+                                    EscapeCsvValue(reader["URLSource"]?.ToString()),
+                                    EscapeCsvValue(reader["AdditionalNotes"]?.ToString()),
+                                    EscapeCsvValue(reader["ExpectedOutcome"]?.ToString()),
+                                    EscapeCsvValue(reader["AttachedFilePath"]?.ToString()),
+                                    EscapeCsvValue(reader["Status"]?.ToString()),
+                                    reader["CreatedDate"] != DBNull.Value ? Convert.ToDateTime(reader["CreatedDate"]).ToString("yyyy-MM-dd HH:mm:ss") : "",
+                                    EscapeCsvValue(reader["CreatedBy"]?.ToString()),
+                                    reader["UpdatedDate"] != DBNull.Value ? Convert.ToDateTime(reader["UpdatedDate"]).ToString("yyyy-MM-dd HH:mm:ss") : "",
+                                    EscapeCsvValue(reader["UpdatedBy"]?.ToString()),
+                                    reader["RegistrationCost"]?.ToString() ?? "0",
+                                    reader["InstructorFee"]?.ToString() ?? "0",
+                                    reader["EquipmentCost"]?.ToString() ?? "0",
+                                    reader["FoodCost"]?.ToString() ?? "0",
+                                    reader["OtherCost"]?.ToString() ?? "0",
+                                    EscapeCsvValue(reader["OtherCostDescription"]?.ToString()),
+                                    reader["TotalPeople"]?.ToString() ?? "0",
+                                    EscapeCsvValue(reader["EmployeeCode"]?.ToString()),
+                                    EscapeCsvValue(reader["EmployeeName"]?.ToString()),
+                                    EscapeCsvValue(reader["EmployeePosition"]?.ToString()),
+                                    reader["PreviousTrainingHours"]?.ToString() ?? "0",
+                                    reader["PreviousTrainingCost"]?.ToString() ?? "0",
+                                    reader["CurrentTrainingHours"]?.ToString() ?? "0",
+                                    reader["CurrentTrainingCost"]?.ToString() ?? "0",
+                                    EscapeCsvValue(reader["Notes"]?.ToString()),
+                                    EscapeCsvValue(reader["Level"]?.ToString()),
+                                    EscapeCsvValue(reader["EmployeeDepartment"]?.ToString()),
+                                    reader["RemainingHours"]?.ToString() ?? "0",
+                                    reader["RemainingCost"]?.ToString() ?? "0"
+                                };
+
+                                csv.AppendLine(string.Join(",", row));
+                            }
+
+                            Console.WriteLine($"✅ Export: {rowCount} rows exported");
+
+                            // 🔹 สร้างชื่อไฟล์
+                            string fileName = $"Dashboard_Export_{selectedYear}";
+                            if (!string.IsNullOrEmpty(department))
+                                fileName += $"_{department}";
+                            fileName += $"_{DateTime.Now:yyyyMMdd_HHmmss}.csv";
+
+                            // 🔹 Return CSV file with UTF-8 BOM (สำหรับภาษาไทยใน Excel)
+                            byte[] csvBytes = System.Text.Encoding.UTF8.GetPreamble()
+                                .Concat(System.Text.Encoding.UTF8.GetBytes(csv.ToString()))
+                                .ToArray();
+
+                            return File(csvBytes, "text/csv", fileName);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Error in ExportDashboardData: {ex.Message}");
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Helper: Escape CSV values (จัดการ comma, quotes, newlines)
+        /// </summary>
+        private string EscapeCsvValue(string? value)
+        {
+            if (string.IsNullOrEmpty(value))
+                return "";
+
+            // ถ้ามี comma, quote, หรือ newline ต้อง wrap ด้วย quotes
+            if (value.Contains(",") || value.Contains("\"") || value.Contains("\n") || value.Contains("\r"))
+            {
+                // Escape double quotes โดยใช้ double quotes สองตัว
+                value = value.Replace("\"", "\"\"");
+                return $"\"{value}\"";
+            }
+
+            return value;
+        }
     }
 }
