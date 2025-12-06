@@ -28,12 +28,18 @@ namespace TrainingRequestApp.Services
             _configuration = configuration;
             _connectionString = _configuration.GetConnectionString("DefaultConnection");
 
-            // Initialize fonts (ใช้ฟอนต์มาตรฐานที่รองรับภาษาไทย)
-            _fontTitle = new XFont("Arial", 16, XFontStyle.Bold);
-            _fontHeader = new XFont("Arial", 12, XFontStyle.Bold);
-            _fontNormal = new XFont("Arial", 10, XFontStyle.Regular);
-            _fontSmall = new XFont("Arial", 8, XFontStyle.Regular);
-            _fontBold = new XFont("Arial", 10, XFontStyle.Bold);
+            // Initialize fonts with Unicode support for Thai language
+            // ใช้ XPdfFontOptions.UnicodeDefault เพื่อรองรับภาษาไทย
+            var options = new XPdfFontOptions(PdfFontEncoding.Unicode);
+
+            // ใช้ Tahoma หรือ Microsoft Sans Serif ซึ่งรองรับภาษาไทยดีกว่า Arial
+            string fontName = "Tahoma"; // หรือ "Microsoft Sans Serif"
+
+            _fontTitle = new XFont(fontName, 16, XFontStyle.Bold, options);
+            _fontHeader = new XFont(fontName, 12, XFontStyle.Bold, options);
+            _fontNormal = new XFont(fontName, 10, XFontStyle.Regular, options);
+            _fontSmall = new XFont(fontName, 8, XFontStyle.Regular, options);
+            _fontBold = new XFont(fontName, 10, XFontStyle.Bold, options);
         }
 
         /// <summary>
