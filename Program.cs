@@ -29,6 +29,7 @@ builder.Services.AddScoped<IEmployeeService, EmployeeService>();
 builder.Services.AddScoped<ITrainingRequestService, TrainingRequestService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IApprovalWorkflowService, ApprovalWorkflowService>();
+builder.Services.AddScoped<IPdfReportService, PdfReportService>(); // PDF Report Service
 
 // ✅ เพิ่ม Controllers และ Views
 builder.Services.AddControllersWithViews();

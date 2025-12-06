@@ -6,16 +6,19 @@ using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Linq;
 using System.Threading.Tasks;
+using TrainingRequestApp.Services;
 
 namespace TrainingRequestApp.Controllers
 {
     public class HomeController : Controller
     {
         private readonly IConfiguration _configuration;
+        private readonly IPdfReportService _pdfReportService;
 
-        public HomeController(IConfiguration configuration)
+        public HomeController(IConfiguration configuration, IPdfReportService pdfReportService)
         {
             _configuration = configuration;
+            _pdfReportService = pdfReportService;
         }
         [HttpGet]
         public IActionResult Index()
@@ -783,6 +786,42 @@ namespace TrainingRequestApp.Controllers
             }
 
             return value;
+        }
+
+        /// <summary>
+        /// Export Training Request as PDF
+        /// GET: /Home/ExportTrainingRequestPdf/5
+        /// </summary>
+        [HttpGet]
+        public async Task<IActionResult> ExportTrainingRequestPdf(int id)
+        {
+            try
+            {
+                // ตรวจสอบ Session
+                if (string.IsNullOrEmpty(HttpContext.Session.GetString("UserEmail")))
+                {
+                    return RedirectToAction("Index", "Login");
+                }
+
+                Console.WriteLine($"🔹 Generating PDF for Training Request ID: {id}");
+
+                // เรียกใช้ Service สร้าง PDF
+                byte[] pdfBytes = await _pdfReportService.GenerateTrainingRequestPdfAsync(id);
+
+                // สร้างชื่อไฟล์
+                string fileName = $"TrainingRequest_{id}_{DateTime.Now:yyyyMMdd_HHmmss}.pdf";
+
+                Console.WriteLine($"✅ PDF generated successfully: {fileName} ({pdfBytes.Length} bytes)");
+
+                // Return PDF file
+                return File(pdfBytes, "application/pdf", fileName);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Error in ExportTrainingRequestPdf: {ex.Message}");
+                Console.WriteLine($"Stack Trace: {ex.StackTrace}");
+                return Json(new { success = false, message = $"เกิดข้อผิดพลาด: {ex.Message}" });
+            }
         }
     }
 }
