@@ -8,14 +8,14 @@ using PdfSharpCore.Pdf;
 namespace TrainingRequestApp.Services
 {
     /// <summary>
-    /// PDF Report Service - Template ตรงตามแบบฟอร์มจริง 100%
+    /// PDF Report Service - แบบฟอร์มคำขอฝึกอบรม (ตรงตาม Template 100%)
     /// </summary>
     public class PdfReportService : IPdfReportService
     {
         private readonly IConfiguration _configuration;
         private readonly string _connectionString;
 
-        // Fonts
+        // Fonts (Tahoma with Unicode support for Thai)
         private XFont _fontTitle;
         private XFont _fontHeader;
         private XFont _fontNormal;
@@ -23,7 +23,7 @@ namespace TrainingRequestApp.Services
         private XFont _fontBold;
         private XFont _fontTiny;
 
-        // Colors
+        // Colors & Pens
         private XSolidBrush _grayBrush;
         private XPen _borderPen;
         private XPen _thinPen;
@@ -33,11 +33,11 @@ namespace TrainingRequestApp.Services
             _configuration = configuration;
             _connectionString = _configuration.GetConnectionString("DefaultConnection");
 
-            // Initialize fonts with Unicode support
+            // Initialize fonts with Unicode support (Tahoma for Thai)
             var options = new XPdfFontOptions(PdfFontEncoding.Unicode);
             string fontName = "Tahoma";
 
-            _fontTitle = new XFont(fontName, 14, XFontStyle.Bold, options);
+            _fontTitle = new XFont(fontName, 16, XFontStyle.Bold, options);
             _fontHeader = new XFont(fontName, 11, XFontStyle.Bold, options);
             _fontNormal = new XFont(fontName, 9, XFontStyle.Regular, options);
             _fontSmall = new XFont(fontName, 8, XFontStyle.Regular, options);
@@ -45,7 +45,7 @@ namespace TrainingRequestApp.Services
             _fontTiny = new XFont(fontName, 7, XFontStyle.Regular, options);
 
             // Colors and pens
-            _grayBrush = new XSolidBrush(XColor.FromArgb(220, 220, 220));
+            _grayBrush = new XSolidBrush(XColor.FromArgb(240, 240, 240));
             _borderPen = new XPen(XColors.Black, 1);
             _thinPen = new XPen(XColors.Black, 0.5);
         }
@@ -55,7 +55,8 @@ namespace TrainingRequestApp.Services
             try
             {
                 var data = await GetTrainingRequestDataAsync(trainingRequestId);
-                if (data == null) throw new Exception($"Training Request ID {trainingRequestId} not found");
+                if (data == null)
+                    throw new Exception($"Training Request ID {trainingRequestId} not found");
 
                 PdfDocument document = new PdfDocument();
                 document.Info.Title = $"Training Request - {data.DocNo}";
@@ -71,31 +72,41 @@ namespace TrainingRequestApp.Services
                 double pageWidth = page.Width - (2 * margin);
 
                 // ==========================================
-                // HEADER SECTION
+                // 1. TITLE
+                // ==========================================
+                DrawTitle(gfx, data, margin, ref yPos, pageWidth);
+
+                // ==========================================
+                // 2. HEADER (ประเภท, สาขา, เรียน, etc.)
                 // ==========================================
                 DrawHeader(gfx, data, margin, ref yPos, pageWidth);
 
                 // ==========================================
-                // MAIN BODY (2 COLUMNS)
+                // 3. MAIN BODY (2 Columns)
                 // ==========================================
                 DrawMainBody(gfx, data, margin, ref yPos, pageWidth);
 
                 // ==========================================
-                // TABLE: รายชื่อผู้เข้าอบรม (3 rows)
+                // 4. PARTICIPANT TABLE (รายชื่อผู้เข้าอบรม)
                 // ==========================================
                 DrawParticipantTable(gfx, data, margin, ref yPos, pageWidth);
 
                 // ==========================================
-                // วัตถุประสงค์
+                // 5. OBJECTIVES (วัตถุประสงค์)
                 // ==========================================
                 DrawObjectives(gfx, data, margin, ref yPos, pageWidth);
 
                 // ==========================================
-                // งบประมาณ
+                // 6. BUDGET (งบประมาณ)
                 // ==========================================
                 DrawBudgetSection(gfx, data, margin, ref yPos, pageWidth);
 
-                // Check if need new page for approvers
+                // ==========================================
+                // 7. TRAINING HISTORY TABLE (ประวัติการฝึกอบรม)
+                // ==========================================
+                DrawTrainingHistoryTable(gfx, data, margin, ref yPos, pageWidth);
+
+                // Check if need new page
                 if (yPos > page.Height - 250)
                 {
                     page = document.AddPage();
@@ -105,11 +116,16 @@ namespace TrainingRequestApp.Services
                 }
 
                 // ==========================================
-                // FOOTER: ผู้อนุมัติ (2 columns)
+                // 8. FOOTER (ผลการพิจารณา + HRD)
                 // ==========================================
-                DrawApproversSection(gfx, data, margin, ref yPos, pageWidth);
+                DrawFooterSection(gfx, data, margin, ref yPos, pageWidth);
 
-                // Save to memory stream
+                // ==========================================
+                // 9. APPROVERS (5 ระดับ - แสดงเฉพาะ APPROVED)
+                // ==========================================
+                DrawApprovers(gfx, data, margin, ref yPos, pageWidth);
+
+                // Save to memory
                 using (var stream = new System.IO.MemoryStream())
                 {
                     document.Save(stream, false);
@@ -127,128 +143,202 @@ namespace TrainingRequestApp.Services
         // DRAW METHODS
         // ==========================================
 
+        private void DrawTitle(XGraphics gfx, TrainingRequestData data, double x, ref double yPos, double width)
+        {
+            // Title: แบบฟอร์มคำขอฝึกอบรม / TRAINING REQUEST FORM
+            var titleTh = "แบบฟอร์มคำขอฝึกอบรม";
+            var titleEn = "TRAINING REQUEST FORM";
+
+            var sizeTh = gfx.MeasureString(titleTh, _fontTitle);
+            var sizeEn = gfx.MeasureString(titleEn, _fontNormal);
+
+            gfx.DrawString(titleTh, _fontTitle, XBrushes.Black,
+                new XPoint(x + (width - sizeTh.Width) / 2, yPos + 15));
+
+            gfx.DrawString(titleEn, _fontNormal, XBrushes.Black,
+                new XPoint(x + (width - sizeEn.Width) / 2, yPos + 32));
+
+            yPos += 45;
+        }
+
         private void DrawHeader(XGraphics gfx, TrainingRequestData data, double x, ref double yPos, double width)
         {
-            // Border around header
-            gfx.DrawRectangle(_borderPen, x, yPos, width, 80);
+            double startY = yPos;
+
+            // Border around entire header section
+            gfx.DrawRectangle(_borderPen, x, yPos, width, 110);
+
+            yPos += 10;
 
             // Line 1: ประเภทการอบรม
-            double y = yPos + 10;
-            gfx.DrawString("ประเภทการอบรม:", _fontBold, XBrushes.Black, new XPoint(x + 5, y));
+            gfx.DrawString("ประเภทการอบรม:", _fontBold, XBrushes.Black, new XPoint(x + 5, yPos));
 
-            // Checkboxes
             double cbX = x + 120;
-            DrawCheckbox(gfx, cbX, y - 8, data.TrainingType == "In-House");
-            gfx.DrawString("อบรมภายใน (In-House Training)", _fontNormal, XBrushes.Black, new XPoint(cbX + 15, y));
+            DrawCheckbox(gfx, cbX, yPos - 8, data.TrainingType == "In-House");
+            gfx.DrawString("อบรมภายใน (In-House Training)", _fontNormal, XBrushes.Black, new XPoint(cbX + 15, yPos));
 
-            cbX += 220;
-            DrawCheckbox(gfx, cbX, y - 8, data.TrainingType == "Public");
-            gfx.DrawString("อบรมภายนอก (Public Training)", _fontNormal, XBrushes.Black, new XPoint(cbX + 15, y));
+            cbX += 230;
+            DrawCheckbox(gfx, cbX, yPos - 8, data.TrainingType == "Public");
+            gfx.DrawString("อบรมภายนอก (Public Training)", _fontNormal, XBrushes.Black, new XPoint(cbX + 15, yPos));
 
-            // Line 2: สมาชิก/ประจำปี
-            y += 15;
-            cbX = x + 120;
-            DrawCheckbox(gfx, cbX, y - 8, false);
-            gfx.DrawString("สมาชิกสหภาพ", _fontNormal, XBrushes.Black, new XPoint(cbX + 15, y));
+            yPos += 15;
 
-            cbX += 120;
-            DrawCheckbox(gfx, cbX, y - 8, false);
-            gfx.DrawString("ประจำปี", _fontNormal, XBrushes.Black, new XPoint(cbX + 15, y));
+            // Line 2: สาขา
+            gfx.DrawString("สาขา:", _fontBold, XBrushes.Black, new XPoint(x + 5, yPos));
 
-            // Line 3: เรื่อง
-            y += 15;
-            gfx.DrawString("เรื่อง:", _fontBold, XBrushes.Black, new XPoint(x + 5, y));
-            gfx.DrawLine(_thinPen, x + 35, y + 2, x + 300, y + 2);
-            gfx.DrawString(data.SeminarTitle ?? "", _fontNormal, XBrushes.Black, new XPoint(x + 40, y));
+            cbX = x + 50;
+            DrawCheckbox(gfx, cbX, yPos - 8, data.Factory == "สมุทรสาคร");
+            gfx.DrawString("สมุทรสาคร", _fontNormal, XBrushes.Black, new XPoint(cbX + 15, yPos));
 
-            gfx.DrawString("ตำแหน่ง:", _fontNormal, XBrushes.Black, new XPoint(x + 310, y));
-            gfx.DrawLine(_thinPen, x + 360, y + 2, x + width - 5, y + 2);
-            gfx.DrawString(data.Position ?? "", _fontNormal, XBrushes.Black, new XPoint(x + 365, y));
+            cbX += 100;
+            DrawCheckbox(gfx, cbX, yPos - 8, data.Factory == "ปราจีนบุรี");
+            gfx.DrawString("ปราจีนบุรี", _fontNormal, XBrushes.Black, new XPoint(cbX + 15, yPos));
 
-            // Line 4: สังกัดงบประมาณ
-            y += 15;
-            gfx.DrawString("สังกัดงบประมาณ:", _fontNormal, XBrushes.Black, new XPoint(x + 5, y));
-            gfx.DrawLine(_thinPen, x + 85, y + 2, x + 300, y + 2);
-            gfx.DrawString(data.Department ?? "", _fontNormal, XBrushes.Black, new XPoint(x + 90, y));
+            yPos += 15;
 
-            yPos += 85;
+            // Line 3: เรียน
+            gfx.DrawString("เรียน:", _fontBold, XBrushes.Black, new XPoint(x + 5, yPos));
+            gfx.DrawLine(_thinPen, x + 40, yPos + 2, x + width - 5, yPos + 2);
+            gfx.DrawString("ผู้จัดการฝ่ายทรัพยากรบุคคล", _fontSmall, XBrushes.Black, new XPoint(x + 45, yPos));
+
+            yPos += 15;
+
+            // Line 4: เรื่อง
+            gfx.DrawString("เรื่อง:", _fontBold, XBrushes.Black, new XPoint(x + 5, yPos));
+            gfx.DrawLine(_thinPen, x + 40, yPos + 2, x + width - 5, yPos + 2);
+            gfx.DrawString(data.SeminarTitle ?? "", _fontNormal, XBrushes.Black, new XPoint(x + 45, yPos));
+
+            yPos += 15;
+
+            // Line 5: สำเนาเรียน
+            gfx.DrawString("สำเนาเรียน:", _fontBold, XBrushes.Black, new XPoint(x + 5, yPos));
+            gfx.DrawLine(_thinPen, x + 70, yPos + 2, x + width - 5, yPos + 2);
+
+            yPos += 15;
+
+            // Line 6: สิ่งที่แนบมาด้วย
+            gfx.DrawString("สิ่งที่แนบมาด้วย:", _fontBold, XBrushes.Black, new XPoint(x + 5, yPos));
+            gfx.DrawLine(_thinPen, x + 90, yPos + 2, x + width - 5, yPos + 2);
+
+            yPos += 15;
+
+            // Line 7: ด้วยแผนก
+            gfx.DrawString($"ด้วยแผนก: {data.Department ?? ""}", _fontNormal, XBrushes.Black, new XPoint(x + 5, yPos));
+            gfx.DrawString($"มีความประสงค์ขอให้พนักงานเข้าร่วมฝึกอบรมหลักสูตร", _fontNormal, XBrushes.Black, new XPoint(x + 200, yPos));
+
+            yPos = startY + 115;
         }
 
         private void DrawMainBody(XGraphics gfx, TrainingRequestData data, double x, ref double yPos, double width)
         {
-            // ซ้าย: ข้อมูลคำขอการอบรม (แถบสีเทา)
+            // 2 Columns: Left 70%, Right 30%
             double leftWidth = width * 0.7;
             double rightWidth = width * 0.3 - 5;
             double rightX = x + leftWidth + 5;
 
-            // Header bar (gray background)
-            gfx.DrawRectangle(_grayBrush, x, yPos, leftWidth, 20);
-            gfx.DrawRectangle(_borderPen, x, yPos, leftWidth, 20);
-            gfx.DrawString("ข้อมูลคำขอการอบรม", _fontBold, XBrushes.Black, new XPoint(x + 5, yPos + 14));
+            double startY = yPos;
 
-            // Right column header
-            gfx.DrawRectangle(_borderPen, rightX, yPos, rightWidth, 20);
-            gfx.DrawString("คอมเม้นท์กรรมการ:", _fontBold, XBrushes.Black, new XPoint(rightX + 5, yPos + 14));
+            // === LEFT COLUMN ===
+            // Header (gray background)
+            gfx.DrawRectangle(_grayBrush, x, yPos, leftWidth, 18);
+            gfx.DrawRectangle(_borderPen, x, yPos, leftWidth, 18);
+            gfx.DrawString("รายละเอียดการฝึกอบรม", _fontBold, XBrushes.Black, new XPoint(x + 5, yPos + 13));
 
-            yPos += 20;
+            yPos += 18;
 
-            // Left column content
+            // Left content area
             double yLeft = yPos;
-            gfx.DrawRectangle(_borderPen, x, yLeft, leftWidth, 120);
+            double leftContentHeight = 130;
+            gfx.DrawRectangle(_borderPen, x, yLeft, leftWidth, leftContentHeight);
 
             yLeft += 12;
-            gfx.DrawString($"ตำแหน่งผู้ขอ: {data.Position ?? ""}     ฝ่าย: {data.Department ?? ""}", _fontSmall, XBrushes.Black, new XPoint(x + 5, yLeft));
+            gfx.DrawString($"ชื่อผู้ขอ/ฝ่าย/แผนก: {data.CreatedBy ?? ""} / {data.Department ?? ""}", _fontSmall, XBrushes.Black, new XPoint(x + 5, yLeft));
 
             yLeft += 12;
-            gfx.DrawString("ชื่อสายประสานงาน: _________________", _fontSmall, XBrushes.Black, new XPoint(x + 5, yLeft));
+            gfx.DrawString($"ชื่อหลักสูตรฝึกอบรม: {data.SeminarTitle ?? ""}", _fontSmall, XBrushes.Black, new XPoint(x + 5, yLeft));
 
             yLeft += 12;
-            gfx.DrawString($"ข้อมูลคำขอการอบรม: {data.SeminarTitle ?? ""}", _fontSmall, XBrushes.Black, new XPoint(x + 5, yLeft));
+            string dateRange = "";
+            if (data.StartDate.HasValue && data.EndDate.HasValue)
+            {
+                dateRange = $"{data.StartDate.Value:dd/MM/yyyy} - {data.EndDate.Value:dd/MM/yyyy}";
+            }
+            gfx.DrawString($"วันที่อบรม: {dateRange}", _fontSmall, XBrushes.Black, new XPoint(x + 5, yLeft));
 
             yLeft += 12;
-            gfx.DrawString($"สถานที่: {data.TrainingLocation ?? ""}     รวมระยะเวลา: วัน / ชั่วโมง", _fontSmall, XBrushes.Black, new XPoint(x + 5, yLeft));
+            gfx.DrawString($"สถานที่อบรม: {data.TrainingLocation ?? ""}", _fontSmall, XBrushes.Black, new XPoint(x + 5, yLeft));
 
             yLeft += 12;
-            gfx.DrawString($"การเข้าชาง:  □ รัวหรือผู้อื่น  □ เครื่องน้อง", _fontSmall, XBrushes.Black, new XPoint(x + 5, yLeft));
+            gfx.DrawString($"วิทยากร: {data.Instructor ?? ""}", _fontSmall, XBrushes.Black, new XPoint(x + 5, yLeft));
 
             yLeft += 12;
-            gfx.DrawString($"ใช้เวลาฝึกวางศัพท์: {data.PerPersonTrainingHours} ชม.", _fontSmall, XBrushes.Black, new XPoint(x + 5, yLeft));
+            gfx.DrawString($"จำนวนชั่วโมงฝึกอบรม/คน: {data.PerPersonTrainingHours} ชม.", _fontSmall, XBrushes.Black, new XPoint(x + 5, yLeft));
 
             yLeft += 12;
-            gfx.DrawString($"กระบวนงาน: ___________     จำนวนผู้เข้าร่วมอบรม: {data.TotalPeople} คน", _fontSmall, XBrushes.Black, new XPoint(x + 5, yLeft));
+            gfx.DrawString($"จำนวนผู้เข้าร่วมอบรม: {data.TotalPeople} คน", _fontSmall, XBrushes.Black, new XPoint(x + 5, yLeft));
 
-            // Right column content
+            yLeft += 12;
+            gfx.DrawString($"เลขที่เอกสาร: {data.DocNo ?? ""}", _fontSmall, XBrushes.Black, new XPoint(x + 5, yLeft));
+
+            yLeft += 12;
+            gfx.DrawString($"บริษัท: {data.Company ?? ""}", _fontSmall, XBrushes.Black, new XPoint(x + 5, yLeft));
+
+            // === RIGHT COLUMN ===
+            yPos = startY;
+
+            // Header
+            gfx.DrawRectangle(_grayBrush, rightX, yPos, rightWidth, 18);
+            gfx.DrawRectangle(_borderPen, rightX, yPos, rightWidth, 18);
+            gfx.DrawString("เพื่อพิจารณา", _fontBold, XBrushes.Black, new XPoint(rightX + 5, yPos + 13));
+
+            yPos += 18;
+
+            // Right content area
             double yRight = yPos;
-            gfx.DrawRectangle(_borderPen, rightX, yRight, rightWidth, 60);
-            yRight += 12;
-            DrawCheckbox(gfx, rightX + 5, yRight - 8, false);
-            gfx.DrawString("อนุมัติ", _fontSmall, XBrushes.Black, new XPoint(rightX + 20, yRight));
-            DrawCheckbox(gfx, rightX + 70, yRight - 8, false);
-            gfx.DrawString("ไม่อนุมัติ", _fontSmall, XBrushes.Black, new XPoint(rightX + 85, yRight));
+            gfx.DrawRectangle(_borderPen, rightX, yRight, rightWidth, leftContentHeight);
 
             yRight += 15;
-            gfx.DrawString("ครั้อ: _____ ( / / )", _fontSmall, XBrushes.Black, new XPoint(rightX + 5, yRight));
+            DrawCheckbox(gfx, rightX + 5, yRight - 8, false);
+            gfx.DrawString("อนุมัติ", _fontSmall, XBrushes.Black, new XPoint(rightX + 20, yRight));
+
+            yRight += 15;
+            DrawCheckbox(gfx, rightX + 5, yRight - 8, false);
+            gfx.DrawString("ไม่อนุมัติ", _fontSmall, XBrushes.Black, new XPoint(rightX + 20, yRight));
+
+            yRight += 15;
+            gfx.DrawString("เนื่องจาก:", _fontSmall, XBrushes.Black, new XPoint(rightX + 5, yRight));
 
             yRight += 12;
-            gfx.DrawString("ตำแหน่ง: _____________", _fontSmall, XBrushes.Black, new XPoint(rightX + 5, yRight));
+            gfx.DrawLine(_thinPen, rightX + 5, yRight, rightX + rightWidth - 5, yRight);
 
-            yPos += 120;
+            yRight += 12;
+            gfx.DrawLine(_thinPen, rightX + 5, yRight, rightX + rightWidth - 5, yRight);
+
+            yRight += 15;
+            gfx.DrawString("ลงชื่อ:", _fontSmall, XBrushes.Black, new XPoint(rightX + 5, yRight));
+            gfx.DrawLine(_thinPen, rightX + 35, yRight + 2, rightX + rightWidth - 5, yRight + 2);
+
+            yRight += 12;
+            gfx.DrawString("วันที่:", _fontSmall, XBrushes.Black, new XPoint(rightX + 5, yRight));
+            gfx.DrawLine(_thinPen, rightX + 35, yRight + 2, rightX + rightWidth - 5, yRight + 2);
+
+            yPos = startY + 18 + leftContentHeight + 5;
         }
 
         private void DrawParticipantTable(XGraphics gfx, TrainingRequestData data, double x, ref double yPos, double width)
         {
-            // Header
-            gfx.DrawString("รายชื่อผู้เข้าร่วม:", _fontBold, XBrushes.Black, new XPoint(x + 5, yPos + 12));
-            yPos += 15;
+            // Title
+            gfx.DrawString("รายชื่อผู้เข้าร่วมฝึกอบรม:", _fontBold, XBrushes.Black, new XPoint(x, yPos + 12));
+            yPos += 18;
 
-            // Table header
+            // Table headers
             double[] colWidths = { 50, 150, 150, width - 350 };
-            string[] headers = { "ลำดับ", "ชื่อ", "ภารี", "ตำแหน่ง" };
+            string[] headers = { "ลำดับ", "รหัส", "ชื่อ-สกุล", "ตำแหน่ง" };
 
             double xCol = x;
             double rowHeight = 20;
 
-            // Header row
+            // Header row (gray)
             for (int i = 0; i < headers.Length; i++)
             {
                 gfx.DrawRectangle(_grayBrush, xCol, yPos, colWidths[i], rowHeight);
@@ -259,7 +349,7 @@ namespace TrainingRequestApp.Services
 
             yPos += rowHeight;
 
-            // Data rows (3 rows)
+            // 3 data rows
             for (int row = 1; row <= 3; row++)
             {
                 xCol = x;
@@ -280,76 +370,99 @@ namespace TrainingRequestApp.Services
 
         private void DrawObjectives(XGraphics gfx, TrainingRequestData data, double x, ref double yPos, double width)
         {
-            gfx.DrawString("วัตถุประสงค์:", _fontBold, XBrushes.Black, new XPoint(x + 5, yPos + 12));
+            gfx.DrawString("วัตถุประสงค์การฝึกอบรม:", _fontBold, XBrushes.Black, new XPoint(x, yPos + 12));
+            yPos += 18;
+
+            // 6 checkboxes in 2 rows
+            string[] objectives = {
+                "เพื่อพัฒนาทักษะ ความรู้ ความสามารถ",
+                "เพื่อเพิ่มประสิทธิภาพการทำงาน",
+                "เพื่อรองรับการเปลี่ยนแปลงขององค์กร",
+                "เพื่อให้ทันต่อกฎหมาย ระเบียบที่เปลี่ยนแปลง",
+                "เพื่อเตรียมความพร้อมสำหรับตำแหน่งใหม่",
+                "อื่นๆ (ระบุ)"
+            };
+
+            int objIndex = 0;
+            for (int row = 0; row < 2; row++)
+            {
+                double cbX = x + 10;
+                for (int col = 0; col < 3; col++)
+                {
+                    if (objIndex < objectives.Length)
+                    {
+                        DrawCheckbox(gfx, cbX, yPos - 8, false);
+                        gfx.DrawString(objectives[objIndex], _fontSmall, XBrushes.Black, new XPoint(cbX + 15, yPos));
+                        cbX += 180;
+                        objIndex++;
+                    }
+                }
+                yPos += 15;
+            }
+
+            yPos += 5;
+
+            // วัตถุประสงค์อื่นๆ
+            if (!string.IsNullOrEmpty(data.TrainingObjective))
+            {
+                gfx.DrawString($"รายละเอียด: {data.TrainingObjective}", _fontSmall, XBrushes.Black, new XPoint(x + 5, yPos));
+                yPos += 12;
+            }
+
+            // ผลที่คาดหวัง
+            gfx.DrawString("ผลที่คาดหวังจากการฝึกอบรม:", _fontBold, XBrushes.Black, new XPoint(x, yPos + 12));
+            yPos += 15;
+            gfx.DrawLine(_thinPen, x + 5, yPos, x + width - 5, yPos);
+            yPos += 12;
+            gfx.DrawLine(_thinPen, x + 5, yPos, x + width - 5, yPos);
             yPos += 15;
 
-            // Row 1
-            double cbY = yPos;
-            DrawCheckbox(gfx, x + 10, cbY, false);
-            gfx.DrawString("พัฒนาทักษะความรู้", _fontSmall, XBrushes.Black, new XPoint(x + 25, cbY + 8));
-
-            DrawCheckbox(gfx, x + 180, cbY, false);
-            gfx.DrawString("เพิ่มประสิทธิภาพ / คุณภาพ", _fontSmall, XBrushes.Black, new XPoint(x + 195, cbY + 8));
-
-            DrawCheckbox(gfx, x + 380, cbY, false);
-            gfx.DrawString("ทดสอบผล / ปรับปรุงงา", _fontSmall, XBrushes.Black, new XPoint(x + 395, cbY + 8));
-
-            yPos += 15;
-
-            // Row 2
-            cbY = yPos;
-            DrawCheckbox(gfx, x + 10, cbY, false);
-            gfx.DrawString("กฎหม้/คู่มือ/กำหนดส", _fontSmall, XBrushes.Black, new XPoint(x + 25, cbY + 8));
-
-            DrawCheckbox(gfx, x + 180, cbY, false);
-            gfx.DrawString("อาคารสอภคเริตุยัยคล่องอยู่ปรัน", _fontSmall, XBrushes.Black, new XPoint(x + 195, cbY + 8));
-
-            DrawCheckbox(gfx, x + 380, cbY, false);
-            gfx.DrawString("อื่นๆ (ระบุ)", _fontSmall, XBrushes.Black, new XPoint(x + 395, cbY + 8));
-
-            yPos += 20;
+            if (!string.IsNullOrEmpty(data.ExpectedOutcome))
+            {
+                gfx.DrawString(data.ExpectedOutcome, _fontSmall, XBrushes.Black, new XPoint(x + 5, yPos - 25));
+            }
         }
 
         private void DrawBudgetSection(XGraphics gfx, TrainingRequestData data, double x, ref double yPos, double width)
         {
-            gfx.DrawString("หลักฐานการอบรม:", _fontBold, XBrushes.Black, new XPoint(x + 5, yPos + 12));
-            yPos += 15;
+            gfx.DrawString("งบประมาณ:", _fontBold, XBrushes.Black, new XPoint(x, yPos + 12));
+            yPos += 18;
 
-            // Row 1
-            DrawCheckbox(gfx, x + 10, yPos, false);
-            gfx.DrawString($"สำเนาเอกสารยืนยัน: _____ บาท", _fontSmall, XBrushes.Black, new XPoint(x + 25, yPos + 8));
+            // Budget breakdown
+            gfx.DrawString($"1. ค่าลงทะเบียน/วิทยากร: {data.RegistrationCost + data.InstructorFee:N2} บาท", _fontSmall, XBrushes.Black, new XPoint(x + 10, yPos));
+            yPos += 12;
 
-            DrawCheckbox(gfx, x + 280, yPos, false);
-            gfx.DrawString($"คำขอสะพเรศัมปรกงน: _____ บาท", _fontSmall, XBrushes.Black, new XPoint(x + 295, yPos + 8));
+            gfx.DrawString($"2. ค่าเอกสาร/อุปกรณ์: {data.EquipmentCost:N2} บาท", _fontSmall, XBrushes.Black, new XPoint(x + 10, yPos));
+            yPos += 12;
 
-            yPos += 15;
+            gfx.DrawString($"3. ค่าอาหาร/เครื่องดื่ม: {data.FoodCost:N2} บาท", _fontSmall, XBrushes.Black, new XPoint(x + 10, yPos));
+            yPos += 12;
 
-            // Row 2
-            DrawCheckbox(gfx, x + 10, yPos, false);
-            gfx.DrawString($"อื่นๆ (ระบุ): _____ บาท", _fontSmall, XBrushes.Black, new XPoint(x + 25, yPos + 8));
+            gfx.DrawString($"4. ค่าใช้จ่ายอื่นๆ: {data.OtherCost:N2} บาท", _fontSmall, XBrushes.Black, new XPoint(x + 10, yPos));
+            yPos += 12;
 
-            gfx.DrawString($"รวมเงิน: {data.TotalCost:N2} บาท", _fontBold, XBrushes.Black, new XPoint(x + 300, yPos + 8));
-
+            gfx.DrawString($"รวมสุทธิ: {data.TotalCost:N2} บาท ({data.TotalPeople} คน × {data.CostPerPerson:N2} บาท/คน)", _fontBold, XBrushes.Black, new XPoint(x + 10, yPos));
             yPos += 20;
-
-            // Cost breakdown table
-            DrawCostTable(gfx, data, x, ref yPos, width);
         }
 
-        private void DrawCostTable(XGraphics gfx, TrainingRequestData data, double x, ref double yPos, double width)
+        private void DrawTrainingHistoryTable(XGraphics gfx, TrainingRequestData data, double x, ref double yPos, double width)
         {
-            double[] colWidths = { 60, 120, 80, 80, 80, 80, width - 500 };
-            string[] headers = { "ลำดับที่", "ชื่อ-สกุล", "ไม่แส", "เส", "โนเส", "เบื้อยบัน", "ชื่องักฐอร" };
+            gfx.DrawString("ประวัติการฝึกอบรม (หลักสูตรเดียวกันหรือใกล้เคียง):", _fontBold, XBrushes.Black, new XPoint(x, yPos + 12));
+            yPos += 18;
+
+            // 7 columns table
+            double[] colWidths = { 30, 80, 120, 50, 50, 80, 80, width - 490 };
+            string[] headers = { "ที่", "รหัสพนักงาน", "ชื่อ-สกุล", "ไม่เคย", "เคย", "ใกล้เคียง", "เมื่อวันที่", "ชื่อหลักสูตร" };
 
             double xCol = x;
             double rowHeight = 20;
 
-            // Header
+            // Header row
             for (int i = 0; i < headers.Length; i++)
             {
                 gfx.DrawRectangle(_grayBrush, xCol, yPos, colWidths[i], rowHeight);
                 gfx.DrawRectangle(_borderPen, xCol, yPos, colWidths[i], rowHeight);
-                gfx.DrawString(headers[i], _fontSmall, XBrushes.Black, new XPoint(xCol + 3, yPos + 14));
+                gfx.DrawString(headers[i], _fontTiny, XBrushes.Black, new XPoint(xCol + 3, yPos + 13));
                 xCol += colWidths[i];
             }
 
@@ -371,90 +484,113 @@ namespace TrainingRequestApp.Services
                 yPos += rowHeight;
             }
 
-            yPos += 10;
-
-            // Footer: ตรวจอบอาคูม
-            gfx.DrawString("ตรวจอบราคูม: _____ ( / / )", _fontSmall, XBrushes.Black, new XPoint(x + 5, yPos + 12));
-            gfx.DrawString("อนุมัติชองสอบ: _____ ( / / )", _fontSmall, XBrushes.Black, new XPoint(x + 300, yPos + 12));
-
-            yPos += 25;
+            yPos += 15;
         }
 
-        private void DrawApproversSection(XGraphics gfx, TrainingRequestData data, double x, ref double yPos, double width)
+        private void DrawFooterSection(XGraphics gfx, TrainingRequestData data, double x, ref double yPos, double width)
         {
-            // 2 columns
+            // 2 columns: Left (ผลการพิจารณา) / Right (HRD)
             double leftWidth = width / 2 - 5;
             double rightX = x + width / 2 + 5;
 
-            // Left column: หุดกมปริงคัวรญษ
+            double startY = yPos;
+
+            // === LEFT COLUMN: ผลการพิจารณา ===
             double yLeft = yPos;
+
             gfx.DrawRectangle(_grayBrush, x, yLeft, leftWidth, 18);
             gfx.DrawRectangle(_borderPen, x, yLeft, leftWidth, 18);
-            gfx.DrawString("หุดกมปริงคัวรญษ:", _fontBold, XBrushes.Black, new XPoint(x + 5, yLeft + 13));
+            gfx.DrawString("ผลการพิจารณา", _fontBold, XBrushes.Black, new XPoint(x + 5, yLeft + 13));
 
             yLeft += 18;
-            gfx.DrawRectangle(_borderPen, x, yLeft, leftWidth, 100);
+
+            double leftContentHeight = 110;
+            gfx.DrawRectangle(_borderPen, x, yLeft, leftWidth, leftContentHeight);
 
             yLeft += 15;
             DrawCheckbox(gfx, x + 10, yLeft - 8, false);
-            gfx.DrawString("ชำขดสใร็ชภัอมารำกำมง", _fontSmall, XBrushes.Black, new XPoint(x + 25, yLeft));
+            gfx.DrawString("อนุมัติให้ฝึกอบรมสัมมนา", _fontSmall, XBrushes.Black, new XPoint(x + 25, yLeft));
 
             yLeft += 15;
-            gfx.DrawString("เปีัยกต: _________________", _fontSmall, XBrushes.Black, new XPoint(x + 10, yLeft));
-
-            yLeft += 30;
-            gfx.DrawString("ตำแหน่ง: ____________ ( / / )", _fontSmall, XBrushes.Black, new XPoint(x + 10, yLeft));
+            DrawCheckbox(gfx, x + 10, yLeft - 8, false);
+            gfx.DrawString("ไม่อนุมัติ/ส่งกลับ", _fontSmall, XBrushes.Black, new XPoint(x + 25, yLeft));
 
             yLeft += 15;
-            gfx.DrawString("ตำแหน่ง: _________________", _fontSmall, XBrushes.Black, new XPoint(x + 10, yLeft));
+            gfx.DrawString("เหตุผล:", _fontSmall, XBrushes.Black, new XPoint(x + 10, yLeft));
+            gfx.DrawLine(_thinPen, x + 50, yLeft + 2, x + leftWidth - 5, yLeft + 2);
 
-            // Right column: HRD
+            yLeft += 12;
+            gfx.DrawLine(_thinPen, x + 10, yLeft, x + leftWidth - 5, yLeft);
+
+            yLeft += 15;
+            gfx.DrawString("ลงชื่อ:", _fontSmall, XBrushes.Black, new XPoint(x + 10, yLeft));
+            gfx.DrawLine(_thinPen, x + 45, yLeft + 2, x + leftWidth - 5, yLeft + 2);
+
+            yLeft += 12;
+            gfx.DrawString("ตำแหน่ง:", _fontSmall, XBrushes.Black, new XPoint(x + 10, yLeft));
+            gfx.DrawLine(_thinPen, x + 55, yLeft + 2, x + leftWidth - 5, yLeft + 2);
+
+            yLeft += 12;
+            gfx.DrawString("วันที่:", _fontSmall, XBrushes.Black, new XPoint(x + 10, yLeft));
+            gfx.DrawLine(_thinPen, x + 45, yLeft + 2, x + leftWidth - 5, yLeft + 2);
+
+            // === RIGHT COLUMN: HRD ===
             double yRight = yPos;
+
             gfx.DrawRectangle(_grayBrush, rightX, yRight, leftWidth, 18);
             gfx.DrawRectangle(_borderPen, rightX, yRight, leftWidth, 18);
-            gfx.DrawString("ชอมูขอย HRD งงงติอบขงอช:", _fontBold, XBrushes.Black, new XPoint(rightX + 5, yRight + 13));
+            gfx.DrawString("ข้อมูลส่วน HRD บันทึกข้อมูล", _fontBold, XBrushes.Black, new XPoint(rightX + 5, yRight + 13));
 
             yRight += 18;
-            gfx.DrawRectangle(_borderPen, rightX, yRight, leftWidth, 100);
 
-            yRight += 15;
-            DrawCheckbox(gfx, rightX + 10, yRight - 8, false);
-            gfx.DrawString("คัอชงตรอชัมรื/ผืิอนเ: วันนี้", _fontSmall, XBrushes.Black, new XPoint(rightX + 25, yRight));
-
-            yRight += 12;
-            gfx.DrawString("ชื้องนี้ดรอชอขัท", _fontSmall, XBrushes.Black, new XPoint(rightX + 10, yRight));
-
-            yRight += 12;
-            gfx.DrawString("คงระชงะงม: ชำระเง้งมคงบรงน็ท", _fontSmall, XBrushes.Black, new XPoint(rightX + 10, yRight));
+            gfx.DrawRectangle(_borderPen, rightX, yRight, leftWidth, leftContentHeight);
 
             yRight += 12;
             DrawCheckbox(gfx, rightX + 10, yRight - 8, false);
-            gfx.DrawString("เบื็ยกลัชมเนนตงยนูอิช", _fontSmall, XBrushes.Black, new XPoint(rightX + 25, yRight));
+            gfx.DrawString("เพิ่มในแผนฝึกอบรม ประจำปี:", _fontSmall, XBrushes.Black, new XPoint(rightX + 25, yRight));
+            gfx.DrawLine(_thinPen, rightX + 165, yRight + 2, rightX + leftWidth - 5, yRight + 2);
+
+            yRight += 12;
+            gfx.DrawString("ประเภท:", _fontSmall, XBrushes.Black, new XPoint(rightX + 10, yRight));
+            DrawCheckbox(gfx, rightX + 55, yRight - 8, false);
+            gfx.DrawString("Technical", _fontSmall, XBrushes.Black, new XPoint(rightX + 70, yRight));
+            DrawCheckbox(gfx, rightX + 130, yRight - 8, false);
+            gfx.DrawString("Non-Technical", _fontSmall, XBrushes.Black, new XPoint(rightX + 145, yRight));
+
+            yRight += 12;
+            gfx.DrawString("สังกัดงบประมาณ:", _fontSmall, XBrushes.Black, new XPoint(rightX + 10, yRight));
+            gfx.DrawLine(_thinPen, rightX + 95, yRight + 2, rightX + leftWidth - 5, yRight + 2);
 
             yRight += 12;
             DrawCheckbox(gfx, rightX + 10, yRight - 8, false);
-            gfx.DrawString("รำระเป็นมันชคล", _fontSmall, XBrushes.Black, new XPoint(rightX + 25, yRight));
+            gfx.DrawString("จัดเก็บเอกสาร", _fontSmall, XBrushes.Black, new XPoint(rightX + 25, yRight));
 
-            yRight += 15;
-            gfx.DrawString("คอบื้อ: ________ ผู้บันนิก", _fontSmall, XBrushes.Black, new XPoint(rightX + 10, yRight));
+            yRight += 12;
+            DrawCheckbox(gfx, rightX + 10, yRight - 8, false);
+            gfx.DrawString("บันทึกข้อมูลในระบบ", _fontSmall, XBrushes.Black, new XPoint(rightX + 25, yRight));
 
-            yPos += 118 + 10;
+            yRight += 12;
+            gfx.DrawString("ผู้บันทึก:", _fontSmall, XBrushes.Black, new XPoint(rightX + 10, yRight));
+            gfx.DrawLine(_thinPen, rightX + 60, yRight + 2, rightX + leftWidth - 5, yRight + 2);
 
-            // ผู้อนุมัติ 5 ระดับ (แสดงเฉพาะที่ APPROVED)
-            DrawApprovers(gfx, data, x, ref yPos, width);
+            yRight += 12;
+            gfx.DrawString("วันที่:", _fontSmall, XBrushes.Black, new XPoint(rightX + 10, yRight));
+            gfx.DrawLine(_thinPen, rightX + 45, yRight + 2, rightX + leftWidth - 5, yRight + 2);
+
+            yPos = startY + 18 + leftContentHeight + 10;
         }
 
         private void DrawApprovers(XGraphics gfx, TrainingRequestData data, double x, ref double yPos, double width)
         {
-            gfx.DrawString("ผู้อนุมัติ:", _fontHeader, XBrushes.Black, new XPoint(x, yPos + 12));
+            gfx.DrawString("ผู้อนุมัติ (Approvers):", _fontHeader, XBrushes.Black, new XPoint(x, yPos + 12));
             yPos += 20;
 
             string[] approverTitles = {
-                "1. Section Manager",
-                "2. Department Manager",
-                "3. HRD Admin",
-                "4. HRD Confirmation",
-                "5. Managing Director"
+                "1. Section Manager (หัวหน้าแผนก)",
+                "2. Department Manager (ผู้จัดการฝ่าย)",
+                "3. HRD Admin (ฝ่ายทรัพยากรบุคคล - ตรวจสอบ)",
+                "4. HRD Confirmation (ฝ่ายทรัพยากรบุคคล - อนุมัติ)",
+                "5. Managing Director (กรรมการผู้จัดการ)"
             };
 
             string[] approverIds = {
@@ -503,6 +639,11 @@ namespace TrainingRequestApp.Services
 
                 yPos += 5;
             }
+
+            // Footer info
+            yPos += 10;
+            gfx.DrawString($"สถานะเอกสาร: {data.Status ?? "Draft"}", _fontSmall, XBrushes.Black, new XPoint(x, yPos));
+            gfx.DrawString($"วันที่สร้าง: {data.CreatedDate:dd/MM/yyyy HH:mm}", _fontSmall, XBrushes.Black, new XPoint(x + 200, yPos));
         }
 
         private void DrawCheckbox(XGraphics gfx, double x, double y, bool isChecked)
@@ -511,6 +652,7 @@ namespace TrainingRequestApp.Services
             gfx.DrawRectangle(_borderPen, x, y, size, size);
             if (isChecked)
             {
+                // Draw X
                 gfx.DrawLine(_borderPen, x + 2, y + 2, x + size - 2, y + size - 2);
                 gfx.DrawLine(_borderPen, x + 2, y + size - 2, x + size - 2, y + 2);
             }
@@ -603,6 +745,10 @@ namespace TrainingRequestApp.Services
             return null;
         }
 
+        // ==========================================
+        // DATA CLASS
+        // ==========================================
+
         private class TrainingRequestData
         {
             public string DocNo { get; set; }
@@ -632,6 +778,7 @@ namespace TrainingRequestApp.Services
             public string CreatedBy { get; set; }
             public DateTime CreatedDate { get; set; }
 
+            // Approvers - 5 levels
             public string SectionManagerId { get; set; }
             public string Status_SectionManager { get; set; }
             public string ApproveInfo_SectionManager { get; set; }
