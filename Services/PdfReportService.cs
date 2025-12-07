@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
@@ -10,6 +11,8 @@ namespace TrainingRequestApp.Services
     /// <summary>
     /// PDF Report Service - แบบฟอร์มคำขอฝึกอบรม (Training Request Form)
     /// ตรงตาม HTML Template 100%
+    ///
+    /// Version: 2.0 (Updated with 7 enhancements)
     /// </summary>
     public class PdfReportService : IPdfReportService
     {
@@ -287,10 +290,10 @@ namespace TrainingRequestApp.Services
                 gfx.DrawString("คน", _fontSmall, XBrushes.Black, new XPoint(xPos + 35, currentY + 12));
             });
 
-            // === Row 11-13: รายชื่อผู้เข้าอบรม (3 rows, แนวนอน) ===
+            // === Row 11-13: รายชื่อผู้เข้าอบรม (3 rows, แนวนอน) - ✅ FIX 1 ===
             currentY = DrawParticipantList(gfx, data, contentX, currentY, contentWidth);
 
-            // === Row 14: วัตถุประสงค์ (6 ข้อ) ===
+            // === Row 14: วัตถุประสงค์ (6 ข้อ) - ✅ FIX 2 ===
             currentY = DrawObjectivesSection(gfx, data, contentX, currentY, contentWidth);
 
             // === Row 15: ผลที่คาดว่าจะได้รับ ===
@@ -302,10 +305,10 @@ namespace TrainingRequestApp.Services
                 gfx.DrawString(data.ExpectedOutcome ?? "", _fontSmall, XBrushes.Black, new XPoint(xPos + 123, currentY + 12));
             });
 
-            // === Row 16: งบประมาณ ===
+            // === Row 16: งบประมาณ - ✅ FIX 3 ===
             currentY = DrawBudgetSection(gfx, data, contentX, currentY, contentWidth);
 
-            // === Row 17: จึงเรียนมาเพื่อโปรดพิจารณาอนุมัติ + ลายเซ็น ===
+            // === Row 17: จึงเรียนมาเพื่อโปรดพิจารณาอนุมัติ + ลายเซ็น - ✅ FIX 4 & 5 ===
             currentY = DrawSignatureSection(gfx, data, contentX, currentY, contentWidth);
 
             return currentY - startY;
@@ -411,7 +414,7 @@ namespace TrainingRequestApp.Services
         }
 
         // ==========================================
-        // ส่วนที่ 3: การพิจารณาอนุมัติ
+        // ส่วนที่ 3: การพิจารณาอนุมัติ - ✅ FIX 6 & 7
         // ==========================================
         private double DrawSection3(XGraphics gfx, TrainingRequestData data, double x, double y, double width, double vlabelWidth)
         {
@@ -435,15 +438,18 @@ namespace TrainingRequestApp.Services
             double leftY = currentY + 5;
             double rightY = currentY + 5;
 
-            // === LEFT COLUMN: ผลการพิจารณา ===
+            // === LEFT COLUMN: ผลการพิจารณา (Managing Director) - ✅ FIX 6 ===
             gfx.DrawString("ผลการพิจารณา :", _fontBold, XBrushes.Black, new XPoint(leftX + 5, leftY + 12));
             leftY += 20;
 
-            DrawCheckbox(gfx, leftX + 10, leftY, false);
+            // Check if Managing Director approved (case insensitive)
+            bool isManagingApproved = data.Status_ManagingDirector?.ToUpper() == "APPROVED";
+
+            DrawCheckbox(gfx, leftX + 10, leftY, isManagingApproved);
             gfx.DrawString("อนุมัติให้ฝึกอบรมสัมมนา", _fontSmall, XBrushes.Black, new XPoint(leftX + 25, leftY + 8));
             leftY += 15;
 
-            DrawCheckbox(gfx, leftX + 10, leftY, false);
+            DrawCheckbox(gfx, leftX + 10, leftY, !isManagingApproved);
             gfx.DrawString("ไม่อนุมัติ/ส่งกลับให้ต้นสังกัดทบทวนใหม่", _fontSmall, XBrushes.Black, new XPoint(leftX + 25, leftY + 8));
             leftY += 20;
 
@@ -451,12 +457,19 @@ namespace TrainingRequestApp.Services
             gfx.DrawLine(_thinPen, leftX + 55, leftY + 9, leftX + halfWidth - 10, leftY + 9);
             leftY += 20;
 
-            // Signature
+            // Signature - Show Managing Director ID when APPROVED
             gfx.DrawString("ลงชื่อ", _fontSmall, XBrushes.Black, new XPoint(leftX + 10, leftY + 8));
             gfx.DrawLine(_thinPen, leftX + 45, leftY + 9, leftX + halfWidth - 10, leftY + 9);
             leftY += 15;
             gfx.DrawString("(", _fontSmall, XBrushes.Black, new XPoint(leftX + 30, leftY + 8));
             gfx.DrawLine(_thinPen, leftX + 40, leftY + 9, leftX + halfWidth - 20, leftY + 9);
+
+            // ✅ Show Managing Director ID when APPROVED
+            if (isManagingApproved)
+            {
+                gfx.DrawString(data.ManagingDirectorId ?? "", _fontSmall, XBrushes.Black, new XPoint(leftX + 45, leftY + 8));
+            }
+
             gfx.DrawString(")", _fontSmall, XBrushes.Black, new XPoint(leftX + halfWidth - 15, leftY + 8));
             leftY += 15;
             gfx.DrawString("ตำแหน่ง", _fontSmall, XBrushes.Black, new XPoint(leftX + 10, leftY + 8));
@@ -466,7 +479,7 @@ namespace TrainingRequestApp.Services
             // Vertical separator between columns
             gfx.DrawLine(_borderPen, rightX, currentY, rightX, currentY + 175);
 
-            // === RIGHT COLUMN: ข้อมูลส่วน HRD บันทึกข้อมูล ===
+            // === RIGHT COLUMN: ข้อมูลส่วน HRD บันทึกข้อมูล (HRD Confirmation) - ✅ FIX 7 ===
             gfx.DrawString("ข้อมูลส่วน HRD บันทึกข้อมูล", _fontBold, XBrushes.Black, new XPoint(rightX + 5, rightY + 12));
             rightY += 20;
 
@@ -491,8 +504,17 @@ namespace TrainingRequestApp.Services
             gfx.DrawString("ชำระเป็นเงินสด", _fontSmall, XBrushes.Black, new XPoint(cbX + 15, rightY + 8));
             rightY += 25;
 
+            // ✅ Show HRD Confirmation ID when APPROVED (case insensitive)
+            bool isHRDConfirmationApproved = data.Status_HRDConfirmation?.ToUpper() == "APPROVED";
+
             gfx.DrawString("ผู้บันทึก", _fontSmall, XBrushes.Black, new XPoint(rightX + 5, rightY + 8));
             gfx.DrawLine(_thinPen, rightX + 50, rightY + 9, rightX + halfWidth - 10, rightY + 9);
+
+            if (isHRDConfirmationApproved)
+            {
+                gfx.DrawString(data.HRDConfirmationId ?? "", _fontSmall, XBrushes.Black, new XPoint(rightX + 55, rightY + 8));
+            }
+
             rightY += 20;
 
             // Bottom border
@@ -541,6 +563,7 @@ namespace TrainingRequestApp.Services
             return y + rowHeight;
         }
 
+        // ✅ FIX 1: Draw Participant List with real data from TrainingRequestEmployees
         private double DrawParticipantList(XGraphics gfx, TrainingRequestData data, double x, double y, double width)
         {
             double currentY = y;
@@ -552,28 +575,57 @@ namespace TrainingRequestApp.Services
             gfx.DrawString("รายชื่อ", _fontBold, XBrushes.Black, new XPoint(x + 5, currentY + 12));
             currentY += rowHeight;
 
-            // 3 participant rows
-            for (int i = 1; i <= 3; i++)
+            // 3 participant rows (or less if fewer employees)
+            int maxRows = Math.Min(3, data.Employees.Count);
+
+            for (int i = 0; i < 3; i++)
             {
                 gfx.DrawLine(_borderPen, x, currentY + rowHeight, x + width, currentY + rowHeight);
 
                 double xPos = x + 5;
-                if (i == 1) xPos += 0; // First row has no indent
+                if (i == 0) xPos += 0; // First row has no indent
                 else xPos += 50; // Other rows indent
 
-                gfx.DrawString($"{i}.", _fontSmall, XBrushes.Black, new XPoint(xPos, currentY + 12));
+                gfx.DrawString($"{i + 1}.", _fontSmall, XBrushes.Black, new XPoint(xPos, currentY + 12));
                 xPos += 15;
-                gfx.DrawLine(_thinPen, xPos, currentY + 13, xPos + 150, currentY + 13);
 
-                xPos += 160;
-                gfx.DrawString("รหัส", _fontSmall, XBrushes.Black, new XPoint(xPos, currentY + 12));
-                xPos += 30;
-                gfx.DrawLine(_thinPen, xPos, currentY + 13, xPos + 60, currentY + 13);
+                // ✅ Show employee data if available
+                if (i < data.Employees.Count)
+                {
+                    var employee = data.Employees[i];
 
-                xPos += 70;
-                gfx.DrawString("ตำแหน่ง", _fontSmall, XBrushes.Black, new XPoint(xPos, currentY + 12));
-                xPos += 50;
-                gfx.DrawLine(_thinPen, xPos, currentY + 13, x + width - 5, currentY + 13);
+                    // Employee Name
+                    gfx.DrawString(employee.EmployeeName ?? "", _fontSmall, XBrushes.Black, new XPoint(xPos, currentY + 12));
+
+                    xPos += 160;
+                    gfx.DrawString("รหัส", _fontSmall, XBrushes.Black, new XPoint(xPos, currentY + 12));
+                    xPos += 30;
+
+                    // Employee Code
+                    gfx.DrawString(employee.EmployeeCode ?? "", _fontSmall, XBrushes.Black, new XPoint(xPos, currentY + 12));
+
+                    xPos += 70;
+                    gfx.DrawString("ตำแหน่ง", _fontSmall, XBrushes.Black, new XPoint(xPos, currentY + 12));
+                    xPos += 50;
+
+                    // Level (NOT Position!)
+                    gfx.DrawString(employee.Level ?? "", _fontSmall, XBrushes.Black, new XPoint(xPos, currentY + 12));
+                }
+                else
+                {
+                    // Empty row with lines
+                    gfx.DrawLine(_thinPen, xPos, currentY + 13, xPos + 150, currentY + 13);
+
+                    xPos += 160;
+                    gfx.DrawString("รหัส", _fontSmall, XBrushes.Black, new XPoint(xPos, currentY + 12));
+                    xPos += 30;
+                    gfx.DrawLine(_thinPen, xPos, currentY + 13, xPos + 60, currentY + 13);
+
+                    xPos += 70;
+                    gfx.DrawString("ตำแหน่ง", _fontSmall, XBrushes.Black, new XPoint(xPos, currentY + 12));
+                    xPos += 50;
+                    gfx.DrawLine(_thinPen, xPos, currentY + 13, x + width - 5, currentY + 13);
+                }
 
                 currentY += rowHeight;
             }
@@ -581,6 +633,7 @@ namespace TrainingRequestApp.Services
             return currentY;
         }
 
+        // ✅ FIX 2: Draw Objectives with checkboxes based on TrainingObjective data
         private double DrawObjectivesSection(XGraphics gfx, TrainingRequestData data, double x, double y, double width)
         {
             double currentY = y;
@@ -595,42 +648,58 @@ namespace TrainingRequestApp.Services
             gfx.DrawString("วัตถุประสงค์:", _fontBold, XBrushes.Black, new XPoint(xPos, yOffset));
             xPos += 85;
 
+            // ✅ Check which objectives are selected (from TrainingObjective column)
+            string objective = data.TrainingObjective ?? "";
+            bool isObj1 = objective.Contains("พัฒนาทักษะ");
+            bool isObj2 = objective.Contains("เพิ่มประสิทธิภาพ") || objective.Contains("คุณภาพ");
+            bool isObj3 = objective.Contains("แก้ไข") || objective.Contains("ป้องกันปัญหา");
+            bool isObj4 = objective.Contains("กฎหมาย") || objective.Contains("ข้อกำหนด");
+            bool isObj5 = objective.Contains("ถ่ายทอดความรู้") || objective.Contains("ขยายผล");
+            bool isObj6 = objective.Contains("อื่นๆ");
+
             // Row 1 - 3 objectives
-            DrawCheckbox(gfx, xPos, yOffset - 6, false);
+            DrawCheckbox(gfx, xPos, yOffset - 6, isObj1);
             gfx.DrawString("พัฒนาทักษะความชำนาญ", _fontSmall, XBrushes.Black, new XPoint(xPos + 15, yOffset));
             xPos += 145;
 
-            DrawCheckbox(gfx, xPos, yOffset - 6, false);
+            DrawCheckbox(gfx, xPos, yOffset - 6, isObj2);
             gfx.DrawString("เพิ่มประสิทธิภาพ / คุณภาพ", _fontSmall, XBrushes.Black, new XPoint(xPos + 15, yOffset));
             xPos += 165;
 
-            DrawCheckbox(gfx, xPos, yOffset - 6, false);
+            DrawCheckbox(gfx, xPos, yOffset - 6, isObj3);
             gfx.DrawString("ช่วยแก้ไข / ป้องกันปัญหา", _fontSmall, XBrushes.Black, new XPoint(xPos + 15, yOffset));
 
             // Row 2 - 3 objectives
             yOffset += 15;
             xPos = x + 90;
 
-            DrawCheckbox(gfx, xPos, yOffset - 6, false);
+            DrawCheckbox(gfx, xPos, yOffset - 6, isObj4);
             gfx.DrawString("กฎหมาย/ข้อกำหนด", _fontSmall, XBrushes.Black, new XPoint(xPos + 15, yOffset));
             xPos += 145;
 
-            DrawCheckbox(gfx, xPos, yOffset - 6, false);
+            DrawCheckbox(gfx, xPos, yOffset - 6, isObj5);
             gfx.DrawString("ถ่ายทอดความรู้/ขยายผลสู่อื่น", _fontSmall, XBrushes.Black, new XPoint(xPos + 15, yOffset));
             xPos += 180;
 
-            DrawCheckbox(gfx, xPos, yOffset - 6, false);
+            DrawCheckbox(gfx, xPos, yOffset - 6, isObj6);
             gfx.DrawString("อื่นๆ (ระบุ)", _fontSmall, XBrushes.Black, new XPoint(xPos + 15, yOffset));
             xPos += 70;
             gfx.DrawLine(_thinPen, xPos, yOffset + 1, x + width - 5, yOffset + 1);
 
+            // Show other objective text if specified
+            if (isObj6 && !string.IsNullOrEmpty(data.OtherObjective))
+            {
+                gfx.DrawString(data.OtherObjective, _fontTiny, XBrushes.Black, new XPoint(xPos + 3, yOffset + 1));
+            }
+
             return currentY + rowHeight;
         }
 
+        // ✅ FIX 3: Draw Budget Section with all 5 items separated
         private double DrawBudgetSection(XGraphics gfx, TrainingRequestData data, double x, double y, double width)
         {
             double currentY = y;
-            double rowHeight = 30;
+            double rowHeight = 48; // Taller for 3 rows
 
             gfx.DrawLine(_borderPen, x, currentY, x + width, currentY);
             gfx.DrawLine(_borderPen, x, currentY + rowHeight, x + width, currentY + rowHeight);
@@ -638,44 +707,62 @@ namespace TrainingRequestApp.Services
             double xPos = x + 5;
             double yOffset = currentY + 10;
 
-            // Row 1
+            // Row 1: งบประมาณ
             gfx.DrawString("งบประมาณ:", _fontBold, XBrushes.Black, new XPoint(xPos, yOffset));
-            xPos += 75;
+            yOffset += 12;
 
-            DrawCheckbox(gfx, xPos, yOffset - 6, false);
+            // Row 2: ค่าลงทะเบียน/วิทยากร, ค่าวิทยากร, ค่าอุปกรณ์
+            xPos = x + 10;
+            DrawCheckbox(gfx, xPos, yOffset - 6, data.RegistrationCost > 0);
             gfx.DrawString("ค่าลงทะเบียน/วิทยากร:", _fontSmall, XBrushes.Black, new XPoint(xPos + 15, yOffset));
-            xPos += 135;
-            gfx.DrawLine(_thinPen, xPos, yOffset + 1, xPos + 60, yOffset + 1);
-            gfx.DrawString((data.RegistrationCost + data.InstructorFee).ToString("N2"), _fontSmall, XBrushes.Black, new XPoint(xPos + 3, yOffset));
-            gfx.DrawString("บาท", _fontSmall, XBrushes.Black, new XPoint(xPos + 65, yOffset));
+            xPos += 145;
+            gfx.DrawString(data.RegistrationCost.ToString("N2"), _fontSmall, XBrushes.Black, new XPoint(xPos, yOffset));
+            gfx.DrawString("บาท", _fontSmall, XBrushes.Black, new XPoint(xPos + 60, yOffset));
+
             xPos += 90;
-
-            DrawCheckbox(gfx, xPos, yOffset - 6, false);
-            gfx.DrawString("ค่าเอกสาร/อุปกรณ์:", _fontSmall, XBrushes.Black, new XPoint(xPos + 15, yOffset));
-            xPos += 125;
-            gfx.DrawLine(_thinPen, xPos, yOffset + 1, xPos + 60, yOffset + 1);
-            gfx.DrawString(data.EquipmentCost.ToString("N2"), _fontSmall, XBrushes.Black, new XPoint(xPos + 3, yOffset));
-            gfx.DrawString("บาท", _fontSmall, XBrushes.Black, new XPoint(xPos + 65, yOffset));
-
-            // Row 2
-            yOffset += 15;
-            xPos = x + 80;
-
-            DrawCheckbox(gfx, xPos, yOffset - 6, false);
-            gfx.DrawString("อื่นๆ (ระบุ)", _fontSmall, XBrushes.Black, new XPoint(xPos + 15, yOffset));
+            DrawCheckbox(gfx, xPos, yOffset - 6, data.InstructorFee > 0);
+            gfx.DrawString("ค่าวิทยากร:", _fontSmall, XBrushes.Black, new XPoint(xPos + 15, yOffset));
             xPos += 85;
-            gfx.DrawLine(_thinPen, xPos, yOffset + 1, xPos + 100, yOffset + 1);
-            xPos += 110;
+            gfx.DrawString(data.InstructorFee.ToString("N2"), _fontSmall, XBrushes.Black, new XPoint(xPos, yOffset));
+            gfx.DrawString("บาท", _fontSmall, XBrushes.Black, new XPoint(xPos + 60, yOffset));
 
+            yOffset += 12;
+
+            // Row 3: ค่าอุปกรณ์, ค่าอาหาร, อื่นๆ
+            xPos = x + 10;
+            DrawCheckbox(gfx, xPos, yOffset - 6, data.EquipmentCost > 0);
+            gfx.DrawString("ค่าอุปกรณ์:", _fontSmall, XBrushes.Black, new XPoint(xPos + 15, yOffset));
+            xPos += 85;
+            gfx.DrawString(data.EquipmentCost.ToString("N2"), _fontSmall, XBrushes.Black, new XPoint(xPos, yOffset));
+            gfx.DrawString("บาท", _fontSmall, XBrushes.Black, new XPoint(xPos + 60, yOffset));
+
+            xPos += 90;
+            DrawCheckbox(gfx, xPos, yOffset - 6, data.FoodCost > 0);
+            gfx.DrawString("ค่าอาหาร:", _fontSmall, XBrushes.Black, new XPoint(xPos + 15, yOffset));
+            xPos += 75;
+            gfx.DrawString(data.FoodCost.ToString("N2"), _fontSmall, XBrushes.Black, new XPoint(xPos, yOffset));
+            gfx.DrawString("บาท", _fontSmall, XBrushes.Black, new XPoint(xPos + 60, yOffset));
+
+            xPos += 90;
+            DrawCheckbox(gfx, xPos, yOffset - 6, data.OtherCost > 0);
+            gfx.DrawString("อื่นๆ:", _fontSmall, XBrushes.Black, new XPoint(xPos + 15, yOffset));
+            xPos += 50;
+            gfx.DrawString(data.OtherCost.ToString("N2"), _fontSmall, XBrushes.Black, new XPoint(xPos, yOffset));
+            gfx.DrawString("บาท", _fontSmall, XBrushes.Black, new XPoint(xPos + 60, yOffset));
+
+            yOffset += 12;
+
+            // Row 4: รวมสุทธิ
+            xPos = x + width - 180;
             gfx.DrawString("รวมสุทธิ:", _fontBold, XBrushes.Black, new XPoint(xPos, yOffset));
-            xPos += 60;
-            gfx.DrawLine(_thinPen, xPos, yOffset + 1, xPos + 80, yOffset + 1);
-            gfx.DrawString(data.TotalCost.ToString("N2"), _fontBold, XBrushes.Black, new XPoint(xPos + 3, yOffset));
-            gfx.DrawString("บาท", _fontBold, XBrushes.Black, new XPoint(xPos + 85, yOffset));
+            xPos += 65;
+            gfx.DrawString(data.TotalCost.ToString("N2"), _fontBold, XBrushes.Black, new XPoint(xPos, yOffset));
+            gfx.DrawString("บาท", _fontBold, XBrushes.Black, new XPoint(xPos + 80, yOffset));
 
             return currentY + rowHeight;
         }
 
+        // ✅ FIX 4 & 5: Draw Signature Section (Section Manager & Department Manager)
         private double DrawSignatureSection(XGraphics gfx, TrainingRequestData data, double x, double y, double width)
         {
             double currentY = y;
@@ -695,14 +782,17 @@ namespace TrainingRequestApp.Services
             double leftX = x;
             double rightX = x + halfWidth;
 
-            // Left: ต้นสังกัดทบทวน
+            // === LEFT: ต้นสังกัดทบทวน (Section Manager) - ✅ FIX 4 ===
             double leftY = currentY;
             gfx.DrawString("ต้นสังกัดทบทวน:", _fontBold, XBrushes.Black, new XPoint(leftX + 5, leftY));
             leftY += 15;
 
-            DrawCheckbox(gfx, leftX + 10, leftY - 6, false);
+            // Check if Section Manager approved (case insensitive)
+            bool isSectionApproved = data.Status_SectionManager?.ToUpper() == "APPROVED";
+
+            DrawCheckbox(gfx, leftX + 10, leftY - 6, isSectionApproved);
             gfx.DrawString("อนุมัติ", _fontSmall, XBrushes.Black, new XPoint(leftX + 25, leftY));
-            DrawCheckbox(gfx, leftX + 80, leftY - 6, false);
+            DrawCheckbox(gfx, leftX + 80, leftY - 6, !isSectionApproved);
             gfx.DrawString("ไม่อนุมัติ", _fontSmall, XBrushes.Black, new XPoint(leftX + 95, leftY));
             leftY += 20;
 
@@ -711,23 +801,45 @@ namespace TrainingRequestApp.Services
             leftY += 12;
             gfx.DrawString("(", _fontSmall, XBrushes.Black, new XPoint(leftX + 30, leftY));
             gfx.DrawLine(_thinPen, leftX + 40, leftY + 1, leftX + halfWidth - 30, leftY + 1);
-            gfx.DrawString(data.CreatedBy ?? "", _fontSmall, XBrushes.Black, new XPoint(leftX + 45, leftY));
+
+            // ✅ Show Section Manager ID when APPROVED
+            if (isSectionApproved)
+            {
+                gfx.DrawString(data.SectionManagerId ?? "", _fontSmall, XBrushes.Black, new XPoint(leftX + 45, leftY));
+            }
+
             gfx.DrawString(")", _fontSmall, XBrushes.Black, new XPoint(leftX + halfWidth - 25, leftY));
             leftY += 12;
             gfx.DrawString("ตำแหน่ง", _fontSmall, XBrushes.Black, new XPoint(leftX + 10, leftY));
             gfx.DrawLine(_thinPen, leftX + 50, leftY + 1, leftX + halfWidth - 20, leftY + 1);
-            gfx.DrawString(data.Position ?? "", _fontSmall, XBrushes.Black, new XPoint(leftX + 53, leftY));
 
             // Vertical separator
             gfx.DrawLine(_borderPen, rightX, currentY - 25, rightX, currentY + 75);
 
-            // Right: Reviewer signature
-            double rightY = currentY + 15;
+            // === RIGHT: ต้นสังกัดทบทวน (Department Manager) - ✅ FIX 5 ===
+            double rightY = currentY;
+
+            // Check if Department Manager approved (case insensitive)
+            bool isDepartmentApproved = data.Status_DepartmentManager?.ToUpper() == "APPROVED";
+
+            DrawCheckbox(gfx, rightX + 10, rightY - 6, isDepartmentApproved);
+            gfx.DrawString("อนุมัติ", _fontSmall, XBrushes.Black, new XPoint(rightX + 25, rightY));
+            DrawCheckbox(gfx, rightX + 80, rightY - 6, !isDepartmentApproved);
+            gfx.DrawString("ไม่อนุมัติ", _fontSmall, XBrushes.Black, new XPoint(rightX + 95, rightY));
+            rightY += 20;
+
             gfx.DrawString("ลงชื่อ", _fontSmall, XBrushes.Black, new XPoint(rightX + 10, rightY));
             gfx.DrawLine(_thinPen, rightX + 45, rightY + 1, rightX + halfWidth - 20, rightY + 1);
             rightY += 12;
             gfx.DrawString("(", _fontSmall, XBrushes.Black, new XPoint(rightX + 30, rightY));
             gfx.DrawLine(_thinPen, rightX + 40, rightY + 1, rightX + halfWidth - 30, rightY + 1);
+
+            // ✅ Show Department Manager ID when APPROVED
+            if (isDepartmentApproved)
+            {
+                gfx.DrawString(data.DepartmentManagerId ?? "", _fontSmall, XBrushes.Black, new XPoint(rightX + 45, rightY));
+            }
+
             gfx.DrawString(")", _fontSmall, XBrushes.Black, new XPoint(rightX + halfWidth - 25, rightY));
             rightY += 12;
             gfx.DrawString("ตำแหน่ง", _fontSmall, XBrushes.Black, new XPoint(rightX + 10, rightY));
@@ -806,10 +918,13 @@ namespace TrainingRequestApp.Services
 
         private async Task<TrainingRequestData> GetTrainingRequestDataAsync(int id)
         {
+            var data = new TrainingRequestData();
+
             using (SqlConnection conn = new SqlConnection(_connectionString))
             {
                 await conn.OpenAsync();
 
+                // Query 1: Main Training Request data
                 string query = @"
                     SELECT
                         DocNo, Company, TrainingType, Factory, Department, Position,
@@ -835,60 +950,82 @@ namespace TrainingRequestApp.Services
                     {
                         if (await reader.ReadAsync())
                         {
-                            return new TrainingRequestData
+                            data.DocNo = reader["DocNo"]?.ToString();
+                            data.Company = reader["Company"]?.ToString();
+                            data.TrainingType = reader["TrainingType"]?.ToString();
+                            data.Factory = reader["Factory"]?.ToString();
+                            data.Department = reader["Department"]?.ToString();
+                            data.Position = reader["Position"]?.ToString();
+                            data.SeminarTitle = reader["SeminarTitle"]?.ToString();
+                            data.TrainingLocation = reader["TrainingLocation"]?.ToString();
+                            data.Instructor = reader["Instructor"]?.ToString();
+                            data.StartDate = reader["StartDate"] != DBNull.Value ? (DateTime?)reader["StartDate"] : null;
+                            data.EndDate = reader["EndDate"] != DBNull.Value ? (DateTime?)reader["EndDate"] : null;
+                            data.TotalPeople = reader["TotalPeople"] != DBNull.Value ? (int)reader["TotalPeople"] : 0;
+                            data.PerPersonTrainingHours = reader["PerPersonTrainingHours"] != DBNull.Value ? (int)reader["PerPersonTrainingHours"] : 0;
+                            data.RegistrationCost = reader["RegistrationCost"] != DBNull.Value ? (decimal)reader["RegistrationCost"] : 0;
+                            data.InstructorFee = reader["InstructorFee"] != DBNull.Value ? (decimal)reader["InstructorFee"] : 0;
+                            data.EquipmentCost = reader["EquipmentCost"] != DBNull.Value ? (decimal)reader["EquipmentCost"] : 0;
+                            data.FoodCost = reader["FoodCost"] != DBNull.Value ? (decimal)reader["FoodCost"] : 0;
+                            data.OtherCost = reader["OtherCost"] != DBNull.Value ? (decimal)reader["OtherCost"] : 0;
+                            data.TotalCost = reader["TotalCost"] != DBNull.Value ? (decimal)reader["TotalCost"] : 0;
+                            data.CostPerPerson = reader["CostPerPerson"] != DBNull.Value ? (decimal)reader["CostPerPerson"] : 0;
+                            data.TrainingObjective = reader["TrainingObjective"]?.ToString();
+                            data.OtherObjective = reader["OtherObjective"]?.ToString();
+                            data.ExpectedOutcome = reader["ExpectedOutcome"]?.ToString();
+                            data.Status = reader["Status"]?.ToString();
+                            data.CreatedBy = reader["CreatedBy"]?.ToString();
+                            data.CreatedDate = reader["CreatedDate"] != DBNull.Value ? (DateTime)reader["CreatedDate"] : DateTime.Now;
+                            data.SectionManagerId = reader["SectionManagerId"]?.ToString();
+                            data.Status_SectionManager = reader["Status_SectionManager"]?.ToString();
+                            data.ApproveInfo_SectionManager = reader["ApproveInfo_SectionManager"]?.ToString();
+                            data.DepartmentManagerId = reader["DepartmentManagerId"]?.ToString();
+                            data.Status_DepartmentManager = reader["Status_DepartmentManager"]?.ToString();
+                            data.ApproveInfo_DepartmentManager = reader["ApproveInfo_DepartmentManager"]?.ToString();
+                            data.HRDAdminId = reader["HRDAdminId"]?.ToString();
+                            data.Status_HRDAdmin = reader["Status_HRDAdmin"]?.ToString();
+                            data.ApproveInfo_HRDAdmin = reader["ApproveInfo_HRDAdmin"]?.ToString();
+                            data.HRDConfirmationId = reader["HRDConfirmationId"]?.ToString();
+                            data.Status_HRDConfirmation = reader["Status_HRDConfirmation"]?.ToString();
+                            data.ApproveInfo_HRDConfirmation = reader["ApproveInfo_HRDConfirmation"]?.ToString();
+                            data.ManagingDirectorId = reader["ManagingDirectorId"]?.ToString();
+                            data.Status_ManagingDirector = reader["Status_ManagingDirector"]?.ToString();
+                            data.ApproveInfo_ManagingDirector = reader["ApproveInfo_ManagingDirector"]?.ToString();
+                        }
+                    }
+                }
+
+                // ✅ Query 2: Employees from TrainingRequestEmployees table
+                string employeeQuery = @"
+                    SELECT EmployeeName, EmployeeCode, Level
+                    FROM TrainingRequestEmployees
+                    WHERE TrainingRequestId = @Id
+                    ORDER BY Id";
+
+                using (SqlCommand cmd = new SqlCommand(employeeQuery, conn))
+                {
+                    cmd.Parameters.AddWithValue("@Id", id);
+
+                    using (var reader = await cmd.ExecuteReaderAsync())
+                    {
+                        while (await reader.ReadAsync())
+                        {
+                            data.Employees.Add(new EmployeeData
                             {
-                                DocNo = reader["DocNo"]?.ToString(),
-                                Company = reader["Company"]?.ToString(),
-                                TrainingType = reader["TrainingType"]?.ToString(),
-                                Factory = reader["Factory"]?.ToString(),
-                                Department = reader["Department"]?.ToString(),
-                                Position = reader["Position"]?.ToString(),
-                                SeminarTitle = reader["SeminarTitle"]?.ToString(),
-                                TrainingLocation = reader["TrainingLocation"]?.ToString(),
-                                Instructor = reader["Instructor"]?.ToString(),
-                                StartDate = reader["StartDate"] != DBNull.Value ? (DateTime?)reader["StartDate"] : null,
-                                EndDate = reader["EndDate"] != DBNull.Value ? (DateTime?)reader["EndDate"] : null,
-                                TotalPeople = reader["TotalPeople"] != DBNull.Value ? (int)reader["TotalPeople"] : 0,
-                                PerPersonTrainingHours = reader["PerPersonTrainingHours"] != DBNull.Value ? (int)reader["PerPersonTrainingHours"] : 0,
-                                RegistrationCost = reader["RegistrationCost"] != DBNull.Value ? (decimal)reader["RegistrationCost"] : 0,
-                                InstructorFee = reader["InstructorFee"] != DBNull.Value ? (decimal)reader["InstructorFee"] : 0,
-                                EquipmentCost = reader["EquipmentCost"] != DBNull.Value ? (decimal)reader["EquipmentCost"] : 0,
-                                FoodCost = reader["FoodCost"] != DBNull.Value ? (decimal)reader["FoodCost"] : 0,
-                                OtherCost = reader["OtherCost"] != DBNull.Value ? (decimal)reader["OtherCost"] : 0,
-                                TotalCost = reader["TotalCost"] != DBNull.Value ? (decimal)reader["TotalCost"] : 0,
-                                CostPerPerson = reader["CostPerPerson"] != DBNull.Value ? (decimal)reader["CostPerPerson"] : 0,
-                                TrainingObjective = reader["TrainingObjective"]?.ToString(),
-                                OtherObjective = reader["OtherObjective"]?.ToString(),
-                                ExpectedOutcome = reader["ExpectedOutcome"]?.ToString(),
-                                Status = reader["Status"]?.ToString(),
-                                CreatedBy = reader["CreatedBy"]?.ToString(),
-                                CreatedDate = reader["CreatedDate"] != DBNull.Value ? (DateTime)reader["CreatedDate"] : DateTime.Now,
-                                SectionManagerId = reader["SectionManagerId"]?.ToString(),
-                                Status_SectionManager = reader["Status_SectionManager"]?.ToString(),
-                                ApproveInfo_SectionManager = reader["ApproveInfo_SectionManager"]?.ToString(),
-                                DepartmentManagerId = reader["DepartmentManagerId"]?.ToString(),
-                                Status_DepartmentManager = reader["Status_DepartmentManager"]?.ToString(),
-                                ApproveInfo_DepartmentManager = reader["ApproveInfo_DepartmentManager"]?.ToString(),
-                                HRDAdminId = reader["HRDAdminId"]?.ToString(),
-                                Status_HRDAdmin = reader["Status_HRDAdmin"]?.ToString(),
-                                ApproveInfo_HRDAdmin = reader["ApproveInfo_HRDAdmin"]?.ToString(),
-                                HRDConfirmationId = reader["HRDConfirmationId"]?.ToString(),
-                                Status_HRDConfirmation = reader["Status_HRDConfirmation"]?.ToString(),
-                                ApproveInfo_HRDConfirmation = reader["ApproveInfo_HRDConfirmation"]?.ToString(),
-                                ManagingDirectorId = reader["ManagingDirectorId"]?.ToString(),
-                                Status_ManagingDirector = reader["Status_ManagingDirector"]?.ToString(),
-                                ApproveInfo_ManagingDirector = reader["ApproveInfo_ManagingDirector"]?.ToString()
-                            };
+                                EmployeeName = reader["EmployeeName"]?.ToString(),
+                                EmployeeCode = reader["EmployeeCode"]?.ToString(),
+                                Level = reader["Level"]?.ToString() // ตำแหน่ง = Level
+                            });
                         }
                     }
                 }
             }
 
-            return null;
+            return data;
         }
 
         // ==========================================
-        // DATA CLASS
+        // DATA CLASSES
         // ==========================================
 
         private class TrainingRequestData
@@ -940,6 +1077,17 @@ namespace TrainingRequestApp.Services
             public string ManagingDirectorId { get; set; }
             public string Status_ManagingDirector { get; set; }
             public string ApproveInfo_ManagingDirector { get; set; }
+
+            // ✅ NEW: Employee List
+            public List<EmployeeData> Employees { get; set; } = new List<EmployeeData>();
+        }
+
+        // ✅ NEW: Employee Data Class
+        private class EmployeeData
+        {
+            public string EmployeeName { get; set; }
+            public string EmployeeCode { get; set; }
+            public string Level { get; set; } // ตำแหน่ง (NOT Position!)
         }
     }
 }
