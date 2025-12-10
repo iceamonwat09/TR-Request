@@ -12,7 +12,9 @@ namespace TrainingRequestApp.Services
     /// PDF Report Service - แบบฟอร์มคำขอฝึกอบรม (Training Request Form)
     /// ตรงตาม HTML Template 100%
     ///
-    /// Version: 2.0 (Updated with 7 enhancements)
+    /// Version: 2.1 (Enhanced with Approver Levels and ApproveInfo display)
+    /// - v2.0: Initial 7 enhancements (Employee list, objectives, budget, approvals)
+    /// - v2.1: Added approver Level display + ApproveInfo datetime for all approvers
     /// </summary>
     public class PdfReportService : IPdfReportService
     {
@@ -385,29 +387,64 @@ namespace TrainingRequestApp.Services
             // === Row 5: ตารางประวัติการอบรม ===
             currentY = DrawTrainingHistoryTable(gfx, data, contentX, currentY, contentWidth);
 
-            // === Row 6: ตรวจสอบโดย & อนุมัติผลการตรวจสอบ ===
+            // === Row 6: ตรวจสอบโดย & อนุมัติผลการตรวจสอบ (v2.1 - 2 คอลัมน์) ===
             currentY = DrawFieldRow(gfx, contentX, currentY, contentWidth, () =>
             {
-                double xPos = contentX + 5;
                 double halfWidth = contentWidth / 2;
+                double leftX = contentX + 5;
+                double rightX = contentX + halfWidth + 5;
 
-                // Left: ตรวจสอบโดย
-                gfx.DrawString("ตรวจสอบโดย:", _fontBold, XBrushes.Black, new XPoint(xPos, currentY + 12));
-                gfx.DrawLine(_thinPen, xPos + 70, currentY + 13, xPos + halfWidth - 50, currentY + 13);
-                gfx.DrawString("(   /   /   )", _fontSmall, XBrushes.Black, new XPoint(xPos + halfWidth - 45, currentY + 12));
+                // === LEFT: ตรวจสอบโดย (HRD Admin) ===
+                gfx.DrawString("ตรวจสอบโดย:", _fontBold, XBrushes.Black, new XPoint(leftX, currentY + 12));
+
+                // แสดง ApproveInfo_HRDAdmin ถ้า APPROVED
+                bool isHRDAdminApproved = data.Status_HRDAdmin?.ToUpper() == "APPROVED";
+                if (isHRDAdminApproved && !string.IsNullOrEmpty(data.ApproveInfo_HRDAdmin))
+                {
+                    gfx.DrawString(data.ApproveInfo_HRDAdmin, _fontSmall, XBrushes.Black, new XPoint(leftX + 75, currentY + 12));
+                }
 
                 // Vertical separator
                 gfx.DrawLine(_borderPen, contentX + halfWidth, currentY, contentX + halfWidth, currentY + 18);
 
-                // Right: อนุมัติผลการตรวจสอบ
-                xPos = contentX + halfWidth + 5;
-                gfx.DrawString("อนุมัติผลการตรวจสอบ:", _fontBold, XBrushes.Black, new XPoint(xPos, currentY + 12));
-                xPos += 130;
-                DrawCheckbox(gfx, xPos, currentY + 4, false);
-                gfx.DrawString("อนุมัติ", _fontSmall, XBrushes.Black, new XPoint(xPos + 15, currentY + 12));
-                xPos += 60;
-                DrawCheckbox(gfx, xPos, currentY + 4, false);
-                gfx.DrawString("ไม่อนุมัติ", _fontSmall, XBrushes.Black, new XPoint(xPos + 15, currentY + 12));
+                // === RIGHT: อนุมัติผลการตรวจสอบ (HRD Confirmation) ===
+                gfx.DrawString("อนุมัติผลการตรวจสอบ:", _fontBold, XBrushes.Black, new XPoint(rightX, currentY + 12));
+
+                // แสดง ApproveInfo_HRDConfirmation ถ้า APPROVED
+                bool isHRDConfirmationApproved = data.Status_HRDConfirmation?.ToUpper() == "APPROVED";
+                if (isHRDConfirmationApproved && !string.IsNullOrEmpty(data.ApproveInfo_HRDConfirmation))
+                {
+                    gfx.DrawString(data.ApproveInfo_HRDConfirmation, _fontSmall, XBrushes.Black, new XPoint(rightX + 130, currentY + 12));
+                }
+            });
+
+            // === Row 7: ตำแหน่ง (v2.1 - 2 คอลัมน์) ===
+            currentY = DrawFieldRow(gfx, contentX, currentY, contentWidth, () =>
+            {
+                double halfWidth = contentWidth / 2;
+                double leftX = contentX + 5;
+                double rightX = contentX + halfWidth + 5;
+
+                // === LEFT: ตำแหน่ง (HRD Admin Level) ===
+                gfx.DrawString("ตำแหน่ง:", _fontSmall, XBrushes.Black, new XPoint(leftX, currentY + 12));
+
+                bool isHRDAdminApproved = data.Status_HRDAdmin?.ToUpper() == "APPROVED";
+                if (isHRDAdminApproved && !string.IsNullOrEmpty(data.HRDAdminLevel))
+                {
+                    gfx.DrawString(data.HRDAdminLevel, _fontSmall, XBrushes.Black, new XPoint(leftX + 55, currentY + 12));
+                }
+
+                // Vertical separator
+                gfx.DrawLine(_borderPen, contentX + halfWidth, currentY, contentX + halfWidth, currentY + 18);
+
+                // === RIGHT: ตำแหน่ง (HRD Confirmation Level) ===
+                gfx.DrawString("ตำแหน่ง:", _fontSmall, XBrushes.Black, new XPoint(rightX, currentY + 12));
+
+                bool isHRDConfirmationApproved = data.Status_HRDConfirmation?.ToUpper() == "APPROVED";
+                if (isHRDConfirmationApproved && !string.IsNullOrEmpty(data.HRDConfirmationLevel))
+                {
+                    gfx.DrawString(data.HRDConfirmationLevel, _fontSmall, XBrushes.Black, new XPoint(rightX + 55, currentY + 12));
+                }
             });
 
             return currentY - startY;
@@ -457,23 +494,36 @@ namespace TrainingRequestApp.Services
             gfx.DrawLine(_thinPen, leftX + 55, leftY + 9, leftX + halfWidth - 10, leftY + 9);
             leftY += 20;
 
-            // Signature - Show Managing Director ID when APPROVED
+            // ✅ v2.1: ลงชื่อ (แสดง ManagingDirectorId)
             gfx.DrawString("ลงชื่อ", _fontSmall, XBrushes.Black, new XPoint(leftX + 10, leftY + 8));
             gfx.DrawLine(_thinPen, leftX + 45, leftY + 9, leftX + halfWidth - 10, leftY + 9);
+
+            if (isManagingApproved && !string.IsNullOrEmpty(data.ManagingDirectorId))
+            {
+                gfx.DrawString(data.ManagingDirectorId, _fontSmall, XBrushes.Black, new XPoint(leftX + 50, leftY + 8));
+            }
             leftY += 15;
+
+            // ✅ v2.1: ApproveInfo ในวงเล็บ
             gfx.DrawString("(", _fontSmall, XBrushes.Black, new XPoint(leftX + 30, leftY + 8));
             gfx.DrawLine(_thinPen, leftX + 40, leftY + 9, leftX + halfWidth - 20, leftY + 9);
 
-            // ✅ Show Managing Director ID when APPROVED
-            if (isManagingApproved)
+            if (isManagingApproved && !string.IsNullOrEmpty(data.ApproveInfo_ManagingDirector))
             {
-                gfx.DrawString(data.ManagingDirectorId ?? "", _fontSmall, XBrushes.Black, new XPoint(leftX + 45, leftY + 8));
+                gfx.DrawString(data.ApproveInfo_ManagingDirector, _fontSmall, XBrushes.Black, new XPoint(leftX + 45, leftY + 8));
             }
 
             gfx.DrawString(")", _fontSmall, XBrushes.Black, new XPoint(leftX + halfWidth - 15, leftY + 8));
             leftY += 15;
+
+            // ✅ v2.1: ตำแหน่ง (แสดง Level)
             gfx.DrawString("ตำแหน่ง", _fontSmall, XBrushes.Black, new XPoint(leftX + 10, leftY + 8));
             gfx.DrawLine(_thinPen, leftX + 55, leftY + 9, leftX + halfWidth - 10, leftY + 9);
+
+            if (isManagingApproved && !string.IsNullOrEmpty(data.ManagingDirectorLevel))
+            {
+                gfx.DrawString(data.ManagingDirectorLevel, _fontSmall, XBrushes.Black, new XPoint(leftX + 60, leftY + 8));
+            }
             leftY += 20;
 
             // Vertical separator between columns
@@ -796,22 +846,36 @@ namespace TrainingRequestApp.Services
             gfx.DrawString("ไม่อนุมัติ", _fontSmall, XBrushes.Black, new XPoint(leftX + 95, leftY));
             leftY += 20;
 
+            // ✅ v2.1: ลงชื่อ (แสดง ManagerId)
             gfx.DrawString("ลงชื่อ", _fontSmall, XBrushes.Black, new XPoint(leftX + 10, leftY));
             gfx.DrawLine(_thinPen, leftX + 45, leftY + 1, leftX + halfWidth - 20, leftY + 1);
+
+            if (isSectionApproved && !string.IsNullOrEmpty(data.SectionManagerId))
+            {
+                gfx.DrawString(data.SectionManagerId, _fontSmall, XBrushes.Black, new XPoint(leftX + 50, leftY));
+            }
             leftY += 12;
+
+            // ✅ v2.1: ApproveInfo ในวงเล็บ
             gfx.DrawString("(", _fontSmall, XBrushes.Black, new XPoint(leftX + 30, leftY));
             gfx.DrawLine(_thinPen, leftX + 40, leftY + 1, leftX + halfWidth - 30, leftY + 1);
 
-            // ✅ Show Section Manager ID when APPROVED
-            if (isSectionApproved)
+            if (isSectionApproved && !string.IsNullOrEmpty(data.ApproveInfo_SectionManager))
             {
-                gfx.DrawString(data.SectionManagerId ?? "", _fontSmall, XBrushes.Black, new XPoint(leftX + 45, leftY));
+                gfx.DrawString(data.ApproveInfo_SectionManager, _fontSmall, XBrushes.Black, new XPoint(leftX + 45, leftY));
             }
 
             gfx.DrawString(")", _fontSmall, XBrushes.Black, new XPoint(leftX + halfWidth - 25, leftY));
             leftY += 12;
+
+            // ✅ v2.1: ตำแหน่ง (แสดง Level)
             gfx.DrawString("ตำแหน่ง", _fontSmall, XBrushes.Black, new XPoint(leftX + 10, leftY));
             gfx.DrawLine(_thinPen, leftX + 50, leftY + 1, leftX + halfWidth - 20, leftY + 1);
+
+            if (isSectionApproved && !string.IsNullOrEmpty(data.SectionManagerLevel))
+            {
+                gfx.DrawString(data.SectionManagerLevel, _fontSmall, XBrushes.Black, new XPoint(leftX + 55, leftY));
+            }
 
             // Vertical separator
             gfx.DrawLine(_borderPen, rightX, currentY - 25, rightX, currentY + 75);
@@ -828,22 +892,36 @@ namespace TrainingRequestApp.Services
             gfx.DrawString("ไม่อนุมัติ", _fontSmall, XBrushes.Black, new XPoint(rightX + 95, rightY));
             rightY += 20;
 
+            // ✅ v2.1: ลงชื่อ (แสดง ManagerId)
             gfx.DrawString("ลงชื่อ", _fontSmall, XBrushes.Black, new XPoint(rightX + 10, rightY));
             gfx.DrawLine(_thinPen, rightX + 45, rightY + 1, rightX + halfWidth - 20, rightY + 1);
+
+            if (isDepartmentApproved && !string.IsNullOrEmpty(data.DepartmentManagerId))
+            {
+                gfx.DrawString(data.DepartmentManagerId, _fontSmall, XBrushes.Black, new XPoint(rightX + 50, rightY));
+            }
             rightY += 12;
+
+            // ✅ v2.1: ApproveInfo ในวงเล็บ
             gfx.DrawString("(", _fontSmall, XBrushes.Black, new XPoint(rightX + 30, rightY));
             gfx.DrawLine(_thinPen, rightX + 40, rightY + 1, rightX + halfWidth - 30, rightY + 1);
 
-            // ✅ Show Department Manager ID when APPROVED
-            if (isDepartmentApproved)
+            if (isDepartmentApproved && !string.IsNullOrEmpty(data.ApproveInfo_DepartmentManager))
             {
-                gfx.DrawString(data.DepartmentManagerId ?? "", _fontSmall, XBrushes.Black, new XPoint(rightX + 45, rightY));
+                gfx.DrawString(data.ApproveInfo_DepartmentManager, _fontSmall, XBrushes.Black, new XPoint(rightX + 45, rightY));
             }
 
             gfx.DrawString(")", _fontSmall, XBrushes.Black, new XPoint(rightX + halfWidth - 25, rightY));
             rightY += 12;
+
+            // ✅ v2.1: ตำแหน่ง (แสดง Level)
             gfx.DrawString("ตำแหน่ง", _fontSmall, XBrushes.Black, new XPoint(rightX + 10, rightY));
             gfx.DrawLine(_thinPen, rightX + 50, rightY + 1, rightX + halfWidth - 20, rightY + 1);
+
+            if (isDepartmentApproved && !string.IsNullOrEmpty(data.DepartmentManagerLevel))
+            {
+                gfx.DrawString(data.DepartmentManagerLevel, _fontSmall, XBrushes.Black, new XPoint(rightX + 55, rightY));
+            }
 
             // Bottom border
             currentY += rowHeight;
@@ -924,23 +1002,35 @@ namespace TrainingRequestApp.Services
             {
                 await conn.OpenAsync();
 
-                // Query 1: Main Training Request data
+                // Query 1: Main Training Request data + Approver Levels (v2.1)
                 string query = @"
                     SELECT
-                        DocNo, Company, TrainingType, Factory, Department, Position,
-                        SeminarTitle, TrainingLocation, Instructor,
-                        StartDate, EndDate, TotalPeople, PerPersonTrainingHours,
-                        RegistrationCost, InstructorFee, EquipmentCost, FoodCost, OtherCost,
-                        TotalCost, CostPerPerson,
-                        TrainingObjective, OtherObjective, ExpectedOutcome,
-                        Status, CreatedBy, CreatedDate,
-                        SectionManagerId, Status_SectionManager, ApproveInfo_SectionManager,
-                        DepartmentManagerId, Status_DepartmentManager, ApproveInfo_DepartmentManager,
-                        HRDAdminid AS HRDAdminId, Status_HRDAdmin, ApproveInfo_HRDAdmin,
-                        HRDConfirmationid AS HRDConfirmationId, Status_HRDConfirmation, ApproveInfo_HRDConfirmation,
-                        ManagingDirectorId, Status_ManagingDirector, ApproveInfo_ManagingDirector
-                    FROM TrainingRequests
-                    WHERE Id = @Id AND IsActive = 1";
+                        tr.DocNo, tr.Company, tr.TrainingType, tr.Factory, tr.Department, tr.Position,
+                        tr.SeminarTitle, tr.TrainingLocation, tr.Instructor,
+                        tr.StartDate, tr.EndDate, tr.TotalPeople, tr.PerPersonTrainingHours,
+                        tr.RegistrationCost, tr.InstructorFee, tr.EquipmentCost, tr.FoodCost, tr.OtherCost,
+                        tr.TotalCost, tr.CostPerPerson,
+                        tr.TrainingObjective, tr.OtherObjective, tr.ExpectedOutcome,
+                        tr.Status, tr.CreatedBy, tr.CreatedDate,
+                        tr.SectionManagerId, tr.Status_SectionManager, tr.ApproveInfo_SectionManager,
+                        tr.DepartmentManagerId, tr.Status_DepartmentManager, tr.ApproveInfo_DepartmentManager,
+                        tr.HRDAdminid AS HRDAdminId, tr.Status_HRDAdmin, tr.ApproveInfo_HRDAdmin,
+                        tr.HRDConfirmationid AS HRDConfirmationId, tr.Status_HRDConfirmation, tr.ApproveInfo_HRDConfirmation,
+                        tr.ManagingDirectorId, tr.Status_ManagingDirector, tr.ApproveInfo_ManagingDirector,
+
+                        e_sm.Level AS SectionManagerLevel,
+                        e_dm.Level AS DepartmentManagerLevel,
+                        e_ha.Level AS HRDAdminLevel,
+                        e_hc.Level AS HRDConfirmationLevel,
+                        e_md.Level AS ManagingDirectorLevel
+
+                    FROM TrainingRequests tr
+                    LEFT JOIN Employees e_sm ON tr.SectionManagerId = e_sm.Email
+                    LEFT JOIN Employees e_dm ON tr.DepartmentManagerId = e_dm.Email
+                    LEFT JOIN Employees e_ha ON tr.HRDAdminid = e_ha.Email
+                    LEFT JOIN Employees e_hc ON tr.HRDConfirmationid = e_hc.Email
+                    LEFT JOIN Employees e_md ON tr.ManagingDirectorId = e_md.Email
+                    WHERE tr.Id = @Id AND tr.IsActive = 1";
 
                 using (SqlCommand cmd = new SqlCommand(query, conn))
                 {
@@ -991,6 +1081,13 @@ namespace TrainingRequestApp.Services
                             data.ManagingDirectorId = reader["ManagingDirectorId"]?.ToString();
                             data.Status_ManagingDirector = reader["Status_ManagingDirector"]?.ToString();
                             data.ApproveInfo_ManagingDirector = reader["ApproveInfo_ManagingDirector"]?.ToString();
+
+                            // ✅ v2.1: Read Approver Levels
+                            data.SectionManagerLevel = reader["SectionManagerLevel"]?.ToString();
+                            data.DepartmentManagerLevel = reader["DepartmentManagerLevel"]?.ToString();
+                            data.HRDAdminLevel = reader["HRDAdminLevel"]?.ToString();
+                            data.HRDConfirmationLevel = reader["HRDConfirmationLevel"]?.ToString();
+                            data.ManagingDirectorLevel = reader["ManagingDirectorLevel"]?.ToString();
                         }
                     }
                 }
@@ -1077,6 +1174,13 @@ namespace TrainingRequestApp.Services
             public string ManagingDirectorId { get; set; }
             public string Status_ManagingDirector { get; set; }
             public string ApproveInfo_ManagingDirector { get; set; }
+
+            // ✅ NEW v2.1: Approver Levels (from Employees table)
+            public string SectionManagerLevel { get; set; }
+            public string DepartmentManagerLevel { get; set; }
+            public string HRDAdminLevel { get; set; }
+            public string HRDConfirmationLevel { get; set; }
+            public string ManagingDirectorLevel { get; set; }
 
             // ✅ NEW: Employee List
             public List<EmployeeData> Employees { get; set; } = new List<EmployeeData>();
