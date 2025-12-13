@@ -552,7 +552,7 @@
         }
 
         function viewReport(id) {
-            window.location.href = '@Url.Action("Details", "TrainingRequest")/' + id;
+            window.location.href = '@Url.Action("ExportTrainingRequestPdf", "Home")?id=' + id;
         }
 
         function viewWorkflow(docNo) {
