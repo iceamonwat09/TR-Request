@@ -94,7 +94,7 @@
 
                                     <!-- ✅ เพิ่ม Position Dropdown ใหม่ -->
                                     <div class="form-group">
-                                        <label class="form-label fw-bold">👔 ตำแหน่ง</label>
+                                        <label class="form-label fw-bold">👔 แผนก</label>
                                         <select id="positionSelect" name="Position" class="form-select form-select-lg" style="border-radius: 10px;" disabled>
                                             <option value="">-- เลือกฝ่ายก่อน --</option>
                                         </select>
@@ -647,7 +647,7 @@
                                                             <th class="text-center py-3 fw-bold border-2" style="min-width: 80px; vertical-align: middle;">ลำดับ</th>
                                                             <th class="text-center py-3 fw-bold border-2" style="min-width: 100px; vertical-align: middle;">รหัส</th>
                                                             <th class="text-center py-3 fw-bold border-2" style="min-width: 150px; vertical-align: middle;">ชื่อ - นามสกุล</th>
-                                                            <th class="text-center py-3 fw-bold border-2" style="min-width: 120px; vertical-align: middle;">ตำแหน่ง</th>
+                                                            <th class="text-center py-3 fw-bold border-2" style="min-width: 120px; vertical-align: middle;">แผนก</th>
                                                             <th class="text-center py-3 fw-bold border-2" colspan="2" style="background-color: #e3f2fd; min-width: 200px;">ประวัติการอบรม ไม่รวมครั้งนี้</th>
                                                             <th class="text-center py-3 fw-bold border-2" colspan="2" style="background-color: #f3e5f5; min-width: 200px;">ประวัติการอบรม ในครั้งนี้</th>
                                                             <th class="text-center py-3 fw-bold border-2" style="min-width: 140px; vertical-align: middle;">
@@ -707,7 +707,7 @@
                                 <div class="form-group mt-3">
                                     <label class="form-label fw-bold">
                                         👤 Section Manager
-                                        <small class="text-muted">(กรองจาก ฝ่าย + ตำแหน่งที่เลือก)</small>
+                                        <small class="text-muted">(กรองจาก ฝ่าย + แผนกที่เลือก)</small>
                                     </label>
                                     <select id="sectionManagerSelect" class="form-select form-select-lg" style="width: 100%; border-radius: 10px;">
                                         <option value="">-- เลือก Section Manager --</option>
@@ -718,7 +718,7 @@
                                 <div class="form-group mt-3">
                                     <label class="form-label fw-bold">
                                         👤 Department Manager
-                                        <small class="text-muted">(กรองจาก ฝ่าย + ตำแหน่งที่เลือก)</small>
+                                        <small class="text-muted">(กรองจาก ฝ่าย + แผนกที่เลือก)</small>
                                     </label>
                                     <select id="departmentManagerSelect" class="form-select form-select-lg" style="width: 100%; border-radius: 10px;">
                                         <option value="">-- เลือก Department Manager --</option>
@@ -820,7 +820,7 @@
                                     <p class="form-control-plaintext fw-semibold" id="displayFullName">-</p>
                                 </div>
                                 <div class="col-md-6">
-                                    <label class="form-label fw-bold">ตำแหน่ง:</label>
+                                    <label class="form-label fw-bold">แผนก:</label>
                                     <p class="form-control-plaintext fw-semibold" id="displayPosition">-</p>
                                 </div>
                                 <div class="col-md-6">
@@ -1489,7 +1489,7 @@
 
                     if (!department || !position) {
                         event.preventDefault();
-                        alert('⚠️ กรุณาเลือก ฝ่าย และ ตำแหน่ง ก่อนค้นหาพนักงาน');
+                        alert('⚠️ กรุณาเลือก ฝ่าย และ แผนก ก่อนค้นหาพนักงาน');
                         return false;
                     }
                 });
@@ -2322,12 +2322,12 @@
             const positions = await response.json();
 
             // เคลียร์และเพิ่ม options ใหม่
-            positionSelect.innerHTML = '<option value="">-- เลือกตำแหน่ง --</option>';
+            positionSelect.innerHTML = '<option value="">-- เลือกแผนก --</option>';
 
             if (positions.length === 0) {
-                positionSelect.innerHTML = '<option value="">-- ไม่มีตำแหน่งในฝ่ายนี้ --</option>';
+                positionSelect.innerHTML = '<option value="">-- ไม่มีแผนกในฝ่ายนี้ --</option>';
                 positionSelect.disabled = true;
-                console.warn('⚠️ ไม่พบตำแหน่งในฝ่าย:', department);
+                console.warn('⚠️ ไม่พบแผนกในฝ่าย:', department);
                 return;
             }
 
@@ -2347,7 +2347,7 @@
             console.error('❌ Error loading positions:', error);
             positionSelect.innerHTML = '<option value="">-- เกิดข้อผิดพลาด --</option>';
             positionSelect.disabled = true;
-            alert('⚠️ ไม่สามารถโหลดข้อมูลตำแหน่งได้ กรุณาลองใหม่อีกครั้ง');
+            alert('⚠️ ไม่สามารถโหลดข้อมูลแผนกได้ กรุณาลองใหม่อีกครั้ง');
         }
     });
 

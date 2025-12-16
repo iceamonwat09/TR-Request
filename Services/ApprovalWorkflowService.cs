@@ -56,7 +56,7 @@ namespace TrainingRequestApp.Services
         {
             return role switch
             {
-                "SectionManager" => "ผู้จัดการแผนก (Section Manager)",
+                "SectionManager" => "ผู้จัดการส่วน (Section Manager)",
                 "DepartmentManager" => "ผู้จัดการฝ่าย (Department Manager)",
                 "HRDAdmin" => "เจ้าหน้าที่พัฒนาบุคลากร (HRD Admin)",
                 "HRDConfirmation" => "ผู้รับรองการฝึกอบรม (HRD Confirmation)",
@@ -902,7 +902,7 @@ namespace TrainingRequestApp.Services
 
             string approverRoleName = statusWaitingFor switch
             {
-                "WAITING_FOR_SECTION_MANAGER" => "ผู้จัดการแผนก (Section Manager)",
+                "WAITING_FOR_SECTION_MANAGER" => "ผู้จัดการส่วน (Section Manager)",
                 "WAITING_FOR_DEPARTMENT_MANAGER" => "ผู้จัดการฝ่าย (Department Manager)",
                 "WAITING_FOR_HRD_ADMIN" => "เจ้าหน้าที่พัฒนาบุคลากร (HRD Admin)",
                 "WAITING_FOR_HRD_CONFIRMATION" => "ผู้รับรองการฝึกอบรม (HRD Confirmation)",
@@ -989,7 +989,7 @@ namespace TrainingRequestApp.Services
 
             string approverRoleName = statusWaitingFor switch
             {
-                "WAITING_FOR_SECTION_MANAGER" => "ผู้จัดการแผนก (Section Manager)",
+                "WAITING_FOR_SECTION_MANAGER" => "ผู้จัดการส่วน (Section Manager)",
                 "WAITING_FOR_DEPARTMENT_MANAGER" => "ผู้จัดการฝ่าย (Department Manager)",
                 "WAITING_FOR_HRD_ADMIN" => "เจ้าหน้าที่พัฒนาบุคลากร (HRD Admin)",
                 "WAITING_FOR_HRD_CONFIRMATION" => "ผู้รับรองการฝึกอบรม (HRD Confirmation)",
@@ -1367,7 +1367,7 @@ namespace TrainingRequestApp.Services
 
             var uniqueEmails = allEmails.Distinct().ToArray();
 
-            await _emailService.SendEmailToMultipleAsync(uniqueEmails, subject, body, request.Id, "FINAL_APPROVAL", request.DocNo);
+            await _emailService.SendEmailToMultipleRecipientsAsync(uniqueEmails, subject, body, request.Id, "FINAL_APPROVAL", request.DocNo);
         }
 
         private string GenerateApprovalStatusHtml(TrainingRequestEditViewModel request)
@@ -1375,7 +1375,7 @@ namespace TrainingRequestApp.Services
             return $@"
 <table style='width: 100%; border-collapse: collapse;'>
     <tr style='border-bottom: 1px solid #e0e0e0;'>
-        <td style='padding: 10px; font-weight: bold;'>ผู้จัดการแผนก (Section Manager)</td>
+        <td style='padding: 10px; font-weight: bold;'>ผู้จัดการส่วน (Section Manager)</td>
         <td style='padding: 10px;'>{request.SectionManagerId ?? "-"}</td>
         <td style='padding: 10px;'><span class='status-badge {GetStatusClass(request.Status_SectionManager)}'>{request.Status_SectionManager ?? "รออนุมัติ"}</span></td>
     </tr>
