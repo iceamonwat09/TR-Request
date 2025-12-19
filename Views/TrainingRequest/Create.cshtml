@@ -737,6 +737,18 @@
                                     <input type="hidden" id="managingDirectorIdHidden" name="ManagingDirectorId" value="" />
                                 </div>
 
+                                <!-- Deputy Managing Director -->
+                                <div class="form-group mt-3">
+                                    <label class="form-label fw-bold">
+                                        👤 Deputy Managing Director
+                                        <small class="text-muted">(รอง MD / Deputy MD)</small>
+                                    </label>
+                                    <select id="deputyManagingDirectorSelect" class="form-select form-select-lg" style="width: 100%; border-radius: 10px;">
+                                        <option value="">-- เลือก Deputy Managing Director --</option>
+                                    </select>
+                                    <input type="hidden" id="deputyManagingDirectorIdHidden" name="DeputyManagingDirectorId" value="" />
+                                </div>
+
                                 <!-- HRD Admin (ผู้ตรวจสอบ) - Readonly -->
                                 <div class="form-group mt-3">
                                     <label class="form-label fw-bold">
@@ -2227,6 +2239,45 @@
             const selectedValue = $(this).val();
             $('#managingDirectorIdHidden').val(selectedValue || '');
             console.log('✅ Managing Director selected:', selectedValue);
+        });
+
+        // 4️⃣ Deputy Managing Director Select2
+        $('#deputyManagingDirectorSelect').select2({
+            theme: 'bootstrap-5',
+            placeholder: 'พิมพ์ชื่อเพื่อค้นหา Deputy Managing Director...',
+            allowClear: true,
+            multiple: false, // เลือกได้แค่ 1 คน
+            width: '100%',
+            ajax: {
+                url: '/api/employees/approvers/director', // ใช้ API เดียวกับ MD
+                dataType: 'json',
+                delay: 300,
+                data: function (params) {
+                    console.log('🔍 Searching Deputy Managing Director:', params.term);
+                    return {
+                        q: params.term || ''
+                    };
+                },
+                processResults: function (data) {
+                    console.log('📋 Deputy Managing Directors found:', data.length);
+                    return {
+                        results: data.map(function(item) {
+                            return {
+                                id: item.email,
+                                text: item.email + ' (' + item.name + ' - ' + item.level + ')'
+                            };
+                        })
+                    };
+                },
+                cache: false
+            },
+            minimumInputLength: 0
+        });
+
+        $('#deputyManagingDirectorSelect').on('change', function() {
+            const selectedValue = $(this).val();
+            $('#deputyManagingDirectorIdHidden').val(selectedValue || '');
+            console.log('✅ Deputy Managing Director selected:', selectedValue);
         });
 
         console.log('✅ Approvers Select2 initialized');
