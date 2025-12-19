@@ -14,12 +14,21 @@ namespace TrainingRequestApp.Services
         private readonly string _connectionString;
         private readonly string _baseUrl;
 
+        // 🆕 Constant สำหรับ "ผู้บังคับบัญชาลำดับถัดไป อนุมัติ"
+        private const string SKIP_APPROVER = "ผู้บังคับบัญชาลำดับถัดไป อนุมัติ";
+
         public ApprovalWorkflowService(IConfiguration configuration, IEmailService emailService)
         {
             _configuration = configuration;
             _emailService = emailService;
             _connectionString = _configuration.GetConnectionString("DefaultConnection");
             _baseUrl = _configuration["AppSettings:BaseUrl"] ?? "https://localhost:1253";
+        }
+
+        // 🆕 Helper Method: ตรวจสอบว่าเป็น SKIP_APPROVER หรือไม่
+        private bool IsSkipApprover(string approverId)
+        {
+            return string.Equals(approverId?.Trim(), SKIP_APPROVER, StringComparison.OrdinalIgnoreCase);
         }
 
         #region Helper Methods
