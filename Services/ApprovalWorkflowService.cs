@@ -26,9 +26,15 @@ namespace TrainingRequestApp.Services
         }
 
         // 🆕 Helper Method: ตรวจสอบว่าเป็น SKIP_APPROVER หรือไม่
+        // ✅ ถือว่า NULL/Empty = SKIP (เพื่อ backward compatibility กับ records เก่า)
         private bool IsSkipApprover(string approverId)
         {
-            return string.Equals(approverId?.Trim(), SKIP_APPROVER, StringComparison.OrdinalIgnoreCase);
+            // NULL หรือ empty string = SKIP
+            if (string.IsNullOrWhiteSpace(approverId))
+                return true;
+
+            // เช็คว่าเป็นค่า SKIP_APPROVER หรือไม่
+            return string.Equals(approverId.Trim(), SKIP_APPROVER, StringComparison.OrdinalIgnoreCase);
         }
 
         #region Helper Methods
