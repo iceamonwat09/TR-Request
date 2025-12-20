@@ -1074,8 +1074,12 @@ namespace TrainingRequestApp.Controllers
                     [TotalCost], [CostPerPerson],[PerPersonTrainingHours], [TrainingObjective], [OtherObjective],
                     [URLSource], [AdditionalNotes], [ExpectedOutcome],
                     [Status], [CreatedDate], [CreatedBy], [IsActive],[TotalPeople],
-                    [SectionManagerId], [DepartmentManagerId], [HRDAdminId], [Status_HRDAdmin],
-                    [HRDConfirmationId], [Status_HRDConfirmation], [ManagingDirectorId], [DeputyManagingDirectorId]
+                    [SectionManagerId], [Status_SectionManager],
+                    [DepartmentManagerId], [Status_DepartmentManager],
+                    [HRDAdminId], [Status_HRDAdmin],
+                    [HRDConfirmationId], [Status_HRDConfirmation],
+                    [ManagingDirectorId], [Status_ManagingDirector],
+                    [DeputyManagingDirectorId], [Status_DeputyManagingDirector]
                 )
                 VALUES (
                     @DocNo, @Company, @TrainingType, @Factory, @CCEmail, @Department,@Position,
@@ -1084,8 +1088,12 @@ namespace TrainingRequestApp.Controllers
                     @TotalCost, @CostPerPerson,@PerPersonTrainingHours, @TrainingObjective, @OtherObjective,
                     @URLSource, @AdditionalNotes, @ExpectedOutcome,
                     'Pending', GETDATE(), @CreatedBy, 1,@TotalPeople,
-                    @SectionManagerId, @DepartmentManagerId, @HRDAdminId, 'Pending',
-                    @HRDConfirmationId, 'Pending', @ManagingDirectorId, @DeputyManagingDirectorId
+                    @SectionManagerId, 'Pending',
+                    @DepartmentManagerId, 'Pending',
+                    @HRDAdminId, 'Pending',
+                    @HRDConfirmationId, 'Pending',
+                    @ManagingDirectorId, 'Pending',
+                    @DeputyManagingDirectorId, 'Pending'
                 );
                 SELECT CAST(SCOPE_IDENTITY() AS INT);";
 
