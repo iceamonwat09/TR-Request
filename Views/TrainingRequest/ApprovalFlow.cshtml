@@ -340,7 +340,11 @@
                 </div>
                 <div class="approver-info">
                     <div class="approver-email">
-                        @if (!string.IsNullOrEmpty(Model.SectionManagerId))
+                        @if (IsSkipApprover(Model.SectionManagerId))
+                        {
+                            <span class="text-warning">⏭️ ข้ามขั้นตอนนี้ (Skip)</span>
+                        }
+                        else if (!string.IsNullOrEmpty(Model.SectionManagerId))
                         {
                             <span>📧 @Model.SectionManagerId</span>
                         }
@@ -378,7 +382,11 @@
                 </div>
                 <div class="approver-info">
                     <div class="approver-email">
-                        @if (!string.IsNullOrEmpty(Model.DepartmentManagerId))
+                        @if (IsSkipApprover(Model.DepartmentManagerId))
+                        {
+                            <span class="text-warning">⏭️ ข้ามขั้นตอนนี้ (Skip)</span>
+                        }
+                        else if (!string.IsNullOrEmpty(Model.DepartmentManagerId))
                         {
                             <span>📧 @Model.DepartmentManagerId</span>
                         }
@@ -492,7 +500,11 @@
                 </div>
                 <div class="approver-info">
                     <div class="approver-email">
-                        @if (!string.IsNullOrEmpty(Model.ManagingDirectorId))
+                        @if (IsSkipApprover(Model.ManagingDirectorId))
+                        {
+                            <span class="text-warning">⏭️ ข้ามขั้นตอนนี้ (Skip)</span>
+                        }
+                        else if (!string.IsNullOrEmpty(Model.ManagingDirectorId))
                         {
                             <span>📧 @Model.ManagingDirectorId</span>
                         }
