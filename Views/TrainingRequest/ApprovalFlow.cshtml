@@ -507,6 +507,44 @@
             </div>
         </div>
 
+        <!-- Level 6: Deputy Managing Director -->
+        @{
+            var dmdStatus = Model.Status_DeputyManagingDirector ?? "Pending";
+            var dmdClass = GetStatusClass(dmdStatus, Model.Status, "WAITING_FOR_DEPUTY_MANAGING_DIRECTOR");
+        }
+        <div class="timeline-item">
+            <div class="timeline-marker @dmdClass">6</div>
+            <div class="timeline-content @dmdClass">
+                <div class="timeline-header">
+                    <div class="timeline-title">🔹 Deputy Managing Director</div>
+                    <span class="status-badge @dmdClass">@GetStatusDisplay(dmdStatus, Model.Status, "WAITING_FOR_DEPUTY_MANAGING_DIRECTOR")</span>
+                </div>
+                <div class="approver-info">
+                    <div class="approver-email">
+                        @if (!string.IsNullOrEmpty(Model.DeputyManagingDirectorId))
+                        {
+                            <span>📧 @Model.DeputyManagingDirectorId</span>
+                        }
+                        else
+                        {
+                            <span class="text-muted">ยังไม่ระบุผู้อนุมัติ</span>
+                        }
+                    </div>
+                    @if (!string.IsNullOrEmpty(Model.ApproveInfo_DeputyManagingDirector))
+                    {
+                        <div class="approval-date">✅ @Model.ApproveInfo_DeputyManagingDirector</div>
+                    }
+                </div>
+                @if (!string.IsNullOrEmpty(Model.Comment_DeputyManagingDirector))
+                {
+                    <div class="comment-box">
+                        <div class="comment-label">💬 ความคิดเห็น:</div>
+                        <div>@Model.Comment_DeputyManagingDirector</div>
+                    </div>
+                }
+            </div>
+        </div>
+
         <!-- Final Status -->
         @if (string.Equals(Model.Status, "APPROVED", StringComparison.OrdinalIgnoreCase))
         {
