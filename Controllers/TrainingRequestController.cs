@@ -492,7 +492,8 @@ namespace TrainingRequestApp.Controllers
                             DepartmentManagerId, Status_DepartmentManager, Comment_DepartmentManager, ApproveInfo_DepartmentManager,
                             HRDAdminId, Status_HRDAdmin, Comment_HRDAdmin, ApproveInfo_HRDAdmin,
                             HRDConfirmationId, Status_HRDConfirmation, Comment_HRDConfirmation, ApproveInfo_HRDConfirmation,
-                            ManagingDirectorId, Status_ManagingDirector, Comment_ManagingDirector, ApproveInfo_ManagingDirector
+                            ManagingDirectorId, Status_ManagingDirector, Comment_ManagingDirector, ApproveInfo_ManagingDirector,
+                            DeputyManagingDirectorId, Status_DeputyManagingDirector, Comment_DeputyManagingDirector, ApproveInfo_DeputyManagingDirector
                         FROM [HRDSYSTEM].[dbo].[TrainingRequests]
                         WHERE DocNo = @DocNo AND IsActive = 1";
 
@@ -534,7 +535,11 @@ namespace TrainingRequestApp.Controllers
                                     ManagingDirectorId = reader["ManagingDirectorId"]?.ToString(),
                                     Status_ManagingDirector = reader["Status_ManagingDirector"]?.ToString(),
                                     Comment_ManagingDirector = reader["Comment_ManagingDirector"]?.ToString(),
-                                    ApproveInfo_ManagingDirector = reader["ApproveInfo_ManagingDirector"]?.ToString()
+                                    ApproveInfo_ManagingDirector = reader["ApproveInfo_ManagingDirector"]?.ToString(),
+                                    DeputyManagingDirectorId = reader["DeputyManagingDirectorId"]?.ToString(),
+                                    Status_DeputyManagingDirector = reader["Status_DeputyManagingDirector"]?.ToString(),
+                                    Comment_DeputyManagingDirector = reader["Comment_DeputyManagingDirector"]?.ToString(),
+                                    ApproveInfo_DeputyManagingDirector = reader["ApproveInfo_DeputyManagingDirector"]?.ToString()
                                 };
 
                                 return View(model);
