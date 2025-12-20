@@ -8,6 +8,15 @@
     bool isAdmin = userRole.Contains("Admin", StringComparison.OrdinalIgnoreCase) ||
                    userRole.Contains("System Admin", StringComparison.OrdinalIgnoreCase);
 
+    // Skip approver constant
+    const string SKIP_APPROVER = "ผู้บังคับบัญชาลำดับถัดไป อนุมัติ";
+
+    // Helper function to check if approver is skipped
+    bool IsSkipApprover(string approverId)
+    {
+        return string.Equals(approverId?.Trim(), SKIP_APPROVER, StringComparison.OrdinalIgnoreCase);
+    }
+
     // Helper functions
     string GetStatusClass(string levelStatus, string mainStatus, string waitingStatus)
     {
@@ -521,7 +530,11 @@
                 </div>
                 <div class="approver-info">
                     <div class="approver-email">
-                        @if (!string.IsNullOrEmpty(Model.DeputyManagingDirectorId))
+                        @if (IsSkipApprover(Model.DeputyManagingDirectorId))
+                        {
+                            <span class="text-warning">⏭️ ข้ามขั้นตอนนี้ (Skip)</span>
+                        }
+                        else if (!string.IsNullOrEmpty(Model.DeputyManagingDirectorId))
                         {
                             <span>📧 @Model.DeputyManagingDirectorId</span>
                         }
