@@ -1750,12 +1750,20 @@
                 },
                 processResults: function(data) {
                     console.log('📋 Section Managers found:', data.length);
-                    return {
-                        results: data.map(item => ({
-                            id: item.id,
-                            text: `${item.name} (${item.email})`
-                        }))
-                    };
+
+                    // Add SKIP option as first choice
+                    var results = [{
+                        id: 'ผู้บังคับบัญชาลำดับถัดไป อนุมัติ',
+                        text: '⏭️ ผู้บังคับบัญชาลำดับถัดไป อนุมัติ'
+                    }];
+
+                    // Add employee results
+                    results = results.concat(data.map(item => ({
+                        id: item.id,
+                        text: `${item.name} (${item.email})`
+                    })));
+
+                    return { results: results };
                 },
                 cache: false
             },
@@ -1788,12 +1796,20 @@
                 },
                 processResults: function(data) {
                     console.log('📋 Dept Managers found:', data.length);
-                    return {
-                        results: data.map(item => ({
-                            id: item.id,
-                            text: `${item.name} (${item.email})`
-                        }))
-                    };
+
+                    // Add SKIP option as first choice
+                    var results = [{
+                        id: 'ผู้บังคับบัญชาลำดับถัดไป อนุมัติ',
+                        text: '⏭️ ผู้บังคับบัญชาลำดับถัดไป อนุมัติ'
+                    }];
+
+                    // Add employee results
+                    results = results.concat(data.map(item => ({
+                        id: item.id,
+                        text: `${item.name} (${item.email})`
+                    })));
+
+                    return { results: results };
                 },
                 cache: false
             },
@@ -1820,12 +1836,20 @@
                 },
                 processResults: function(data) {
                     console.log('📋 Directors found:', data.length);
-                    return {
-                        results: data.map(item => ({
-                            id: item.id,
-                            text: `${item.name} - ${item.level} (${item.email})`
-                        }))
-                    };
+
+                    // Add SKIP option as first choice
+                    var results = [{
+                        id: 'ผู้บังคับบัญชาลำดับถัดไป อนุมัติ',
+                        text: '⏭️ ผู้บังคับบัญชาลำดับถัดไป อนุมัติ'
+                    }];
+
+                    // Add employee results
+                    results = results.concat(data.map(item => ({
+                        id: item.id,
+                        text: `${item.name} - ${item.level} (${item.email})`
+                    })));
+
+                    return { results: results };
                 },
                 cache: false
             },
@@ -1852,12 +1876,20 @@
                 },
                 processResults: function(data) {
                     console.log('📋 Deputy Directors found:', data.length);
-                    return {
-                        results: data.map(item => ({
-                            id: item.id,
-                            text: `${item.name} - ${item.level} (${item.email})`
-                        }))
-                    };
+
+                    // Add SKIP option as first choice
+                    var results = [{
+                        id: 'ผู้บังคับบัญชาลำดับถัดไป อนุมัติ',
+                        text: '⏭️ ผู้บังคับบัญชาลำดับถัดไป อนุมัติ'
+                    }];
+
+                    // Add employee results
+                    results = results.concat(data.map(item => ({
+                        id: item.id,
+                        text: `${item.name} - ${item.level} (${item.email})`
+                    })));
+
+                    return { results: results };
                 },
                 cache: false
             },
@@ -3088,18 +3120,26 @@
                 },
                 processResults: function (data) {
                     console.log('📋 Section Managers found:', data.length);
-                    return {
-                        results: data.map(function(item) {
-                            return {
-                                id: item.email,
-                                text: item.email + ' (' + item.name + ' - ' + item.level + ')'
-                            };
-                        })
-                    };
+
+                    // Add SKIP option as first choice
+                    var results = [{
+                        id: 'ผู้บังคับบัญชาลำดับถัดไป อนุมัติ',
+                        text: '⏭️ ผู้บังคับบัญชาลำดับถัดไป อนุมัติ'
+                    }];
+
+                    // Add employee results
+                    results = results.concat(data.map(function(item) {
+                        return {
+                            id: item.email,
+                            text: item.email + ' (' + item.name + ' - ' + item.level + ')'
+                        };
+                    }));
+
+                    return { results: results };
                 },
                 cache: false
             },
-            minimumInputLength: 0
+            minimumInputLevel: 0
         });
 
         $('#sectionManagerSelect').on('change', function() {
@@ -3131,14 +3171,22 @@
                 },
                 processResults: function (data) {
                     console.log('📋 Department Managers found:', data.length);
-                    return {
-                        results: data.map(function(item) {
-                            return {
-                                id: item.email,
-                                text: item.email + ' (' + item.name + ' - ' + item.level + ')'
-                            };
-                        })
-                    };
+
+                    // Add SKIP option as first choice
+                    var results = [{
+                        id: 'ผู้บังคับบัญชาลำดับถัดไป อนุมัติ',
+                        text: '⏭️ ผู้บังคับบัญชาลำดับถัดไป อนุมัติ'
+                    }];
+
+                    // Add employee results
+                    results = results.concat(data.map(function(item) {
+                        return {
+                            id: item.email,
+                            text: item.email + ' (' + item.name + ' - ' + item.level + ')'
+                        };
+                    }));
+
+                    return { results: results };
                 },
                 cache: false
             },
@@ -3170,14 +3218,22 @@
                 },
                 processResults: function (data) {
                     console.log('📋 Managing Directors found:', data.length);
-                    return {
-                        results: data.map(function(item) {
-                            return {
-                                id: item.email,
-                                text: item.email + ' (' + item.name + ' - ' + item.level + ')'
-                            };
-                        })
-                    };
+
+                    // Add SKIP option as first choice
+                    var results = [{
+                        id: 'ผู้บังคับบัญชาลำดับถัดไป อนุมัติ',
+                        text: '⏭️ ผู้บังคับบัญชาลำดับถัดไป อนุมัติ'
+                    }];
+
+                    // Add employee results
+                    results = results.concat(data.map(function(item) {
+                        return {
+                            id: item.email,
+                            text: item.email + ' (' + item.name + ' - ' + item.level + ')'
+                        };
+                    }));
+
+                    return { results: results };
                 },
                 cache: false
             },
