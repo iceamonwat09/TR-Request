@@ -14,12 +14,27 @@ namespace TrainingRequestApp.Services
         private readonly string _connectionString;
         private readonly string _baseUrl;
 
+        // 🆕 Constant สำหรับ "ผู้บังคับบัญชาลำดับถัดไป อนุมัติ"
+        private const string SKIP_APPROVER = "ผู้บังคับบัญชาลำดับถัดไป อนุมัติ";
+
         public ApprovalWorkflowService(IConfiguration configuration, IEmailService emailService)
         {
             _configuration = configuration;
             _emailService = emailService;
             _connectionString = _configuration.GetConnectionString("DefaultConnection");
             _baseUrl = _configuration["AppSettings:BaseUrl"] ?? "https://localhost:1253";
+        }
+
+        // 🆕 Helper Method: ตรวจสอบว่าเป็น SKIP_APPROVER หรือไม่
+        // ✅ ถือว่า NULL/Empty = SKIP (เพื่อ backward compatibility กับ records เก่า)
+        private bool IsSkipApprover(string approverId)
+        {
+            // NULL หรือ empty string = SKIP
+            if (string.IsNullOrWhiteSpace(approverId))
+                return true;
+
+            // เช็คว่าเป็นค่า SKIP_APPROVER หรือไม่
+            return string.Equals(approverId.Trim(), SKIP_APPROVER, StringComparison.OrdinalIgnoreCase);
         }
 
         #region Helper Methods
@@ -41,15 +56,22 @@ namespace TrainingRequestApp.Services
 
         public string GetNextApproverEmail(TrainingRequestEditViewModel request, string nextStatus)
         {
-            return nextStatus switch
+            var email = nextStatus switch
             {
                 "WAITING_FOR_SECTION_MANAGER" => request.SectionManagerId,
                 "WAITING_FOR_DEPARTMENT_MANAGER" => request.DepartmentManagerId,
                 "WAITING_FOR_HRD_ADMIN" => request.HRDAdminId,
                 "WAITING_FOR_HRD_CONFIRMATION" => request.HRDConfirmationId,
                 "WAITING_FOR_MANAGING_DIRECTOR" => request.ManagingDirectorId,
+                "WAITING_FOR_DEPUTY_MANAGING_DIRECTOR" => request.DeputyManagingDirectorId, // 🆕
                 _ => null
             };
+
+            // ⚠️ ถ้าเป็น SKIP_APPROVER → return null (ไม่ส่ง email)
+            if (IsSkipApprover(email))
+                return null;
+
+            return email?.Trim();
         }
 
         private string GetApproverRoleName(string role)
@@ -61,8 +83,60 @@ namespace TrainingRequestApp.Services
                 "HRDAdmin" => "เจ้าหน้าที่พัฒนาบุคลากร (HRD Admin)",
                 "HRDConfirmation" => "ผู้รับรองการฝึกอบรม (HRD Confirmation)",
                 "ManagingDirector" => "กรรมการผู้จัดการ (Managing Director)",
+                "DeputyManagingDirector" => "รองกรรมการผู้จัดการ (Deputy Managing Director)", // 🆕
                 _ => "ผู้อนุมัติ"
             };
+        }
+
+        // 🆕 GetNextApprovalStatus ที่รองรับ Skip Logic
+        public string GetNextApprovalStatusWithSkip(TrainingRequestEditViewModel request, string currentStatus)
+        {
+            switch (currentStatus)
+            {
+                case "Pending":
+                case "WAITING_FOR_SECTION_MANAGER":
+                    // ข้าม Section Manager แล้ว → ตรวจสอบ Department Manager
+                    if (!IsSkipApprover(request.DepartmentManagerId))
+                        return "WAITING_FOR_DEPARTMENT_MANAGER";
+                    // ข้าม Department Manager → HRD Admin (บังคับมีจริง)
+                    return "WAITING_FOR_HRD_ADMIN";
+
+                case "WAITING_FOR_DEPARTMENT_MANAGER":
+                    // Department Manager อนุมัติแล้ว → HRD Admin (บังคับมีจริง)
+                    return "WAITING_FOR_HRD_ADMIN";
+
+                case "WAITING_FOR_HRD_ADMIN":
+                    // HRD Admin อนุมัติแล้ว → HRD Confirmation (บังคับมีจริง)
+                    return "WAITING_FOR_HRD_CONFIRMATION";
+
+                case "WAITING_FOR_HRD_CONFIRMATION":
+                    // HRD Confirmation อนุมัติแล้ว → ตรวจสอบ Managing Director
+                    if (!IsSkipApprover(request.ManagingDirectorId))
+                        return "WAITING_FOR_MANAGING_DIRECTOR";
+                    // ข้าม MD → ตรวจสอบ Deputy MD
+                    if (!IsSkipApprover(request.DeputyManagingDirectorId))
+                        return "WAITING_FOR_DEPUTY_MANAGING_DIRECTOR";
+                    // ข้ามทั้งคู่ → APPROVED
+                    return "APPROVED";
+
+                case "WAITING_FOR_MANAGING_DIRECTOR":
+                    // Managing Director อนุมัติแล้ว → ตรวจสอบ Deputy MD
+                    if (!IsSkipApprover(request.DeputyManagingDirectorId))
+                        return "WAITING_FOR_DEPUTY_MANAGING_DIRECTOR";
+                    // ข้าม Deputy MD → APPROVED
+                    return "APPROVED";
+
+                case "WAITING_FOR_DEPUTY_MANAGING_DIRECTOR":
+                    // 🆕 Deputy MD อนุมัติแล้ว → APPROVED (ท้ายสุด!)
+                    return "APPROVED";
+
+                case "Revision Admin":
+                    // Revision Admin → กลับไปที่ HRD Confirmation
+                    return "WAITING_FOR_HRD_CONFIRMATION";
+
+                default:
+                    return currentStatus;
+            }
         }
 
         #endregion
@@ -97,6 +171,7 @@ namespace TrainingRequestApp.Services
                 Console.WriteLine($"   HRD Admin: {request.HRDAdminId}");
                 Console.WriteLine($"   HRD Confirmation: {request.HRDConfirmationId}");
                 Console.WriteLine($"   Managing Director: {request.ManagingDirectorId}");
+                Console.WriteLine($"   Deputy Managing Director: {request.DeputyManagingDirectorId}"); // 🆕
 
                 // ตรวจสอบสิทธิ์ตาม Status และ Email (Case-Insensitive)
                 if (request.Status == "WAITING_FOR_SECTION_MANAGER" &&
@@ -138,6 +213,15 @@ namespace TrainingRequestApp.Services
                     result.ApproverRole = "ManagingDirector";
                     result.Message = "คุณมีสิทธิ์อนุมัติในฐานะ Managing Director";
                     Console.WriteLine($"✅ Permission granted: Managing Director");
+                }
+                // 🆕 Deputy Managing Director
+                else if (request.Status == "WAITING_FOR_DEPUTY_MANAGING_DIRECTOR" &&
+                         string.Equals(userEmail, request.DeputyManagingDirectorId, StringComparison.OrdinalIgnoreCase))
+                {
+                    result.CanApprove = true;
+                    result.ApproverRole = "DeputyManagingDirector";
+                    result.Message = "คุณมีสิทธิ์อนุมัติในฐานะ Deputy Managing Director";
+                    Console.WriteLine($"✅ Permission granted: Deputy Managing Director");
                 }
                 else if (request.Status == "Revision Admin" &&
                          string.Equals(userEmail, request.HRDAdminId, StringComparison.OrdinalIgnoreCase))
@@ -187,8 +271,8 @@ namespace TrainingRequestApp.Services
                 // อัพเดท Status และ ApproveInfo ตาม Role
                 await UpdateApprovalStatus(docNo, approverRole, "APPROVED", comment, userEmail, ipAddress);
 
-                // หา Status ถัดไป
-                string nextStatus = GetNextApprovalStatus(previousStatus);
+                // หา Status ถัดไป (ใช้ GetNextApprovalStatusWithSkip เพื่อรองรับ SKIP_APPROVER)
+                string nextStatus = GetNextApprovalStatusWithSkip(request, previousStatus);
 
                 // ⭐ ถ้า previousStatus = "Revision Admin" และ HRD Admin อนุมัติ
                 // ต้อง Reset Status_HRDConfirmation และ Status_ManagingDirector เป็น Pending
@@ -269,12 +353,14 @@ namespace TrainingRequestApp.Services
                 string previousStatus = request.Status;
 
                 // ตรวจสอบว่าเป็น Revise กรณีที่ 1 หรือ 2
-                bool isRevisionAdminCase = (approverRole == "HRDConfirmation" || approverRole == "ManagingDirector");
+                bool isRevisionAdminCase = (approverRole == "HRDConfirmation" ||
+                                           approverRole == "ManagingDirector" ||
+                                           approverRole == "DeputyManagingDirector"); // 🆕
 
                 string newStatus;
                 if (isRevisionAdminCase)
                 {
-                    // กรณีที่ 2: HRD Confirmation/Managing Director → Revision Admin
+                    // กรณีที่ 2: HRD Confirmation/Managing Director/Deputy Managing Director → Revision Admin
                     newStatus = "Revision Admin";
                 }
                 else
@@ -412,15 +498,49 @@ namespace TrainingRequestApp.Services
                 Console.WriteLine($"   HRD Admin: {request.HRDAdminId ?? "⚠️ NOT ASSIGNED"}");
                 Console.WriteLine($"   HRD Confirmation: {request.HRDConfirmationId ?? "⚠️ NOT ASSIGNED"}");
                 Console.WriteLine($"   Managing Director: {request.ManagingDirectorId ?? "⚠️ NOT ASSIGNED"}");
+                Console.WriteLine($"   Deputy Managing Director: {request.DeputyManagingDirectorId ?? "⚠️ NOT ASSIGNED"}");
 
+                // ตรวจสอบว่ามี approver ที่จำเป็นหรือไม่
                 if (string.IsNullOrWhiteSpace(request.SectionManagerId))
                 {
                     Console.WriteLine($"\n❌ [ERROR] Section Manager not assigned!");
-                    Console.WriteLine($"   Cannot start workflow without Section Manager");
+                    return false;
+                }
+                if (string.IsNullOrWhiteSpace(request.HRDAdminId) || IsSkipApprover(request.HRDAdminId))
+                {
+                    Console.WriteLine($"\n❌ [ERROR] HRD Admin is required and cannot be skipped!");
+                    return false;
+                }
+                if (string.IsNullOrWhiteSpace(request.HRDConfirmationId) || IsSkipApprover(request.HRDConfirmationId))
+                {
+                    Console.WriteLine($"\n❌ [ERROR] HRD Confirmation is required and cannot be skipped!");
                     return false;
                 }
 
-                Console.WriteLine($"✅ [STEP 2/5] Validation SUCCESS - Section Manager assigned");
+                Console.WriteLine($"✅ [STEP 2/5] Validation SUCCESS");
+
+                // ⭐ Dynamic first approver - หาผู้อนุมัติคนแรกที่ไม่ใช่ SKIP
+                string firstApprover;
+                string firstStatus;
+
+                if (!IsSkipApprover(request.SectionManagerId))
+                {
+                    firstApprover = request.SectionManagerId;
+                    firstStatus = "WAITING_FOR_SECTION_MANAGER";
+                    Console.WriteLine($"📍 First Approver: Section Manager ({firstApprover})");
+                }
+                else if (!IsSkipApprover(request.DepartmentManagerId))
+                {
+                    firstApprover = request.DepartmentManagerId;
+                    firstStatus = "WAITING_FOR_DEPARTMENT_MANAGER";
+                    Console.WriteLine($"📍 First Approver: Department Manager ({firstApprover}) - Section Manager skipped");
+                }
+                else
+                {
+                    firstApprover = request.HRDAdminId;
+                    firstStatus = "WAITING_FOR_HRD_ADMIN";
+                    Console.WriteLine($"📍 First Approver: HRD Admin ({firstApprover}) - Section & Department skipped");
+                }
 
                 // ส่ง Email #1: แจ้ง CreatedBy + CCEmail
                 Console.WriteLine($"\n📧 [STEP 3/5] Sending Pending Notification Email...");
@@ -437,23 +557,23 @@ namespace TrainingRequestApp.Services
                 await Task.Delay(500);
 
                 // อัพเดท Status
-                Console.WriteLine($"\n📝 [STEP 4/5] Updating Status to WAITING_FOR_SECTION_MANAGER...");
+                Console.WriteLine($"\n📝 [STEP 4/5] Updating Status to {firstStatus}...");
                 Console.WriteLine($"   DocNo: {docNo}");
                 Console.WriteLine($"   Current Status: {request.Status}");
-                Console.WriteLine($"   New Status: WAITING_FOR_SECTION_MANAGER");
+                Console.WriteLine($"   New Status: {firstStatus}");
 
-                await UpdateMainStatus(docNo, "WAITING_FOR_SECTION_MANAGER");
+                await UpdateMainStatus(docNo, firstStatus);
                 Console.WriteLine($"✅ [STEP 4/5] Status Update SUCCESS");
 
                 // เพิ่ม delay เล็กน้อย
                 await Task.Delay(500);
 
-                // ส่ง Email #2: ขออนุมัติจาก Section Manager
+                // ส่ง Email #2: ขออนุมัติจากผู้อนุมัติคนแรก
                 Console.WriteLine($"\n📧 [STEP 5/5] Sending Approval Request Email...");
-                Console.WriteLine($"   To: {request.SectionManagerId}");
-                Console.WriteLine($"   Role: Section Manager");
+                Console.WriteLine($"   To: {firstApprover}");
+                Console.WriteLine($"   Status: {firstStatus}");
 
-                await SendApprovalRequestEmail(request, request.SectionManagerId, "WAITING_FOR_SECTION_MANAGER");
+                await SendApprovalRequestEmail(request, firstApprover, firstStatus);
                 Console.WriteLine($"✅ [STEP 5/5] Approval Request Email sent");
 
                 Console.WriteLine($"\n========================================");
@@ -495,21 +615,23 @@ namespace TrainingRequestApp.Services
                     // ⭐ แยก 2 กรณีอย่างชัดเจน
                     if (resetType == "HRDAdmin" || resetType == "RevisionAdmin")
                     {
-                        // กรณี 2: Revision Admin → Reset เฉพาะ ระดับ 4-5 (ไม่แตะ ระดับ 1-3!)
+                        // กรณี 2: Revision Admin → Reset เฉพาะ ระดับ 4-6 (ไม่แตะ ระดับ 1-3!)
                         query = @"
                             UPDATE [HRDSYSTEM].[dbo].[TrainingRequests]
                             SET
                                 Status_HRDConfirmation = 'Pending',
                                 ApproveInfo_HRDConfirmation = NULL,
                                 Status_ManagingDirector = 'Pending',
-                                ApproveInfo_ManagingDirector = NULL
+                                ApproveInfo_ManagingDirector = NULL,
+                                Status_DeputyManagingDirector = 'Pending',
+                                ApproveInfo_DeputyManagingDirector = NULL
                             WHERE DocNo = @DocNo";
 
-                        Console.WriteLine($"🔄 Resetting Level 4-5 (HRD Confirmation + Managing Director) for {docNo}");
+                        Console.WriteLine($"🔄 Resetting Level 4-6 (HRD Confirmation + Managing Director + Deputy Managing Director) for {docNo}");
                     }
                     else
                     {
-                        // กรณี 1: Revise → Reset เฉพาะ ระดับ 1-3 (ไม่แตะ ระดับ 4-5!)
+                        // กรณี 1: Revise → Reset เฉพาะ ระดับ 1-3 (ไม่แตะ ระดับ 4-6!)
                         query = @"
                             UPDATE [HRDSYSTEM].[dbo].[TrainingRequests]
                             SET
@@ -639,6 +761,7 @@ namespace TrainingRequestApp.Services
                 "WAITING_FOR_HRD_ADMIN" => "รอ HRD Admin อนุมัติ",
                 "WAITING_FOR_HRD_CONFIRMATION" => "รอ HRD Confirmation อนุมัติ",
                 "WAITING_FOR_MANAGING_DIRECTOR" => "รอ Managing Director อนุมัติ",
+                "WAITING_FOR_DEPUTY_MANAGING_DIRECTOR" => "รอ Deputy Managing Director อนุมัติ", // 🆕
                 "Revise" => "ส่งกลับแก้ไข",
                 "Revision Admin" => "ส่งกลับ HRD Admin แก้ไข",
                 "APPROVED" => "อนุมัติสมบูรณ์",
@@ -666,6 +789,7 @@ namespace TrainingRequestApp.Services
                         HRDAdminid AS HRDAdminId, Status_HRDAdmin, Comment_HRDAdmin, ApproveInfo_HRDAdmin,
                         HRDConfirmationid AS HRDConfirmationId, Status_HRDConfirmation, Comment_HRDConfirmation, ApproveInfo_HRDConfirmation,
                         ManagingDirectorId, Status_ManagingDirector, Comment_ManagingDirector, ApproveInfo_ManagingDirector,
+                        DeputyManagingDirectorId, Status_DeputyManagingDirector, Comment_DeputyManagingDirector, ApproveInfo_DeputyManagingDirector,
                         TrainingObjective, ExpectedOutcome
                     FROM [HRDSYSTEM].[dbo].[TrainingRequests]
                     WHERE DocNo = @DocNo AND IsActive = 1";
@@ -711,6 +835,10 @@ namespace TrainingRequestApp.Services
                                 Status_ManagingDirector = reader["Status_ManagingDirector"]?.ToString(),
                                 Comment_ManagingDirector = reader["Comment_ManagingDirector"]?.ToString(),
                                 ApproveInfo_ManagingDirector = reader["ApproveInfo_ManagingDirector"]?.ToString(),
+                                DeputyManagingDirectorId = reader["DeputyManagingDirectorId"]?.ToString(),
+                                Status_DeputyManagingDirector = reader["Status_DeputyManagingDirector"]?.ToString(),
+                                Comment_DeputyManagingDirector = reader["Comment_DeputyManagingDirector"]?.ToString(),
+                                ApproveInfo_DeputyManagingDirector = reader["ApproveInfo_DeputyManagingDirector"]?.ToString(),
                                 TrainingObjective = reader["TrainingObjective"]?.ToString(),
                                 ExpectedOutcome = reader["ExpectedOutcome"]?.ToString()
                             };
@@ -761,6 +889,13 @@ namespace TrainingRequestApp.Services
                         SET Status_ManagingDirector = @Status,
                             Comment_ManagingDirector = @Comment,
                             ApproveInfo_ManagingDirector = @ApproveInfo
+                        WHERE DocNo = @DocNo",
+                    // 🆕 Deputy Managing Director
+                    "DeputyManagingDirector" => @"
+                        UPDATE [HRDSYSTEM].[dbo].[TrainingRequests]
+                        SET Status_DeputyManagingDirector = @Status,
+                            Comment_DeputyManagingDirector = @Comment,
+                            ApproveInfo_DeputyManagingDirector = @ApproveInfo
                         WHERE DocNo = @DocNo",
                     _ => null
                 };
@@ -907,6 +1042,7 @@ namespace TrainingRequestApp.Services
                 "WAITING_FOR_HRD_ADMIN" => "เจ้าหน้าที่พัฒนาบุคลากร (HRD Admin)",
                 "WAITING_FOR_HRD_CONFIRMATION" => "ผู้รับรองการฝึกอบรม (HRD Confirmation)",
                 "WAITING_FOR_MANAGING_DIRECTOR" => "กรรมการผู้จัดการ (Managing Director)",
+                "WAITING_FOR_DEPUTY_MANAGING_DIRECTOR" => "รองกรรมการผู้จัดการ (Deputy Managing Director)", // 🆕
                 _ => "ผู้อนุมัติ"
             };
 
@@ -994,6 +1130,7 @@ namespace TrainingRequestApp.Services
                 "WAITING_FOR_HRD_ADMIN" => "เจ้าหน้าที่พัฒนาบุคลากร (HRD Admin)",
                 "WAITING_FOR_HRD_CONFIRMATION" => "ผู้รับรองการฝึกอบรม (HRD Confirmation)",
                 "WAITING_FOR_MANAGING_DIRECTOR" => "กรรมการผู้จัดการ (Managing Director)",
+                "WAITING_FOR_DEPUTY_MANAGING_DIRECTOR" => "รองกรรมการผู้จัดการ (Deputy Managing Director)", // 🆕
                 _ => "ผู้อนุมัติ"
             };
 
@@ -1359,11 +1496,19 @@ namespace TrainingRequestApp.Services
                 allEmails.AddRange(request.CCEmail.Split(',').Select(e => e.Trim()));
             }
 
-            if (!string.IsNullOrEmpty(request.SectionManagerId)) allEmails.Add(request.SectionManagerId);
-            if (!string.IsNullOrEmpty(request.DepartmentManagerId)) allEmails.Add(request.DepartmentManagerId);
-            if (!string.IsNullOrEmpty(request.HRDAdminId)) allEmails.Add(request.HRDAdminId);
-            if (!string.IsNullOrEmpty(request.HRDConfirmationId)) allEmails.Add(request.HRDConfirmationId);
-            if (!string.IsNullOrEmpty(request.ManagingDirectorId)) allEmails.Add(request.ManagingDirectorId);
+            // ⭐ Add approvers (skip if they are SKIP_APPROVER)
+            if (!string.IsNullOrEmpty(request.SectionManagerId) && !IsSkipApprover(request.SectionManagerId))
+                allEmails.Add(request.SectionManagerId);
+            if (!string.IsNullOrEmpty(request.DepartmentManagerId) && !IsSkipApprover(request.DepartmentManagerId))
+                allEmails.Add(request.DepartmentManagerId);
+            if (!string.IsNullOrEmpty(request.HRDAdminId) && !IsSkipApprover(request.HRDAdminId))
+                allEmails.Add(request.HRDAdminId);
+            if (!string.IsNullOrEmpty(request.HRDConfirmationId) && !IsSkipApprover(request.HRDConfirmationId))
+                allEmails.Add(request.HRDConfirmationId);
+            if (!string.IsNullOrEmpty(request.ManagingDirectorId) && !IsSkipApprover(request.ManagingDirectorId))
+                allEmails.Add(request.ManagingDirectorId);
+            if (!string.IsNullOrEmpty(request.DeputyManagingDirectorId) && !IsSkipApprover(request.DeputyManagingDirectorId))
+                allEmails.Add(request.DeputyManagingDirectorId);
 
             var uniqueEmails = allEmails.Distinct().ToArray();
 
@@ -1394,10 +1539,15 @@ namespace TrainingRequestApp.Services
         <td style='padding: 10px;'>{request.HRDConfirmationId ?? "-"}</td>
         <td style='padding: 10px;'><span class='status-badge {GetStatusClass(request.Status_HRDConfirmation)}'>{request.Status_HRDConfirmation ?? "รออนุมัติ"}</span></td>
     </tr>
-    <tr>
+    <tr style='border-bottom: 1px solid #e0e0e0;'>
         <td style='padding: 10px; font-weight: bold;'>กรรมการผู้จัดการ (Managing Director)</td>
         <td style='padding: 10px;'>{request.ManagingDirectorId ?? "-"}</td>
         <td style='padding: 10px;'><span class='status-badge {GetStatusClass(request.Status_ManagingDirector)}'>{request.Status_ManagingDirector ?? "รออนุมัติ"}</span></td>
+    </tr>
+    <tr>
+        <td style='padding: 10px; font-weight: bold;'>รองกรรมการผู้จัดการ (Deputy Managing Director)</td>
+        <td style='padding: 10px;'>{request.DeputyManagingDirectorId ?? "-"}</td>
+        <td style='padding: 10px;'><span class='status-badge {GetStatusClass(request.Status_DeputyManagingDirector)}'>{request.Status_DeputyManagingDirector ?? "รออนุมัติ"}</span></td>
     </tr>
 </table>";
         }

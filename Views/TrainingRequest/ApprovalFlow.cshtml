@@ -8,6 +8,15 @@
     bool isAdmin = userRole.Contains("Admin", StringComparison.OrdinalIgnoreCase) ||
                    userRole.Contains("System Admin", StringComparison.OrdinalIgnoreCase);
 
+    // Skip approver constant
+    const string SKIP_APPROVER = "ผู้บังคับบัญชาลำดับถัดไป อนุมัติ";
+
+    // Helper function to check if approver is skipped
+    bool IsSkipApprover(string approverId)
+    {
+        return string.Equals(approverId?.Trim(), SKIP_APPROVER, StringComparison.OrdinalIgnoreCase);
+    }
+
     // Helper functions
     string GetStatusClass(string levelStatus, string mainStatus, string waitingStatus)
     {
@@ -331,7 +340,11 @@
                 </div>
                 <div class="approver-info">
                     <div class="approver-email">
-                        @if (!string.IsNullOrEmpty(Model.SectionManagerId))
+                        @if (IsSkipApprover(Model.SectionManagerId))
+                        {
+                            <span class="text-warning">⏭️ ข้ามขั้นตอนนี้ (Skip)</span>
+                        }
+                        else if (!string.IsNullOrEmpty(Model.SectionManagerId))
                         {
                             <span>📧 @Model.SectionManagerId</span>
                         }
@@ -369,7 +382,11 @@
                 </div>
                 <div class="approver-info">
                     <div class="approver-email">
-                        @if (!string.IsNullOrEmpty(Model.DepartmentManagerId))
+                        @if (IsSkipApprover(Model.DepartmentManagerId))
+                        {
+                            <span class="text-warning">⏭️ ข้ามขั้นตอนนี้ (Skip)</span>
+                        }
+                        else if (!string.IsNullOrEmpty(Model.DepartmentManagerId))
                         {
                             <span>📧 @Model.DepartmentManagerId</span>
                         }
@@ -483,7 +500,11 @@
                 </div>
                 <div class="approver-info">
                     <div class="approver-email">
-                        @if (!string.IsNullOrEmpty(Model.ManagingDirectorId))
+                        @if (IsSkipApprover(Model.ManagingDirectorId))
+                        {
+                            <span class="text-warning">⏭️ ข้ามขั้นตอนนี้ (Skip)</span>
+                        }
+                        else if (!string.IsNullOrEmpty(Model.ManagingDirectorId))
                         {
                             <span>📧 @Model.ManagingDirectorId</span>
                         }
@@ -502,6 +523,48 @@
                     <div class="comment-box">
                         <div class="comment-label">💬 ความคิดเห็น:</div>
                         <div>@Model.Comment_ManagingDirector</div>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Level 6: Deputy Managing Director -->
+        @{
+            var dmdStatus = Model.Status_DeputyManagingDirector ?? "Pending";
+            var dmdClass = GetStatusClass(dmdStatus, Model.Status, "WAITING_FOR_DEPUTY_MANAGING_DIRECTOR");
+        }
+        <div class="timeline-item">
+            <div class="timeline-marker @dmdClass">6</div>
+            <div class="timeline-content @dmdClass">
+                <div class="timeline-header">
+                    <div class="timeline-title">🔹 Deputy Managing Director</div>
+                    <span class="status-badge @dmdClass">@GetStatusDisplay(dmdStatus, Model.Status, "WAITING_FOR_DEPUTY_MANAGING_DIRECTOR")</span>
+                </div>
+                <div class="approver-info">
+                    <div class="approver-email">
+                        @if (IsSkipApprover(Model.DeputyManagingDirectorId))
+                        {
+                            <span class="text-warning">⏭️ ข้ามขั้นตอนนี้ (Skip)</span>
+                        }
+                        else if (!string.IsNullOrEmpty(Model.DeputyManagingDirectorId))
+                        {
+                            <span>📧 @Model.DeputyManagingDirectorId</span>
+                        }
+                        else
+                        {
+                            <span class="text-muted">ยังไม่ระบุผู้อนุมัติ</span>
+                        }
+                    </div>
+                    @if (!string.IsNullOrEmpty(Model.ApproveInfo_DeputyManagingDirector))
+                    {
+                        <div class="approval-date">✅ @Model.ApproveInfo_DeputyManagingDirector</div>
+                    }
+                </div>
+                @if (!string.IsNullOrEmpty(Model.Comment_DeputyManagingDirector))
+                {
+                    <div class="comment-box">
+                        <div class="comment-label">💬 ความคิดเห็น:</div>
+                        <div>@Model.Comment_DeputyManagingDirector</div>
                     </div>
                 }
             </div>

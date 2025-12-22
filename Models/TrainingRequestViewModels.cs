@@ -34,7 +34,7 @@ namespace TrainingRequestApp.Models
         public string? ExpectedOutcome { get; set; }
         public string? ParticipantCount { get; set; }
 
-        // Approvers - 5 levels
+        // Approvers - 6 levels
         public string? SectionManagerId { get; set; }
         public string? Status_SectionManager { get; set; }
         public string? Comment_SectionManager { get; set; }
@@ -59,6 +59,12 @@ namespace TrainingRequestApp.Models
         public string? Status_ManagingDirector { get; set; }
         public string? Comment_ManagingDirector { get; set; }
         public string? ApproveInfo_ManagingDirector { get; set; }
+
+        // 🆕 Deputy Managing Director (ท้ายสุด)
+        public string? DeputyManagingDirectorId { get; set; }
+        public string? Status_DeputyManagingDirector { get; set; }
+        public string? Comment_DeputyManagingDirector { get; set; }
+        public string? ApproveInfo_DeputyManagingDirector { get; set; }
 
         public string? Status { get; set; }
         public DateTime CreatedDate { get; set; }

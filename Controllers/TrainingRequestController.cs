@@ -187,6 +187,7 @@ namespace TrainingRequestApp.Controllers
                             HRDAdminId, Status_HRDAdmin, Comment_HRDAdmin, ApproveInfo_HRDAdmin,
                             HRDConfirmationId, Status_HRDConfirmation, Comment_HRDConfirmation, ApproveInfo_HRDConfirmation,
                             ManagingDirectorId, Status_ManagingDirector, Comment_ManagingDirector, ApproveInfo_ManagingDirector,
+                            DeputyManagingDirectorId, Status_DeputyManagingDirector, Comment_DeputyManagingDirector, ApproveInfo_DeputyManagingDirector,
                             Status, CreatedDate, CreatedBy
                         FROM [HRDSYSTEM].[dbo].[TrainingRequests]
                         WHERE DocNo = @DocNo AND IsActive = 1";
@@ -249,6 +250,10 @@ namespace TrainingRequestApp.Controllers
                                     Status_ManagingDirector = reader["Status_ManagingDirector"]?.ToString(),
                                     Comment_ManagingDirector = reader["Comment_ManagingDirector"]?.ToString(),
                                     ApproveInfo_ManagingDirector = reader["ApproveInfo_ManagingDirector"]?.ToString(),
+                                    DeputyManagingDirectorId = reader["DeputyManagingDirectorId"]?.ToString(),
+                                    Status_DeputyManagingDirector = reader["Status_DeputyManagingDirector"]?.ToString(),
+                                    Comment_DeputyManagingDirector = reader["Comment_DeputyManagingDirector"]?.ToString(),
+                                    ApproveInfo_DeputyManagingDirector = reader["ApproveInfo_DeputyManagingDirector"]?.ToString(),
                                     Status = reader["Status"].ToString(),
                                     CreatedDate = reader.GetDateTime(reader.GetOrdinal("CreatedDate")),
                                     CreatedBy = reader["CreatedBy"].ToString()
@@ -487,7 +492,8 @@ namespace TrainingRequestApp.Controllers
                             DepartmentManagerId, Status_DepartmentManager, Comment_DepartmentManager, ApproveInfo_DepartmentManager,
                             HRDAdminId, Status_HRDAdmin, Comment_HRDAdmin, ApproveInfo_HRDAdmin,
                             HRDConfirmationId, Status_HRDConfirmation, Comment_HRDConfirmation, ApproveInfo_HRDConfirmation,
-                            ManagingDirectorId, Status_ManagingDirector, Comment_ManagingDirector, ApproveInfo_ManagingDirector
+                            ManagingDirectorId, Status_ManagingDirector, Comment_ManagingDirector, ApproveInfo_ManagingDirector,
+                            DeputyManagingDirectorId, Status_DeputyManagingDirector, Comment_DeputyManagingDirector, ApproveInfo_DeputyManagingDirector
                         FROM [HRDSYSTEM].[dbo].[TrainingRequests]
                         WHERE DocNo = @DocNo AND IsActive = 1";
 
@@ -529,7 +535,11 @@ namespace TrainingRequestApp.Controllers
                                     ManagingDirectorId = reader["ManagingDirectorId"]?.ToString(),
                                     Status_ManagingDirector = reader["Status_ManagingDirector"]?.ToString(),
                                     Comment_ManagingDirector = reader["Comment_ManagingDirector"]?.ToString(),
-                                    ApproveInfo_ManagingDirector = reader["ApproveInfo_ManagingDirector"]?.ToString()
+                                    ApproveInfo_ManagingDirector = reader["ApproveInfo_ManagingDirector"]?.ToString(),
+                                    DeputyManagingDirectorId = reader["DeputyManagingDirectorId"]?.ToString(),
+                                    Status_DeputyManagingDirector = reader["Status_DeputyManagingDirector"]?.ToString(),
+                                    Comment_DeputyManagingDirector = reader["Comment_DeputyManagingDirector"]?.ToString(),
+                                    ApproveInfo_DeputyManagingDirector = reader["ApproveInfo_DeputyManagingDirector"]?.ToString()
                                 };
 
                                 return View(model);
@@ -1069,8 +1079,12 @@ namespace TrainingRequestApp.Controllers
                     [TotalCost], [CostPerPerson],[PerPersonTrainingHours], [TrainingObjective], [OtherObjective],
                     [URLSource], [AdditionalNotes], [ExpectedOutcome],
                     [Status], [CreatedDate], [CreatedBy], [IsActive],[TotalPeople],
-                    [SectionManagerId], [DepartmentManagerId], [HRDAdminId], [Status_HRDAdmin],
-                    [HRDConfirmationId], [Status_HRDConfirmation], [ManagingDirectorId]
+                    [SectionManagerId], [Status_SectionManager],
+                    [DepartmentManagerId], [Status_DepartmentManager],
+                    [HRDAdminId], [Status_HRDAdmin],
+                    [HRDConfirmationId], [Status_HRDConfirmation],
+                    [ManagingDirectorId], [Status_ManagingDirector],
+                    [DeputyManagingDirectorId], [Status_DeputyManagingDirector]
                 )
                 VALUES (
                     @DocNo, @Company, @TrainingType, @Factory, @CCEmail, @Department,@Position,
@@ -1079,8 +1093,12 @@ namespace TrainingRequestApp.Controllers
                     @TotalCost, @CostPerPerson,@PerPersonTrainingHours, @TrainingObjective, @OtherObjective,
                     @URLSource, @AdditionalNotes, @ExpectedOutcome,
                     'Pending', GETDATE(), @CreatedBy, 1,@TotalPeople,
-                    @SectionManagerId, @DepartmentManagerId, @HRDAdminId, 'Pending',
-                    @HRDConfirmationId, 'Pending', @ManagingDirectorId
+                    @SectionManagerId, 'Pending',
+                    @DepartmentManagerId, 'Pending',
+                    @HRDAdminId, 'Pending',
+                    @HRDConfirmationId, 'Pending',
+                    @ManagingDirectorId, 'Pending',
+                    @DeputyManagingDirectorId, 'Pending'
                 );
                 SELECT CAST(SCOPE_IDENTITY() AS INT);";
 
@@ -1120,12 +1138,13 @@ namespace TrainingRequestApp.Controllers
                 // ✅ CreatedBy - ใช้ Email ของผู้สร้างจาก Session
                 cmd.Parameters.AddWithValue("@CreatedBy", createdBy);
 
-                // ✅ Approvers - 5 levels
+                // ✅ Approvers - 6 levels
                 cmd.Parameters.AddWithValue("@SectionManagerId", formData.SectionManagerId ?? (object)DBNull.Value);
                 cmd.Parameters.AddWithValue("@DepartmentManagerId", formData.DepartmentManagerId ?? (object)DBNull.Value);
                 cmd.Parameters.AddWithValue("@HRDAdminId", hrdAdminEmail ?? (object)DBNull.Value);
                 cmd.Parameters.AddWithValue("@HRDConfirmationId", hrdConfirmationEmail ?? (object)DBNull.Value);
                 cmd.Parameters.AddWithValue("@ManagingDirectorId", formData.ManagingDirectorId ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@DeputyManagingDirectorId", formData.DeputyManagingDirectorId ?? (object)DBNull.Value);
 
                 var result = await cmd.ExecuteScalarAsync();
                 return Convert.ToInt32(result);
@@ -1321,6 +1340,10 @@ namespace TrainingRequestApp.Controllers
                     [Status_ManagingDirector] = @Status_ManagingDirector,
                     [Comment_ManagingDirector] = @Comment_ManagingDirector,
                     [ApproveInfo_ManagingDirector] = @ApproveInfo_ManagingDirector,
+                    [DeputyManagingDirectorId] = @DeputyManagingDirectorId,
+                    [Status_DeputyManagingDirector] = @Status_DeputyManagingDirector,
+                    [Comment_DeputyManagingDirector] = @Comment_DeputyManagingDirector,
+                    [ApproveInfo_DeputyManagingDirector] = @ApproveInfo_DeputyManagingDirector,
                     [UpdatedBy] = @UpdatedBy,
                     [UpdatedDate] = GETDATE()
                 WHERE [DocNo] = @DocNo AND [IsActive] = 1";
@@ -1380,6 +1403,11 @@ namespace TrainingRequestApp.Controllers
                 cmd.Parameters.AddWithValue("@Status_ManagingDirector", formData.Status_ManagingDirector ?? (object)DBNull.Value);
                 cmd.Parameters.AddWithValue("@Comment_ManagingDirector", formData.Comment_ManagingDirector ?? (object)DBNull.Value);
                 cmd.Parameters.AddWithValue("@ApproveInfo_ManagingDirector", formData.ApproveInfo_ManagingDirector ?? (object)DBNull.Value);
+
+                cmd.Parameters.AddWithValue("@DeputyManagingDirectorId", formData.DeputyManagingDirectorId ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@Status_DeputyManagingDirector", formData.Status_DeputyManagingDirector ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@Comment_DeputyManagingDirector", formData.Comment_DeputyManagingDirector ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@ApproveInfo_DeputyManagingDirector", formData.ApproveInfo_DeputyManagingDirector ?? (object)DBNull.Value);
 
                 // ✅ UpdatedBy - ใช้ Email ของผู้แก้ไขจาก Session
                 cmd.Parameters.AddWithValue("@UpdatedBy", updatedBy);
@@ -2037,12 +2065,13 @@ namespace TrainingRequestApp.Controllers
         public List<IFormFile>? AttachedFiles { get; set; }
         public string? ParticipantCount { get; set; }
 
-        // ✅ Approvers - 5 levels
+        // ✅ Approvers - 6 levels
         public string? SectionManagerId { get; set; }
         public string? DepartmentManagerId { get; set; }
         public string? HRDAdminId { get; set; }
         public string? HRDConfirmationId { get; set; }
         public string? ManagingDirectorId { get; set; }
+        public string? DeputyManagingDirectorId { get; set; }
 
         // ✅ Approval Status and Comments for each level
         // Section Manager
@@ -2069,6 +2098,11 @@ namespace TrainingRequestApp.Controllers
         public string? Status_ManagingDirector { get; set; }
         public string? Comment_ManagingDirector { get; set; }
         public string? ApproveInfo_ManagingDirector { get; set; }
+
+        // Deputy Managing Director
+        public string? Status_DeputyManagingDirector { get; set; }
+        public string? Comment_DeputyManagingDirector { get; set; }
+        public string? ApproveInfo_DeputyManagingDirector { get; set; }
     }
 
     public class EmployeeData
