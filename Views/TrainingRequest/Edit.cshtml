@@ -3364,8 +3364,14 @@
                     positionSelect.appendChild(option);
                 });
 
-                // เปิดใช้งาน dropdown
-                positionSelect.disabled = false;
+                // ✅ เปิดใช้งาน dropdown (เฉพาะโหมดแก้ไข)
+                if (canEdit) {
+                    positionSelect.disabled = false;
+                    console.log('✅ Position dropdown enabled (Edit mode)');
+                } else {
+                    positionSelect.disabled = true;
+                    console.log('🔒 Position dropdown kept disabled (Read-only/Approve mode)');
+                }
 
                 console.log('✅ โหลด Positions สำเร็จ:', positions.length, 'รายการ');
 
