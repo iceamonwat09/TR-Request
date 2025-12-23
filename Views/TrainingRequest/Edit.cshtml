@@ -3536,6 +3536,17 @@
                 formData.append('EmployeesJson', JSON.stringify(employeesData));
                 formData.append('docNo', '@Model.DocNo');
 
+                // ✅ สำหรับ Public: ใช้จำนวนผู้เข้าอบรมจริงจาก Employee Count
+                const trainingType = formData.get('TrainingType');
+                if (trainingType === 'Public' && employeesData.length > 0) {
+                    formData.set('ParticipantCount', employeesData.length.toString());
+                    console.log(`✅ Public Training: Auto-set ParticipantCount = ${employeesData.length} (from employee count)`);
+                } else if (trainingType === 'Public' && employeesData.length === 0) {
+                    console.log('ℹ️ Public Training: No employees, ParticipantCount remains 0');
+                } else {
+                    console.log(`ℹ️ In House Training: ParticipantCount = ${formData.get('ParticipantCount')} (manual input)`);
+                }
+
                 console.log('📦 FormData prepared');
                 console.log('📄 EmployeesJson:', employeesData);
 
