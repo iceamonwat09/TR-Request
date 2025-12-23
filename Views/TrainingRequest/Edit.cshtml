@@ -2233,6 +2233,8 @@
                 if (typeof calculateTotalBudgetPublic === 'function') {
                     calculateTotalBudgetPublic();
                 }
+                // ✅ อัปเดต ParticipantCount field
+                this.updateParticipantCount();
             }
 
             this.showSuccessToast('✅ เพิ่มพนักงานเรียบร้อยแล้ว');
@@ -2341,9 +2343,21 @@
                         if (typeof calculateTotalBudgetPublic === 'function') {
                             calculateTotalBudgetPublic();
                         }
+                        // ✅ อัปเดต ParticipantCount field
+                        this.updateParticipantCount();
                     }
 
                     this.showSuccessToast('✅ ลบพนักงานเรียบร้อยแล้ว');
+                }
+            }
+
+            // ✅ ฟังก์ชันอัปเดต ParticipantCount field (สำหรับ Public Training)
+            updateParticipantCount() {
+                const participantCountField = document.getElementById('ParticipantCount');
+                if (participantCountField) {
+                    const count = this.employees.length;
+                    participantCountField.value = count.toString();
+                    console.log(`✅ Updated ParticipantCount field: ${count} people`);
                 }
             }
 
