@@ -96,9 +96,6 @@
                     <div class="card-body p-4">
                         <form id="trainingRequestForm" method="post" enctype="multipart/form-data">
 
-                            <!-- ✅ Hidden field สำหรับ ParticipantCount (จะถูกอัปเดตโดย JavaScript) -->
-                            <input type="hidden" id="ParticipantCountHidden" name="ParticipantCount" value="@Model.ParticipantCount" />
-
                             <!-- การเลือกบริษัทและประเภทการอบรม -->
                             <div class="row mb-4">
                                 <div class="col-md-6">
@@ -305,13 +302,6 @@
                                                     <input asp-for="OtherCostDescription" name="OtherCostDescription" class="form-control form-control-lg" value="@Model.OtherCostDescription" placeholder="กรุณาระบุรายการอื่นๆ" style="border-radius: 10px;" />
                                                 </div>
 
-                                                <!-- จำนวนผู้เข้าอบรม -->
-                                                <div class="col-md-6">
-                                                    <label class="form-label fw-bold">👥 จำนวนผู้เข้าอบรม</label>
-                                                    <!-- ✅ เปลี่ยนเป็น ParticipantCountDisplay (ไม่ส่งไป backend) -->
-                                                    <input type="number" id="ParticipantCountDisplay" class="form-control form-control-lg" min="1" value="@Model.ParticipantCount" style="border-radius: 10px;" />
-                                                </div>
-
                                                 <!-- รวมสุทธิ -->
                                                 <!-- รวมสุทธิ (Read-only, คำนวณอัตโนมัติ) -->
                                                 <div class="col-12">
@@ -321,6 +311,26 @@
                                                         <span class="fw-bold fs-4 text-success" id="totalCostDisplay">0.00</span>
                                                     </div>
                                                     <input asp-for="TotalCost" name="TotalCost" type="hidden" id="totalCostInput" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 👥 จำนวนผู้เข้าอบรม (แสดงสำหรับทั้ง Public และ In House) -->
+                                <div class="col-12 mt-4">
+                                    <div class="card border-0 shadow-sm" style="border-radius: 12px;">
+                                        <div class="card-header bg-primary text-white" style="border-radius: 12px 12px 0 0;">
+                                            <h5 class="mb-0 fw-bold">👥 จำนวนผู้เข้าอบรม</h5>
+                                        </div>
+                                        <div class="card-body p-4">
+                                            <div class="row g-3">
+                                                <div class="col-md-6">
+                                                    <label class="form-label fw-bold">👥 จำนวนผู้เข้าอบรม (คน)</label>
+                                                    <input type="number" name="ParticipantCount" id="ParticipantCount" class="form-control form-control-lg" min="1" value="@Model.ParticipantCount" style="border-radius: 10px;" />
+                                                    <small id="participantCountHelp" class="form-text text-muted">
+                                                        <!-- จะแสดง help text ตาม training type -->
+                                                    </small>
                                                 </div>
                                             </div>
                                         </div>
@@ -524,8 +534,8 @@
 
                                         function toggleBudgetCards() {
                                             const selectedType = document.querySelector('input[name="TrainingType"]:checked');
-                                            const participantCountDisplay = document.getElementById('ParticipantCountDisplay');
-                                            const participantCountHidden = document.getElementById('ParticipantCountHidden');
+                                            const participantCountField = document.getElementById('ParticipantCount');
+                                            const participantCountHelp = document.getElementById('participantCountHelp');
 
                                             if (!selectedType) {
                                                 if (budgetPublicCard) budgetPublicCard.style.display = 'none';
@@ -542,16 +552,14 @@
                                                 if (budgetInHouseCard) budgetInHouseCard.style.display = 'none';
                                                 if (trainingHistorySection) trainingHistorySection.style.display = 'block';
 
-                                                // ✅ สำหรับ Public: ตั้ง hidden field เป็น 0 (จะถูก override ตอน submit)
-                                                if (participantCountHidden) {
-                                                    participantCountHidden.value = '0';
+                                                // ✅ สำหรับ Public: ตั้งเป็น readonly และแสดง help text
+                                                if (participantCountField) {
+                                                    participantCountField.setAttribute('readonly', 'readonly');
+                                                    participantCountField.style.backgroundColor = '#e9ecef';
+                                                    participantCountField.style.cursor = 'not-allowed';
                                                 }
-
-                                                // ⚠️ ปิด validation ของ display field (เพราะซ่อนอยู่ใน In House card)
-                                                if (participantCountDisplay) {
-                                                    participantCountDisplay.removeAttribute('required');
-                                                    participantCountDisplay.removeAttribute('min');
-                                                    participantCountDisplay.disabled = true; // Disable เพื่อไม่ให้ validate
+                                                if (participantCountHelp) {
+                                                    participantCountHelp.textContent = 'ℹ️ จำนวนผู้เข้าอบรมจะถูกตั้งค่าอัตโนมัติจากจำนวนพนักงานในตาราง';
                                                 }
 
                                                 console.log('✅ Showing Public budget card (2 fields) + Training History Table');
@@ -561,17 +569,17 @@
                                                 if (budgetInHouseCard) budgetInHouseCard.style.display = 'block';
                                                 if (trainingHistorySection) trainingHistorySection.style.display = 'none';
 
-                                                // ✅ สำหรับ In House: เปิด validation และใช้ค่าจาก display field
-                                                if (participantCountDisplay) {
-                                                    participantCountDisplay.disabled = false; // Enable field
-                                                    participantCountDisplay.setAttribute('min', '1');
-                                                    if (participantCountDisplay.value === '0' || !participantCountDisplay.value) {
-                                                        participantCountDisplay.value = '1';
+                                                // ✅ สำหรับ In House: ให้กรอกได้ปกติ
+                                                if (participantCountField) {
+                                                    participantCountField.removeAttribute('readonly');
+                                                    participantCountField.style.backgroundColor = '';
+                                                    participantCountField.style.cursor = '';
+                                                    if (participantCountField.value === '0' || !participantCountField.value) {
+                                                        participantCountField.value = '1';
                                                     }
-                                                    // Sync ค่าไปที่ hidden field
-                                                    if (participantCountHidden) {
-                                                        participantCountHidden.value = participantCountDisplay.value;
-                                                    }
+                                                }
+                                                if (participantCountHelp) {
+                                                    participantCountHelp.textContent = 'ℹ️ กรุณากรอกจำนวนผู้เข้าอบรมที่คาดหมาย';
                                                 }
 
                                                 console.log('✅ Showing In House budget card (7 fields) + Hiding Training History Table');
@@ -584,16 +592,6 @@
                                         });
 
                                         toggleBudgetCards();
-
-                                        // ✅ Sync ParticipantCountDisplay → ParticipantCountHidden (สำหรับ In House)
-                                        const participantCountDisplay = document.getElementById('ParticipantCountDisplay');
-                                        const participantCountHidden = document.getElementById('ParticipantCountHidden');
-                                        if (participantCountDisplay && participantCountHidden) {
-                                            participantCountDisplay.addEventListener('input', function() {
-                                                participantCountHidden.value = this.value;
-                                                console.log(`🔄 ParticipantCount synced: ${this.value}`);
-                                            });
-                                        }
 
                                         // ============================================================
                                         // 📋 Form Validation และ Submit
@@ -3562,30 +3560,30 @@
                 formData.append('docNo', '@Model.DocNo');
 
                 // ====================================================================
-                // ✅ อัปเดต ParticipantCount ใน Hidden Field ก่อนส่ง Form
+                // ✅ อัปเดต ParticipantCount สำหรับ Public Training
                 // ====================================================================
-                const participantCountHidden = document.getElementById('ParticipantCountHidden');
+                const participantCountField = document.getElementById('ParticipantCount');
 
                 console.log('🔍 DEBUG: ParticipantCount Auto-Set Logic');
                 console.log('   TrainingType:', trainingTypeValue);
                 console.log('   Employees Count:', employeesData.length);
-                console.log('   ParticipantCountHidden (before):', participantCountHidden?.value);
+                console.log('   ParticipantCount (before):', participantCountField?.value);
 
                 if (trainingTypeValue === 'Public') {
                     // ✅ สำหรับ Public: ใช้จำนวนจากตาราง Employee
                     const participantCount = employeesData.length > 0 ? employeesData.length : 0;
 
-                    // ⭐ อัปเดต hidden field โดยตรง
-                    if (participantCountHidden) {
-                        participantCountHidden.value = participantCount.toString();
-                        console.log(`✅ Public Training: Set ParticipantCountHidden = ${participantCount} (from employee count)`);
+                    // ⭐ อัปเดต field โดยตรง
+                    if (participantCountField) {
+                        participantCountField.value = participantCount.toString();
+                        console.log(`✅ Public Training: Set ParticipantCount = ${participantCount} (from employee count)`);
                     }
                 } else {
-                    // ✅ สำหรับ In House: ใช้ค่าจาก display field (ถูก sync ไปแล้ว)
-                    console.log(`ℹ️ In House Training: ParticipantCountHidden = ${participantCountHidden?.value} (from manual input)`);
+                    // ✅ สำหรับ In House: ใช้ค่าที่ user กรอก (ไม่ต้องทำอะไร)
+                    console.log(`ℹ️ In House Training: ParticipantCount = ${participantCountField?.value} (from manual input)`);
                 }
 
-                console.log('   ParticipantCountHidden (after):', participantCountHidden?.value);
+                console.log('   ParticipantCount (after):', participantCountField?.value);
 
                 console.log('📦 FormData prepared');
                 console.log('📄 EmployeesJson:', employeesData);

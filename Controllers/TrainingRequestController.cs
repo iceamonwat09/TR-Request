@@ -336,11 +336,6 @@ namespace TrainingRequestApp.Controllers
                 string userEmail = HttpContext.Session.GetString("UserEmail") ?? "System";
                 Console.WriteLine($"✅ UpdatedBy: {userEmail}");
 
-                // 🔍 DEBUG: Log received ParticipantCount and TrainingType
-                Console.WriteLine($"🔍 DEBUG Backend - TrainingType: {formData.TrainingType}");
-                Console.WriteLine($"🔍 DEBUG Backend - ParticipantCount: {formData.ParticipantCount}");
-                Console.WriteLine($"🔍 DEBUG Backend - EmployeesJson length: {formData.EmployeesJson?.Length ?? 0}");
-
                 // ✅ Validate TotalCost ก่อนอัพเดท
                 if (!ValidateTotalCost(formData, out string errorMessage))
                 {
