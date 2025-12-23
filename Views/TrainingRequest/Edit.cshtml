@@ -3538,9 +3538,15 @@
 
                 // ✅ สำหรับ Public: ใช้จำนวนผู้เข้าอบรมจริงจาก Employee Count
                 // ใช้ trainingTypeValue ที่ประกาศไว้แล้วที่บรรทัด 3475
+                console.log('🔍 DEBUG: ParticipantCount Auto-Set Logic');
+                console.log('   TrainingType:', trainingTypeValue);
+                console.log('   Employees Count:', employeesData.length);
+                console.log('   ParticipantCount (before):', formData.get('ParticipantCount'));
+
                 if (trainingTypeValue === 'Public' && employeesData.length > 0) {
                     formData.set('ParticipantCount', employeesData.length.toString());
                     console.log(`✅ Public Training: Auto-set ParticipantCount = ${employeesData.length} (from employee count)`);
+                    console.log('   ParticipantCount (after):', formData.get('ParticipantCount'));
                 } else if (trainingTypeValue === 'Public' && employeesData.length === 0) {
                     console.log('ℹ️ Public Training: No employees, ParticipantCount remains 0');
                 } else {
