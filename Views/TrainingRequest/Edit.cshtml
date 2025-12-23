@@ -3537,20 +3537,27 @@
                 formData.append('docNo', '@Model.DocNo');
 
                 // ✅ สำหรับ Public: ใช้จำนวนผู้เข้าอบรมจริงจาก Employee Count
-                // ใช้ trainingTypeValue ที่ประกาศไว้แล้วที่บรรทัด 3475
+                // ⚠️ IMPORTANT: ParticipantCount field is inside budgetInHouseCard (hidden for Public)
+                // So we must DELETE and re-APPEND to ensure it's in FormData
                 console.log('🔍 DEBUG: ParticipantCount Auto-Set Logic');
                 console.log('   TrainingType:', trainingTypeValue);
                 console.log('   Employees Count:', employeesData.length);
                 console.log('   ParticipantCount (before):', formData.get('ParticipantCount'));
 
-                if (trainingTypeValue === 'Public' && employeesData.length > 0) {
-                    formData.set('ParticipantCount', employeesData.length.toString());
-                    console.log(`✅ Public Training: Auto-set ParticipantCount = ${employeesData.length} (from employee count)`);
+                if (trainingTypeValue === 'Public') {
+                    // ✅ สำหรับ Public: ใช้จำนวนจากตาราง Employee
+                    const participantCount = employeesData.length > 0 ? employeesData.length : 0;
+
+                    // ⚠️ ต้อง DELETE ก่อน แล้วค่อย APPEND (ไม่ใช้ .set() เพราะ field อาจไม่อยู่ใน FormData)
+                    formData.delete('ParticipantCount');
+                    formData.append('ParticipantCount', participantCount.toString());
+
+                    console.log(`✅ Public Training: Set ParticipantCount = ${participantCount} (from employee count)`);
                     console.log('   ParticipantCount (after):', formData.get('ParticipantCount'));
-                } else if (trainingTypeValue === 'Public' && employeesData.length === 0) {
-                    console.log('ℹ️ Public Training: No employees, ParticipantCount remains 0');
                 } else {
-                    console.log(`ℹ️ In House Training: ParticipantCount = ${formData.get('ParticipantCount')} (manual input)`);
+                    // ✅ สำหรับ In House: ใช้ค่าที่กรอกใน form (จาก budgetInHouseCard)
+                    const manualCount = formData.get('ParticipantCount');
+                    console.log(`ℹ️ In House Training: ParticipantCount = ${manualCount} (manual input)`);
                 }
 
                 console.log('📦 FormData prepared');
