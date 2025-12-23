@@ -547,6 +547,13 @@
                                                     participantCountHidden.value = '0';
                                                 }
 
+                                                // ⚠️ ปิด validation ของ display field (เพราะซ่อนอยู่ใน In House card)
+                                                if (participantCountDisplay) {
+                                                    participantCountDisplay.removeAttribute('required');
+                                                    participantCountDisplay.removeAttribute('min');
+                                                    participantCountDisplay.disabled = true; // Disable เพื่อไม่ให้ validate
+                                                }
+
                                                 console.log('✅ Showing Public budget card (2 fields) + Training History Table');
                                                 calculateTotalBudgetPublic();
                                             } else if (typeValue === 'In House') {
@@ -554,8 +561,9 @@
                                                 if (budgetInHouseCard) budgetInHouseCard.style.display = 'block';
                                                 if (trainingHistorySection) trainingHistorySection.style.display = 'none';
 
-                                                // ✅ สำหรับ In House: ใช้ค่าจาก display field
+                                                // ✅ สำหรับ In House: เปิด validation และใช้ค่าจาก display field
                                                 if (participantCountDisplay) {
+                                                    participantCountDisplay.disabled = false; // Enable field
                                                     participantCountDisplay.setAttribute('min', '1');
                                                     if (participantCountDisplay.value === '0' || !participantCountDisplay.value) {
                                                         participantCountDisplay.value = '1';
