@@ -1894,7 +1894,7 @@
             allowClear: true,
             width: '100%',
             ajax: {
-                url: '/api/employees/approvers/director',
+                url: '/api/employees/approvers/deputy-director',
                 dataType: 'json',
                 delay: 300,
                 data: function(params) {
@@ -3000,6 +3000,10 @@
         const managingDirectorId = '@Html.Raw(Model.ManagingDirectorId)';
         const deputyManagingDirectorId = '@Html.Raw(Model.DeputyManagingDirectorId)';
 
+        // ⭐ Constant สำหรับ SKIP (ตรงกับ backend)
+        const SKIP_APPROVER = 'ผู้บังคับบัญชาลำดับถัดไป อนุมัติ';
+        const SKIP_TEXT = '⏭️ ผู้บังคับบัญชาลำดับถัดไป อนุมัติ';
+
         console.log('🔧 Setting Approvers...');
 
         // ✅ รอให้ Select2 ทั้งหมด initialize เสร็จก่อน
@@ -3021,8 +3025,12 @@
                             $('#sectionManagerIdHidden').val(sectionManagerId);
                             const $select = $('#sectionManagerSelect');
                             if ($select.find(`option[value="${sectionManagerId}"]`).length === 0) {
-                                const newOption = new Option(sectionManagerId, sectionManagerId, true, true);
+                                // ✅ ตรวจสอบว่าเป็น SKIP หรือไม่
+                                const displayText = (sectionManagerId === SKIP_APPROVER) ? SKIP_TEXT : sectionManagerId;
+                                const newOption = new Option(displayText, sectionManagerId, true, true);
                                 $select.append(newOption).trigger('change');
+                            } else {
+                                $select.val(sectionManagerId).trigger('change');
                             }
                             console.log('✅ SectionManager set:', sectionManagerId);
                         }
@@ -3032,8 +3040,12 @@
                             $('#departmentManagerIdHidden').val(departmentManagerId);
                             const $select = $('#departmentManagerSelect');
                             if ($select.find(`option[value="${departmentManagerId}"]`).length === 0) {
-                                const newOption = new Option(departmentManagerId, departmentManagerId, true, true);
+                                // ✅ ตรวจสอบว่าเป็น SKIP หรือไม่
+                                const displayText = (departmentManagerId === SKIP_APPROVER) ? SKIP_TEXT : departmentManagerId;
+                                const newOption = new Option(displayText, departmentManagerId, true, true);
                                 $select.append(newOption).trigger('change');
+                            } else {
+                                $select.val(departmentManagerId).trigger('change');
                             }
                             console.log('✅ DepartmentManager set:', departmentManagerId);
                         }
@@ -3043,8 +3055,12 @@
                             $('#managingDirectorIdHidden').val(managingDirectorId);
                             const $select = $('#managingDirectorSelect');
                             if ($select.find(`option[value="${managingDirectorId}"]`).length === 0) {
-                                const newOption = new Option(managingDirectorId, managingDirectorId, true, true);
+                                // ✅ ตรวจสอบว่าเป็น SKIP หรือไม่
+                                const displayText = (managingDirectorId === SKIP_APPROVER) ? SKIP_TEXT : managingDirectorId;
+                                const newOption = new Option(displayText, managingDirectorId, true, true);
                                 $select.append(newOption).trigger('change');
+                            } else {
+                                $select.val(managingDirectorId).trigger('change');
                             }
                             console.log('✅ ManagingDirector set:', managingDirectorId);
                         }
@@ -3054,8 +3070,12 @@
                             $('#deputyManagingDirectorIdHidden').val(deputyManagingDirectorId);
                             const $select = $('#deputyManagingDirectorSelect');
                             if ($select.find(`option[value="${deputyManagingDirectorId}"]`).length === 0) {
-                                const newOption = new Option(deputyManagingDirectorId, deputyManagingDirectorId, true, true);
+                                // ✅ ตรวจสอบว่าเป็น SKIP หรือไม่
+                                const displayText = (deputyManagingDirectorId === SKIP_APPROVER) ? SKIP_TEXT : deputyManagingDirectorId;
+                                const newOption = new Option(displayText, deputyManagingDirectorId, true, true);
                                 $select.append(newOption).trigger('change');
+                            } else {
+                                $select.val(deputyManagingDirectorId).trigger('change');
                             }
                             console.log('✅ DeputyManagingDirector set:', deputyManagingDirectorId);
                         }
