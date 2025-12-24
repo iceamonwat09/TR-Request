@@ -11,8 +11,9 @@
     bool isAdmin = ViewBag.IsAdmin ?? false;
 
     // กำหนดสิทธิ์การแก้ไข
-    bool canEdit = (pageMode == "Edit" || pageMode == "Admin");
+    bool canEdit = (pageMode == "Edit" || pageMode == "Admin" || pageMode == "HRDEdit"); // ⭐ เพิ่ม HRDEdit
     bool isApproveMode = (pageMode == "Approve");
+    bool isHRDEditMode = (pageMode == "HRDEdit"); // ⭐ เพิ่ม variable ใหม่
     bool isViewMode = (pageMode == "View");
 
     // Disable form inputs based on mode
@@ -56,6 +57,14 @@
                         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                     </div>
                 }
+                else if (isHRDEditMode)
+                {
+                    <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                        <strong><i class="fa fa-user-edit"></i> โหมด HRD แก้ไขและอนุมัติ</strong><br>
+                        คุณสามารถแก้ไขข้อมูลและอนุมัติเอกสารนี้ได้ (กรุณาบันทึกข้อมูลก่อนอนุมัติ)
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                }
                 <div class="card shadow-lg border-0" style="border-radius: 15px;">
                     <div class="card-header bg-primary py-4 position-relative" style="border-radius: 15px 15px 0 0;">
                         <div class="position-absolute top-0 end-0 p-3">
@@ -71,6 +80,10 @@
                             else if (pageMode == "Admin")
                             {
                                 <span class="badge bg-primary fs-6 ms-2"><i class="fa fa-user-shield"></i> Admin Mode</span>
+                            }
+                            else if (isHRDEditMode)
+                            {
+                                <span class="badge bg-warning text-dark fs-6 ms-2"><i class="fa fa-user-edit"></i> HRD Edit Mode</span>
                             }
                             else if (pageMode == "Edit")
                             {
@@ -1031,6 +1044,44 @@
                                             ← กลับ
                                         </a>
                                     }
+                                    else if (isHRDEditMode)
+                                    {
+                                        <!-- HRD Edit Mode: แสดงปุ่ม Save + Approve/Revise/Reject -->
+
+                                        <!-- 1️⃣ ปุ่ม Save ก่อน -->
+                                        <button type="submit" class="btn btn-primary btn-lg text-white px-5 py-3 fw-bold mb-4" style="border-radius: 25px; box-shadow: 0 4px 15px rgba(13, 110, 253, 0.3);">
+                                            💾 บันทึกข้อมูล
+                                        </button>
+
+                                        <!-- 2️⃣ เส้นแบ่งระหว่าง Save และ Approve -->
+                                        <hr class="my-4" style="border-top: 2px solid #dee2e6;">
+
+                                        <!-- 3️⃣ ส่วน Approval (Approve/Revise/Reject + Comment) -->
+                                        <div class="approval-section border rounded p-4 mb-4" style="background-color: #f8f9fa;">
+                                            <h5 class="text-center mb-4">💬 ความคิดเห็น (Optional for Approve, Required for Revise/Reject)</h5>
+                                            <textarea id="approvalComment" class="form-control form-control-lg mb-4" rows="4" placeholder="กรุณาระบุความคิดเห็น..."></textarea>
+
+                                            <div class="d-flex justify-content-center gap-3">
+                                                <button type="button" id="btnApprove" class="btn btn-success btn-lg px-5 py-3 fw-bold" style="border-radius: 25px;">
+                                                    ✅ Approve
+                                                </button>
+                                                <button type="button" id="btnRevise" class="btn btn-warning btn-lg px-5 py-3 fw-bold" style="border-radius: 25px;">
+                                                    🔄 Revise
+                                                </button>
+                                                <button type="button" id="btnReject" class="btn btn-danger btn-lg px-5 py-3 fw-bold" style="border-radius: 25px;">
+                                                    ❌ Reject
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <!-- 4️⃣ ปุ่มเพิ่มเติม -->
+                                        <a href="/TrainingRequest/ApprovalFlow?docNo=@Model.DocNo" class="btn btn-info btn-lg px-4 py-2" style="border-radius: 20px;">
+                                            📊 ดู Approval Timeline
+                                        </a>
+                                        <a href="/Home/MonthlyRequests" class="btn btn-secondary btn-lg px-4 py-2 ms-2" style="border-radius: 20px;">
+                                            ← กลับ
+                                        </a>
+                                    }
                                     else if (canEdit)
                                     {
                                         <!-- Edit Mode / Admin Mode: แสดงปุ่ม Save -->
@@ -1064,21 +1115,42 @@
     </div>
 </div>
 
-@if (isApproveMode)
+@if (isApproveMode || isHRDEditMode)
 {
     <!-- ✅ JavaScript for Approval Actions -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
     $(document).ready(function() {
         const docNo = '@Model.DocNo';
+        const isHRDEditMode = @Json.Serialize(isHRDEditMode); // ⭐ เพิ่ม HRDEdit Mode flag
 
         // ป้องกัน double-click
         let isProcessing = false;
+
+        // ⭐ Track form changes สำหรับ HRDEdit Mode
+        let formChanged = false;
+        if (isHRDEditMode) {
+            $('#trainingRequestForm :input').on('change', function() {
+                formChanged = true;
+            });
+        }
 
         function handleApprovalAction(action) {
             if (isProcessing) {
                 alert('กำลังดำเนินการ กรุณารอสักครู่...');
                 return;
+            }
+
+            // ⭐ HRDEdit Mode: ตรวจสอบว่า form มี changes หรือไม่
+            if (isHRDEditMode && action === 'Approve') {
+                if (formChanged) {
+                    alert('⚠️ กรุณาบันทึกข้อมูลก่อนอนุมัติ\n\nกด "💾 บันทึกข้อมูล" ก่อน แล้วจึงกด "✅ Approve"');
+                    return;
+                }
+                // ถ้าไม่มี changes → ถามยืนยันว่าจะอนุมัติโดยไม่แก้ไขจริงหรือไม่
+                if (!confirm('คุณต้องการอนุมัติโดยไม่แก้ไขข้อมูลเพิ่มเติมแล้วใช่หรือไม่?')) {
+                    return;
+                }
             }
 
             const comment = $('#approvalComment').val().trim();
@@ -1090,15 +1162,17 @@
                 return;
             }
 
-            // ยืนยันการดำเนินการ
-            const confirmMsg = action === 'Approve'
-                ? 'ต้องการอนุมัติเอกสารนี้ใช่หรือไม่?'
-                : (action === 'Revise'
-                    ? 'ต้องการส่งกลับแก้ไขเอกสารนี้ใช่หรือไม่?'
-                    : 'ต้องการไม่อนุมัติเอกสารนี้ใช่หรือไม่?');
+            // ยืนยันการดำเนินการ (ถ้าไม่ใช่ HRDEdit Mode กับ Approve ที่ยืนยันไปแล้ว)
+            if (!(isHRDEditMode && action === 'Approve')) {
+                const confirmMsg = action === 'Approve'
+                    ? 'ต้องการอนุมัติเอกสารนี้ใช่หรือไม่?'
+                    : (action === 'Revise'
+                        ? 'ต้องการส่งกลับแก้ไขเอกสารนี้ใช่หรือไม่?'
+                        : 'ต้องการไม่อนุมัติเอกสารนี้ใช่หรือไม่?');
 
-            if (!confirm(confirmMsg)) {
-                return;
+                if (!confirm(confirmMsg)) {
+                    return;
+                }
             }
 
             isProcessing = true;

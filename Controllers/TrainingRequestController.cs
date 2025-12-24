@@ -282,15 +282,19 @@ namespace TrainingRequestApp.Controllers
                                 }
                                 else if (model.Status == "Revision Admin" && isHRDAdmin)
                                 {
-                                    pageMode = "Approve"; // ✅ HRD Admin สามารถอนุมัติได้ใน Revision Admin Mode
+                                    pageMode = "HRDEdit"; // ⭐ HRD Admin แก้ไข + อนุมัติได้ใน Revision Admin Mode
                                 }
                                 else if (model.Status == "Revision Admin" && isHRDConfirmation)
                                 {
                                     pageMode = "Admin"; // HRD Confirmation เป็น Admin Mode (ดูอย่างเดียว)
                                 }
+                                else if (permissionResult.CanApprove && permissionResult.ApproverRole == "HRDAdmin")
+                                {
+                                    pageMode = "HRDEdit"; // ⭐ HRD Admin แก้ไข + อนุมัติได้ในขั้นตอนตัวเอง
+                                }
                                 else if (permissionResult.CanApprove)
                                 {
-                                    pageMode = "Approve"; // ผู้อนุมัติอนุมัติได้
+                                    pageMode = "Approve"; // ผู้อนุมัติอื่นๆ อนุมัติอย่างเดียว
                                 }
                                 else if (isAdmin || isHRDAdmin || isHRDConfirmation)
                                 {
