@@ -282,15 +282,19 @@ namespace TrainingRequestApp.Controllers
                                 }
                                 else if (model.Status == "Revision Admin" && isHRDAdmin)
                                 {
-                                    pageMode = "Approve"; // ✅ HRD Admin สามารถอนุมัติได้ใน Revision Admin Mode
+                                    pageMode = "HRDEdit"; // ⭐ HRD Admin แก้ไข + อนุมัติได้ใน Revision Admin Mode
                                 }
                                 else if (model.Status == "Revision Admin" && isHRDConfirmation)
                                 {
                                     pageMode = "Admin"; // HRD Confirmation เป็น Admin Mode (ดูอย่างเดียว)
                                 }
+                                else if (permissionResult.CanApprove && permissionResult.ApproverRole == "HRDAdmin")
+                                {
+                                    pageMode = "HRDEdit"; // ⭐ HRD Admin แก้ไข + อนุมัติได้ในขั้นตอนตัวเอง
+                                }
                                 else if (permissionResult.CanApprove)
                                 {
-                                    pageMode = "Approve"; // ผู้อนุมัติอนุมัติได้
+                                    pageMode = "Approve"; // ผู้อนุมัติอื่นๆ อนุมัติอย่างเดียว
                                 }
                                 else if (isAdmin || isHRDAdmin || isHRDConfirmation)
                                 {
@@ -798,13 +802,14 @@ namespace TrainingRequestApp.Controllers
                     await conn.OpenAsync();
 
                     string query = @"
-                        SELECT TOP 20 
-                            UserID as id, 
-                            CONCAT(Prefix, Name, ' ', Lastname) as name, 
-                            Email as email, 
+                        SELECT TOP 20
+                            UserID as id,
+                            CONCAT(Prefix, Name, ' ', Lastname) as name,
+                            Email as email,
                             Level as level
                         FROM Employees
                         WHERE Level = 'Section Manager'
+                        AND Status = 'Active'
                         AND Department = @Department
                         AND Position = @Position
                         AND (Name LIKE @Search OR Email LIKE @Search)
@@ -852,13 +857,14 @@ namespace TrainingRequestApp.Controllers
                     await conn.OpenAsync();
 
                     string query = @"
-                        SELECT TOP 20 
-                            UserID as id, 
-                            CONCAT(Prefix, Name, ' ', Lastname) as name, 
-                            Email as email, 
+                        SELECT TOP 20
+                            UserID as id,
+                            CONCAT(Prefix, Name, ' ', Lastname) as name,
+                            Email as email,
                             Level as level
                         FROM Employees
                         WHERE Level = 'Department Manager'
+                        AND Status = 'Active'
                         AND Department = @Department
                         AND (Name LIKE @Search OR Email LIKE @Search)
                         ORDER BY Name";
@@ -905,13 +911,14 @@ namespace TrainingRequestApp.Controllers
                     await conn.OpenAsync();
 
                     string query = @"
-                        SELECT TOP 20 
-                            UserID as id, 
-                            CONCAT(Prefix, Name, ' ', Lastname) as name, 
-                            Email as email, 
+                        SELECT TOP 20
+                            UserID as id,
+                            CONCAT(Prefix, Name, ' ', Lastname) as name,
+                            Email as email,
                             Level as level
                         FROM Employees
-                        WHERE Level IN ('Director', 'AMD', 'DMD', 'MD', 'CEO')
+                        WHERE Level IN ('Director', 'AMD', 'MD', 'CEO')
+                        AND Status = 'Active'
                         AND (Name LIKE @Search OR Email LIKE @Search)
                         ORDER BY Name";
 
@@ -940,6 +947,57 @@ namespace TrainingRequestApp.Controllers
             catch (Exception ex)
             {
                 Console.WriteLine($"❌ GetDirectors Error: {ex.Message}");
+                return Json(new List<object>());
+            }
+        }
+
+        [HttpGet("api/employees/approvers/deputy-director")]
+        public async Task<IActionResult> GetDeputyDirectors(string q = "")
+        {
+            try
+            {
+                string connectionString = _configuration.GetConnectionString("DefaultConnection");
+                using (SqlConnection conn = new SqlConnection(connectionString))
+                {
+                    await conn.OpenAsync();
+
+                    string query = @"
+                        SELECT TOP 20
+                            UserID as id,
+                            CONCAT(Prefix, Name, ' ', Lastname) as name,
+                            Email as email,
+                            Level as level
+                        FROM Employees
+                        WHERE Level = 'DMD'
+                        AND Status = 'Active'
+                        AND (Name LIKE @Search OR Email LIKE @Search)
+                        ORDER BY Name";
+
+                    using (SqlCommand cmd = new SqlCommand(query, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@Search", $"%{q}%");
+
+                        var results = new List<object>();
+                        using (var reader = await cmd.ExecuteReaderAsync())
+                        {
+                            while (await reader.ReadAsync())
+                            {
+                                results.Add(new
+                                {
+                                    id = reader["id"].ToString(),
+                                    name = reader["name"].ToString(),
+                                    email = reader["email"].ToString(),
+                                    level = reader["level"].ToString()
+                                });
+                            }
+                        }
+                        return Json(results);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ GetDeputyDirectors Error: {ex.Message}");
                 return Json(new List<object>());
             }
         }
