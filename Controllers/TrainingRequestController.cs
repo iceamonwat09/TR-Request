@@ -1663,7 +1663,7 @@ namespace TrainingRequestApp.Controllers
                     tr.CreatedBy,
                     tr.Status,
                     tr.CreatedDate,
-                    (SELECT COUNT(*) FROM TrainingRequestEmployees WHERE TrainingRequestId = tr.Id) AS ParticipantCount
+                    ISNULL(tr.TotalPeople, 0) AS ParticipantCount
                 FROM TrainingRequests tr
                 WHERE CAST(tr.CreatedDate AS DATE) BETWEEN @StartDate AND @EndDate";
 
