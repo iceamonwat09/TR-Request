@@ -287,7 +287,7 @@
     </div>
 
     <!-- Back Button -->
-    <a href="/" class="back-btn" title="กลับหน้าหลัก">
+    <a href="@Url.Action("Index", "Home")" class="back-btn" title="กลับหน้าหลัก">
         <i class="fas fa-arrow-left"></i>
     </a>
 
@@ -353,6 +353,7 @@
                                             <th class="text-end">โควต้าชั่วโมง (ชม.)</th>
                                             <th class="text-end">โควต้าเงิน (บาท)</th>
                                             <th>สร้างโดย</th>
+                                            <th>แก้ไขโดย</th>
                                             <th width="120" class="text-center">จัดการ</th>
                                         </tr>
                                     </thead>
@@ -373,6 +374,16 @@
                                                     <strong>@quota.Cost.ToString("N2")</strong>
                                                 </td>
                                                 <td>@(quota.CreatedBy ?? "-")</td>
+                                                <td>
+                                                    @if (!string.IsNullOrEmpty(quota.ModifyBy))
+                                                    {
+                                                        <small class="text-muted">@quota.ModifyBy</small>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="text-muted">-</span>
+                                                    }
+                                                </td>
                                                 <td class="text-center">
                                                     <a href="@Url.Action("Edit", "QuotaManagement", new { id = quota.ID })"
                                                        class="btn-warning action-btn" title="แก้ไข">

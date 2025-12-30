@@ -282,7 +282,11 @@
                             <label class="form-label fw-bold">
                                 <i class="fas fa-building"></i> บริษัท
                             </label>
-                            <input type="text" id="company" class="form-control" placeholder="Company">
+                            <select id="company" class="form-select">
+                                <option value="">ทั้งหมด</option>
+                                <option value="F2-สมุทรสาคร">F2-สมุทรสาคร</option>
+                                <option value="F4-ปราจีนบุรี">F4-ปราจีนบุรี</option>
+                            </select>
                         </div>
                         <div class="col-md-2">
                             <label class="form-label fw-bold">
@@ -291,8 +295,17 @@
                             <select id="status" class="form-select">
                                 <option value="">ทั้งหมด</option>
                                 <option value="Pending">Pending</option>
+                                <option value="WAITING_FOR_SECTION_MANAGER">WAITING_FOR_SECTION_MANAGER</option>
+                                <option value="WAITING_FOR_DEPARTMENT_MANAGER">WAITING_FOR_DEPARTMENT_MANAGER</option>
+                                <option value="WAITING_FOR_HRD_ADMIN">WAITING_FOR_HRD_ADMIN</option>
+                                <option value="WAITING_FOR_HRD_CONFIRMATION">WAITING_FOR_HRD_CONFIRMATION</option>
+                                <option value="WAITING_FOR_MANAGING_DIRECTOR">WAITING_FOR_MANAGING_DIRECTOR</option>
                                 <option value="Approved">Approved</option>
                                 <option value="Rejected">Rejected</option>
+                                <option value="Revise">Revise</option>
+                                <option value="Revision Admin">Revision Admin</option>
+                                <option value="Complete">Complete</option>
+                                <option value="RESCHEDULED">RESCHEDULED</option>
                             </select>
                         </div>
                     </div>
