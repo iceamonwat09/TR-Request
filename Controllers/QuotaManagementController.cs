@@ -305,7 +305,7 @@ namespace TrainingRequestApp.Controllers
             {
                 connection.Open();
                 string query = @"
-                    SELECT ID, Department, Year, Qhours, Cost
+                    SELECT ID, Department, Year, Qhours, Cost, CreatedBy, ModifyBy
                     FROM [HRDSYSTEM].[dbo].[TrainingRequest_Cost]
                     WHERE Year = @Year
                     ORDER BY Department";
@@ -324,7 +324,9 @@ namespace TrainingRequestApp.Controllers
                                 Department = reader["Department"].ToString() ?? "",
                                 Year = reader["Year"].ToString() ?? "",
                                 Qhours = Convert.ToInt32(reader["Qhours"]),
-                                Cost = Convert.ToDecimal(reader["Cost"])
+                                Cost = Convert.ToDecimal(reader["Cost"]),
+                                CreatedBy = reader["CreatedBy"]?.ToString(),
+                                ModifyBy = reader["ModifyBy"]?.ToString()
                             });
                         }
                     }
