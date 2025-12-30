@@ -83,7 +83,7 @@ namespace TrainingRequestApp.Controllers
                 }
 
                 // บันทึกข้อมูลพร้อม Error Handling & Transaction
-                string userName = HttpContext.Session.GetString("UserId") ?? "System";
+                string userName = HttpContext.Session.GetString("UserEmail") ?? "System";
                 model.CreatedBy = userName;
 
                 // เตรียมข้อมูล ModifyBy (สร้างครั้งแรก)
@@ -195,7 +195,7 @@ namespace TrainingRequestApp.Controllers
                 }
 
                 // เตรียมข้อมูล ModifyBy
-                string userEmail = HttpContext.Session.GetString("UserId") ?? "System";
+                string userEmail = HttpContext.Session.GetString("UserEmail") ?? "System";
                 string currentDate = DateTime.Now.ToString("dd/MM/yyyy");
                 string currentTime = DateTime.Now.ToString("HH:mm");
                 string modifyBy = $"{userEmail} / {currentDate} / {currentTime}";
