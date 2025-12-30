@@ -85,6 +85,13 @@ namespace TrainingRequestApp.Controllers
                 // บันทึกข้อมูลพร้อม Error Handling & Transaction
                 string userName = HttpContext.Session.GetString("UserId") ?? "System";
                 model.CreatedBy = userName;
+
+                // เตรียมข้อมูล ModifyBy (สร้างครั้งแรก)
+                string currentDate = DateTime.Now.ToString("dd/MM/yyyy");
+                string currentTime = DateTime.Now.ToString("HH:mm");
+                string modifyBy = $"{userName} / {currentDate} / {currentTime}";
+                model.ModifyBy = modifyBy;
+
                 string connectionString = _configuration.GetConnectionString("DefaultConnection");
 
                 try
@@ -98,8 +105,8 @@ namespace TrainingRequestApp.Controllers
                             {
                                 string query = @"
                                     INSERT INTO [HRDSYSTEM].[dbo].[TrainingRequest_Cost]
-                                    (Department, Year, Qhours, Cost, CreatedBy)
-                                    VALUES (@Department, @Year, @Qhours, @Cost, @CreatedBy)";
+                                    (Department, Year, Qhours, Cost, CreatedBy, ModifyBy)
+                                    VALUES (@Department, @Year, @Qhours, @Cost, @CreatedBy, @ModifyBy)";
 
                                 using (SqlCommand command = new SqlCommand(query, connection, transaction))
                                 {
@@ -108,6 +115,7 @@ namespace TrainingRequestApp.Controllers
                                     command.Parameters.AddWithValue("@Qhours", model.Qhours);
                                     command.Parameters.AddWithValue("@Cost", model.Cost);
                                     command.Parameters.AddWithValue("@CreatedBy", (object?)model.CreatedBy ?? DBNull.Value);
+                                    command.Parameters.AddWithValue("@ModifyBy", (object?)model.ModifyBy ?? DBNull.Value);
 
                                     int rowsAffected = command.ExecuteNonQuery();
 
