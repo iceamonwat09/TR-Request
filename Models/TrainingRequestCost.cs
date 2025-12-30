@@ -33,6 +33,10 @@ namespace TrainingRequestApp.Models
         [Display(Name = "สร้างโดย")]
         public string? CreatedBy { get; set; }
 
+        [StringLength(200)]
+        [Display(Name = "แก้ไขโดย")]
+        public string? ModifyBy { get; set; }
+
         // Note: Database allows NULL for all columns except ID (Primary Key)
     }
 }

@@ -186,6 +186,12 @@ namespace TrainingRequestApp.Controllers
                     return View(model);
                 }
 
+                // เตรียมข้อมูล ModifyBy
+                string userEmail = HttpContext.Session.GetString("UserId") ?? "System";
+                string currentDate = DateTime.Now.ToString("dd/MM/yyyy");
+                string currentTime = DateTime.Now.ToString("HH:mm");
+                string modifyBy = $"{userEmail} / {currentDate} / {currentTime}";
+
                 // อัพเดตข้อมูลพร้อม Error Handling & Transaction
                 string connectionString = _configuration.GetConnectionString("DefaultConnection");
 
@@ -203,7 +209,8 @@ namespace TrainingRequestApp.Controllers
                                     SET Department = @Department,
                                         Year = @Year,
                                         Qhours = @Qhours,
-                                        Cost = @Cost
+                                        Cost = @Cost,
+                                        ModifyBy = @ModifyBy
                                     WHERE ID = @ID";
 
                                 using (SqlCommand command = new SqlCommand(query, connection, transaction))
@@ -213,6 +220,7 @@ namespace TrainingRequestApp.Controllers
                                     command.Parameters.AddWithValue("@Year", model.Year);
                                     command.Parameters.AddWithValue("@Qhours", model.Qhours);
                                     command.Parameters.AddWithValue("@Cost", model.Cost);
+                                    command.Parameters.AddWithValue("@ModifyBy", modifyBy);
 
                                     int rowsAffected = command.ExecuteNonQuery();
 
@@ -326,7 +334,7 @@ namespace TrainingRequestApp.Controllers
             {
                 connection.Open();
                 string query = @"
-                    SELECT ID, Department, Year, Qhours, Cost
+                    SELECT ID, Department, Year, Qhours, Cost, CreatedBy, ModifyBy
                     FROM [HRDSYSTEM].[dbo].[TrainingRequest_Cost]
                     WHERE ID = @ID";
 
@@ -344,7 +352,9 @@ namespace TrainingRequestApp.Controllers
                                 Department = reader["Department"].ToString() ?? "",
                                 Year = reader["Year"].ToString() ?? "",
                                 Qhours = Convert.ToInt32(reader["Qhours"]),
-                                Cost = Convert.ToDecimal(reader["Cost"])
+                                Cost = Convert.ToDecimal(reader["Cost"]),
+                                CreatedBy = reader["CreatedBy"]?.ToString(),
+                                ModifyBy = reader["ModifyBy"]?.ToString()
                             };
                         }
                     }
