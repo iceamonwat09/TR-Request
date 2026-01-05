@@ -632,7 +632,7 @@ namespace TrainingRequestApp.Controllers
                 {
                     await conn.OpenAsync();
 
-                    // SQL Query ตามที่ผู้ใช้ระบุ - JOIN TrainingRequests กับ TrainingRequestEmployees
+                    // SQL Query - ใช้ LEFT JOIN เพื่อดึงข้อมูล TrainingRequests ทั้งหมด (รวมที่ไม่มี Employee)
                     string query = @"
                         SELECT
                             tr.DocNo, tr.Company, tr.TrainingType, tr.Factory, tr.CCEmail,
@@ -643,13 +643,20 @@ namespace TrainingRequestApp.Controllers
                             tr.Status, tr.CreatedDate, tr.CreatedBy, tr.UpdatedDate, tr.UpdatedBy,
                             tr.RegistrationCost, tr.InstructorFee, tr.EquipmentCost, tr.FoodCost,
                             tr.OtherCost, tr.OtherCostDescription, tr.TotalPeople,
-                            emp.EmployeeCode, emp.EmployeeName, emp.Position AS EmployeePosition,
-                            emp.PreviousTrainingHours, emp.PreviousTrainingCost,
-                            emp.CurrentTrainingHours, emp.CurrentTrainingCost, emp.Notes,
-                            emp.Level, emp.Department AS EmployeeDepartment,
-                            emp.RemainingHours, emp.RemainingCost
+                            ISNULL(emp.EmployeeCode, '') AS EmployeeCode,
+                            ISNULL(emp.EmployeeName, '') AS EmployeeName,
+                            ISNULL(emp.Position, '') AS EmployeePosition,
+                            ISNULL(emp.PreviousTrainingHours, 0) AS PreviousTrainingHours,
+                            ISNULL(emp.PreviousTrainingCost, 0) AS PreviousTrainingCost,
+                            ISNULL(emp.CurrentTrainingHours, 0) AS CurrentTrainingHours,
+                            ISNULL(emp.CurrentTrainingCost, 0) AS CurrentTrainingCost,
+                            ISNULL(emp.Notes, '') AS Notes,
+                            ISNULL(emp.[level], '') AS Level,
+                            ISNULL(emp.Department, '') AS EmployeeDepartment,
+                            ISNULL(emp.RemainingHours, 0) AS RemainingHours,
+                            ISNULL(emp.RemainingCost, 0) AS RemainingCost
                         FROM [HRDSYSTEM].[dbo].[TrainingRequests] tr
-                        INNER JOIN [HRDSYSTEM].[dbo].[TrainingRequestEmployees] emp
+                        LEFT JOIN [HRDSYSTEM].[dbo].[TrainingRequestEmployees] emp
                             ON emp.TrainingRequestId = tr.Id
                         WHERE tr.StartDate >= @StartDate
                           AND tr.StartDate <= @EndDate
