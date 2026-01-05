@@ -162,11 +162,11 @@ namespace TrainingRequestApp.Services
 
             // === Row 5: ด้วยแผนก / ฝ่าย / มีความประสงค์จะ ===
             gfx.DrawString("ด้วยแผนก", _fontBold, XBrushes.Black, new XPoint(labelX, currentY + textOffsetY));
-            DrawUnderlineText(gfx, labelX + 55, currentY + textOffsetY, 110, data.Department ?? "", 3);
+            DrawUnderlineText(gfx, labelX + 55, currentY + textOffsetY, 110, data.Position ?? "", 3);
 
             double xPos = labelX + 175;
             gfx.DrawString("ฝ่าย", _fontBold, XBrushes.Black, new XPoint(xPos, currentY + textOffsetY));
-            DrawUnderline(gfx, xPos + 28, currentY + textOffsetY + 3, 90);
+            DrawUnderlineText(gfx, xPos + 28, currentY + textOffsetY, 90, data.Department ?? "", 3);
 
             xPos += 130;
             gfx.DrawString("มีความประสงค์จะ", _fontBold, XBrushes.Black, new XPoint(xPos, currentY + textOffsetY));
@@ -185,7 +185,8 @@ namespace TrainingRequestApp.Services
             DrawUnderlineText(gfx, labelX + 105, currentY + textOffsetY, 130, dateRange, 3);
 
             gfx.DrawString("รวมระยะเวลาการอบรม:", _fontBold, XBrushes.Black, new XPoint(rightColX, currentY + textOffsetY));
-            DrawUnderline(gfx, rightColX + 125, currentY + textOffsetY + 3, 25);
+            int workingDays = CalculateWorkingDays(data.StartDate, data.EndDate);
+            DrawUnderlineText(gfx, rightColX + 125, currentY + textOffsetY, 25, workingDays.ToString(), 3);
             gfx.DrawString("วัน /", _fontSmall, XBrushes.Black, new XPoint(rightColX + 153, currentY + textOffsetY));
             DrawUnderlineText(gfx, rightColX + 180, currentY + textOffsetY, 25, data.PerPersonTrainingHours.ToString(), 3);
             gfx.DrawString("ชั่วโมง", _fontSmall, XBrushes.Black, new XPoint(rightColX + 208, currentY + textOffsetY));
@@ -211,7 +212,7 @@ namespace TrainingRequestApp.Services
 
             // === Row 10: กลุ่มเป้าหมาย & จำนวนผู้เข้ารับการอบรม ===
             gfx.DrawString("กลุ่มเป้าหมาย :", _fontBold, XBrushes.Black, new XPoint(labelX, currentY + textOffsetY));
-            DrawUnderlineText(gfx, labelX + 82, currentY + textOffsetY, halfWidth - 100, data.Position ?? "", 3);
+            DrawUnderlineText(gfx, labelX + 82, currentY + textOffsetY, halfWidth - 100, "", 3);
 
             gfx.DrawString("จำนวนผู้เข้ารับการอบรม :", _fontBold, XBrushes.Black, new XPoint(rightColX, currentY + textOffsetY));
             DrawUnderlineText(gfx, rightColX + 130, currentY + textOffsetY, 30, data.TotalPeople.ToString(), 3);
@@ -398,12 +399,13 @@ namespace TrainingRequestApp.Services
             leftY += lineHeight + 3;
 
             bool isManagingApproved = data.Status_ManagingDirector?.ToUpper() == "APPROVED";
+            bool isManagingRejected = data.Status_ManagingDirector?.ToUpper() == "REJECTED";
 
             DrawCheckbox(gfx, leftX + 5, leftY + 2, isManagingApproved);
             gfx.DrawString("อนุมัติให้ฝึกอบรมสัมมนา", _fontSmall, XBrushes.Black, new XPoint(leftX + 20, leftY + textOffsetY));
             leftY += lineHeight;
 
-            DrawCheckbox(gfx, leftX + 5, leftY + 2, !isManagingApproved && !string.IsNullOrEmpty(data.Status_ManagingDirector));
+            DrawCheckbox(gfx, leftX + 5, leftY + 2, isManagingRejected);
             gfx.DrawString("ไม่อนุมัติ/ส่งกลับให้ต้นสังกัดทบทวนใหม่", _fontSmall, XBrushes.Black, new XPoint(leftX + 20, leftY + textOffsetY));
             leftY += lineHeight + 2;
 
@@ -608,39 +610,86 @@ namespace TrainingRequestApp.Services
 
             gfx.DrawString("งบประมาณ:", _fontBold, XBrushes.Black, new XPoint(labelX, currentY + textOffsetY));
 
+            // === แถว 1: ค่าลงทะเบียน + ค่าวิทยากร ===
             double cbX = labelX + 68;
             DrawCheckbox(gfx, cbX, currentY + 4, data.RegistrationCost > 0);
-            gfx.DrawString("ค่าลงทะเบียน/วิทยากร", _fontSmall, XBrushes.Black, new XPoint(cbX + 14, currentY + textOffsetY));
-            DrawUnderlineText(gfx, cbX + 118, currentY + textOffsetY, 45, data.RegistrationCost.ToString("N0"), 3);
-            gfx.DrawString("บาท", _fontSmall, XBrushes.Black, new XPoint(cbX + 168, currentY + textOffsetY));
+            gfx.DrawString("ค่าลงทะเบียน", _fontSmall, XBrushes.Black, new XPoint(cbX + 14, currentY + textOffsetY));
+            DrawUnderlineText(gfx, cbX + 85, currentY + textOffsetY, 50, data.RegistrationCost.ToString("N0"), 3);
+            gfx.DrawString("บาท", _fontSmall, XBrushes.Black, new XPoint(cbX + 140, currentY + textOffsetY));
 
-            cbX += 200;
-            DrawCheckbox(gfx, cbX, currentY + 4, data.EquipmentCost > 0);
-            gfx.DrawString("ค่าเอกสาร/อุปกรณ์", _fontSmall, XBrushes.Black, new XPoint(cbX + 14, currentY + textOffsetY));
-            DrawUnderlineText(gfx, cbX + 102, currentY + textOffsetY, 45, data.EquipmentCost.ToString("N0"), 3);
-            gfx.DrawString("บาท", _fontSmall, XBrushes.Black, new XPoint(cbX + 152, currentY + textOffsetY));
-
+            cbX += 175;
+            DrawCheckbox(gfx, cbX, currentY + 4, data.InstructorFee > 0);
+            gfx.DrawString("ค่าวิทยากร", _fontSmall, XBrushes.Black, new XPoint(cbX + 14, currentY + textOffsetY));
+            DrawUnderlineText(gfx, cbX + 70, currentY + textOffsetY, 50, data.InstructorFee.ToString("N0"), 3);
+            gfx.DrawString("บาท", _fontSmall, XBrushes.Black, new XPoint(cbX + 125, currentY + textOffsetY));
             currentY += rowHeight;
+
+            // === แถว 2: ค่าอาหาร + ค่าอุปกรณ์ ===
             cbX = labelX + 68;
-            DrawCheckbox(gfx, cbX, currentY + 4, data.OtherCost > 0 || data.FoodCost > 0 || data.InstructorFee > 0);
+            DrawCheckbox(gfx, cbX, currentY + 4, data.FoodCost > 0);
+            gfx.DrawString("ค่าอาหาร", _fontSmall, XBrushes.Black, new XPoint(cbX + 14, currentY + textOffsetY));
+            DrawUnderlineText(gfx, cbX + 60, currentY + textOffsetY, 50, data.FoodCost.ToString("N0"), 3);
+            gfx.DrawString("บาท", _fontSmall, XBrushes.Black, new XPoint(cbX + 115, currentY + textOffsetY));
+
+            cbX += 150;
+            DrawCheckbox(gfx, cbX, currentY + 4, data.EquipmentCost > 0);
+            gfx.DrawString("ค่าอุปกรณ์", _fontSmall, XBrushes.Black, new XPoint(cbX + 14, currentY + textOffsetY));
+            DrawUnderlineText(gfx, cbX + 70, currentY + textOffsetY, 50, data.EquipmentCost.ToString("N0"), 3);
+            gfx.DrawString("บาท", _fontSmall, XBrushes.Black, new XPoint(cbX + 125, currentY + textOffsetY));
+            currentY += rowHeight;
+
+            // === แถว 3: ค่าใช้จ่ายต่อคน + อื่นๆ (ระบุ) ===
+            cbX = labelX + 68;
+            DrawCheckbox(gfx, cbX, currentY + 4, data.CostPerPerson > 0);
+            gfx.DrawString("ค่าใช้จ่ายต่อคน", _fontSmall, XBrushes.Black, new XPoint(cbX + 14, currentY + textOffsetY));
+            DrawUnderlineText(gfx, cbX + 95, currentY + textOffsetY, 50, data.CostPerPerson.ToString("N0"), 3);
+            gfx.DrawString("บาท", _fontSmall, XBrushes.Black, new XPoint(cbX + 150, currentY + textOffsetY));
+
+            cbX += 185;
+            DrawCheckbox(gfx, cbX, currentY + 4, data.OtherCost > 0);
             gfx.DrawString("อื่นๆ (ระบุ)", _fontSmall, XBrushes.Black, new XPoint(cbX + 14, currentY + textOffsetY));
 
-            string otherDesc = "";
-            if (data.InstructorFee > 0) otherDesc += $"ค่าวิทยากร {data.InstructorFee:N0}, ";
-            if (data.FoodCost > 0) otherDesc += $"ค่าอาหาร {data.FoodCost:N0}, ";
-            if (data.OtherCost > 0) otherDesc += $"อื่นๆ {data.OtherCost:N0}";
-            otherDesc = otherDesc.TrimEnd(',', ' ');
+            // แสดง OtherCostDescription + OtherCost
+            string otherText = "";
+            if (!string.IsNullOrEmpty(data.OtherCostDescription))
+                otherText = $"{data.OtherCostDescription} {data.OtherCost:N0}";
+            else if (data.OtherCost > 0)
+                otherText = data.OtherCost.ToString("N0");
 
-            DrawUnderlineText(gfx, cbX + 72, currentY + textOffsetY, 115, otherDesc, 3);
+            DrawUnderlineText(gfx, cbX + 72, currentY + textOffsetY, 115, otherText, 3);
             gfx.DrawString("บาท", _fontSmall, XBrushes.Black, new XPoint(cbX + 192, currentY + textOffsetY));
+            currentY += rowHeight;
 
-            cbX += 225;
+            // === แถว 4: รวมสุทธิ ===
+            cbX = labelX + 68 + 185;
             gfx.DrawString("รวมสุทธิ:", _fontBold, XBrushes.Black, new XPoint(cbX, currentY + textOffsetY));
             DrawUnderlineText(gfx, cbX + 52, currentY + textOffsetY, 60, data.TotalCost.ToString("N0"), 3);
             gfx.DrawString("บาท", _fontSmall, XBrushes.Black, new XPoint(cbX + 117, currentY + textOffsetY));
-
             currentY += rowHeight;
+
             return currentY;
+        }
+
+        /// <summary>
+        /// คำนวณจำนวนวันทำงาน (ไม่นับวันเสาร์-อาทิตย์)
+        /// </summary>
+        private int CalculateWorkingDays(DateTime? startDate, DateTime? endDate)
+        {
+            if (!startDate.HasValue || !endDate.HasValue)
+                return 0;
+
+            if (startDate.Value > endDate.Value)
+                return 0;
+
+            int days = 0;
+            for (var date = startDate.Value; date <= endDate.Value; date = date.AddDays(1))
+            {
+                // ไม่นับวันเสาร์ (Saturday) และวันอาทิตย์ (Sunday)
+                if (date.DayOfWeek != DayOfWeek.Saturday && date.DayOfWeek != DayOfWeek.Sunday)
+                    days++;
+            }
+
+            return days;
         }
 
         private double DrawSignatureSection(XGraphics gfx, TrainingRequestData data, double contentX, double currentY, double contentWidth, double padding, double textOffsetY, double sectionBottom)
@@ -660,19 +709,21 @@ namespace TrainingRequestApp.Services
 
             double cbX = labelX + 100;
             bool isSectionApproved = data.Status_SectionManager?.ToUpper() == "APPROVED";
+            bool isSectionRejected = data.Status_SectionManager?.ToUpper() == "REJECTED";
             DrawCheckbox(gfx, cbX, currentY + 4, isSectionApproved);
             gfx.DrawString("อนุมัติ", _fontSmall, XBrushes.Black, new XPoint(cbX + 14, currentY + textOffsetY));
             cbX += 55;
-            DrawCheckbox(gfx, cbX, currentY + 4, !isSectionApproved && !string.IsNullOrEmpty(data.Status_SectionManager));
+            DrawCheckbox(gfx, cbX, currentY + 4, isSectionRejected);
             gfx.DrawString("ไม่อนุมัติ", _fontSmall, XBrushes.Black, new XPoint(cbX + 14, currentY + textOffsetY));
 
             // === RIGHT: อนุมัติ (Department Manager) ===
             cbX = rightColX;
             bool isDepartmentApproved = data.Status_DepartmentManager?.ToUpper() == "APPROVED";
+            bool isDepartmentRejected = data.Status_DepartmentManager?.ToUpper() == "REJECTED";
             DrawCheckbox(gfx, cbX, currentY + 4, isDepartmentApproved);
             gfx.DrawString("อนุมัติ", _fontSmall, XBrushes.Black, new XPoint(cbX + 14, currentY + textOffsetY));
             cbX += 55;
-            DrawCheckbox(gfx, cbX, currentY + 4, !isDepartmentApproved && !string.IsNullOrEmpty(data.Status_DepartmentManager));
+            DrawCheckbox(gfx, cbX, currentY + 4, isDepartmentRejected);
             gfx.DrawString("ไม่อนุมัติ", _fontSmall, XBrushes.Black, new XPoint(cbX + 14, currentY + textOffsetY));
 
             currentY += lineHeight;
@@ -803,6 +854,7 @@ namespace TrainingRequestApp.Services
                         tr.SeminarTitle, tr.TrainingLocation, tr.Instructor,
                         tr.StartDate, tr.EndDate, tr.TotalPeople, tr.PerPersonTrainingHours,
                         tr.RegistrationCost, tr.InstructorFee, tr.EquipmentCost, tr.FoodCost, tr.OtherCost,
+                        tr.OtherCostDescription,
                         tr.TotalCost, tr.CostPerPerson,
                         tr.TrainingObjective, tr.OtherObjective, tr.ExpectedOutcome,
                         tr.Status, tr.CreatedBy, tr.CreatedDate,
@@ -850,6 +902,7 @@ namespace TrainingRequestApp.Services
                             data.EquipmentCost = reader["EquipmentCost"] != DBNull.Value ? (decimal)reader["EquipmentCost"] : 0;
                             data.FoodCost = reader["FoodCost"] != DBNull.Value ? (decimal)reader["FoodCost"] : 0;
                             data.OtherCost = reader["OtherCost"] != DBNull.Value ? (decimal)reader["OtherCost"] : 0;
+                            data.OtherCostDescription = reader["OtherCostDescription"]?.ToString();
                             data.TotalCost = reader["TotalCost"] != DBNull.Value ? (decimal)reader["TotalCost"] : 0;
                             data.CostPerPerson = reader["CostPerPerson"] != DBNull.Value ? (decimal)reader["CostPerPerson"] : 0;
                             data.TrainingObjective = reader["TrainingObjective"]?.ToString();
@@ -934,6 +987,7 @@ namespace TrainingRequestApp.Services
             public decimal EquipmentCost { get; set; }
             public decimal FoodCost { get; set; }
             public decimal OtherCost { get; set; }
+            public string OtherCostDescription { get; set; }
             public decimal TotalCost { get; set; }
             public decimal CostPerPerson { get; set; }
             public string TrainingObjective { get; set; }
