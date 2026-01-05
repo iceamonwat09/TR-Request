@@ -326,7 +326,7 @@ namespace TrainingRequestApp.Services
             bool isHRDConfirmationApproved = data.Status_HRDConfirmation?.ToUpper() == "APPROVED";
 
             // === Row 1: ตรวจสอบโดย / อนุมัติผลการตรวจสอบ ===
-            gfx.DrawString("ตรวจสอบโดย:", _fontBold, XBrushes.Black, new XPoint(labelX, currentY + textOffsetY));
+            gfx.DrawString("ตรวจสอบโดย:", _fontSmall, XBrushes.Black, new XPoint(labelX, currentY + textOffsetY));
 
             // เส้นใต้สำหรับตรวจสอบโดย
             double underlineStartLeft = labelX + 75;
@@ -338,7 +338,7 @@ namespace TrainingRequestApp.Services
                 gfx.DrawString(data.ApproveInfo_HRDAdmin, _fontSmall, XBrushes.Black, new XPoint(underlineStartLeft, currentY + textOffsetY));
             }
 
-            gfx.DrawString("อนุมัติผลการตรวจสอบ:", _fontBold, XBrushes.Black, new XPoint(rightColX, currentY + textOffsetY));
+            gfx.DrawString("อนุมัติผลการตรวจสอบ:", _fontSmall, XBrushes.Black, new XPoint(rightColX, currentY + textOffsetY));
 
             // เส้นใต้สำหรับอนุมัติผลการตรวจสอบ
             double underlineStartRight = rightColX + 118;
@@ -577,24 +577,32 @@ namespace TrainingRequestApp.Services
 
             gfx.DrawString("วัตถุประสงค์:", _fontBold, XBrushes.Black, new XPoint(labelX, currentY + textOffsetY));
 
+            // === Row 1: พัฒนาทักษะ + เพิ่มประสิทธิภาพ + ช่วยแก้ไข + อื่นๆ (ระบุ) ===
             double cbX = labelX + 75;
             DrawCheckbox(gfx, cbX, currentY + 4, isObj1);
             gfx.DrawString("พัฒนาทักษะความชำนาญ", _fontSmall, XBrushes.Black, new XPoint(cbX + 14, currentY + textOffsetY));
-            cbX += 140;
+
+            cbX += 125;
             DrawCheckbox(gfx, cbX, currentY + 4, isObj2);
             gfx.DrawString("เพิ่มประสิทธิภาพ / คุณภาพ", _fontSmall, XBrushes.Black, new XPoint(cbX + 14, currentY + textOffsetY));
-            cbX += 145;
+
+            cbX += 135;
             DrawCheckbox(gfx, cbX, currentY + 4, isObj3);
             gfx.DrawString("ช่วยแก้ไข / ป้องกันปัญหา", _fontSmall, XBrushes.Black, new XPoint(cbX + 14, currentY + textOffsetY));
 
+            // ย้าย "อื่นๆ (ระบุ)" มาอยู่บรรทัดเดียวกับ "ช่วยแก้ไข / ป้องกันปัญหา"
             currentY += rowHeight;
             cbX = labelX + 75;
+
+            // === Row 2: กฎหมาย + ถ่ายทอดความรู้ + อื่นๆ (ระบุ) ===
             DrawCheckbox(gfx, cbX, currentY + 4, isObj4);
             gfx.DrawString("กฎหมาย/ข้อกำหนดลูกค้า", _fontSmall, XBrushes.Black, new XPoint(cbX + 14, currentY + textOffsetY));
-            cbX += 140;
+
+            cbX += 125;
             DrawCheckbox(gfx, cbX, currentY + 4, isObj5);
             gfx.DrawString("ถ่ายทอดความรู้/ขยายผลสู่ผู้อื่น", _fontSmall, XBrushes.Black, new XPoint(cbX + 14, currentY + textOffsetY));
-            cbX += 160;
+
+            cbX += 175;
             DrawCheckbox(gfx, cbX, currentY + 4, isObj6);
             gfx.DrawString("อื่นๆ (ระบุ)", _fontSmall, XBrushes.Black, new XPoint(cbX + 14, currentY + textOffsetY));
             DrawUnderline(gfx, cbX + 72, currentY + textOffsetY + 3, contentWidth - cbX - 77 + contentX);
@@ -608,46 +616,46 @@ namespace TrainingRequestApp.Services
             double rowHeight = 17;
             double labelX = contentX + padding;
 
+            // กำหนดตำแหน่งคอลัมน์ที่แน่นอนเพื่อความสวยงาม
+            double col1X = labelX + 68;      // คอลัมน์ที่ 1
+            double col2X = labelX + 243;     // คอลัมน์ที่ 2 (เพิ่มจาก 68 + 175 = 243)
+            double bahtCol1X = col1X + 140;  // "บาท" คอลัมน์ที่ 1
+            double bahtCol2X = col2X + 125;  // "บาท" คอลัมน์ที่ 2
+
             gfx.DrawString("งบประมาณ:", _fontBold, XBrushes.Black, new XPoint(labelX, currentY + textOffsetY));
 
             // === แถว 1: ค่าลงทะเบียน + ค่าวิทยากร ===
-            double cbX = labelX + 68;
-            DrawCheckbox(gfx, cbX, currentY + 4, data.RegistrationCost > 0);
-            gfx.DrawString("ค่าลงทะเบียน", _fontSmall, XBrushes.Black, new XPoint(cbX + 14, currentY + textOffsetY));
-            DrawUnderlineText(gfx, cbX + 85, currentY + textOffsetY, 50, data.RegistrationCost.ToString("N0"), 3);
-            gfx.DrawString("บาท", _fontSmall, XBrushes.Black, new XPoint(cbX + 140, currentY + textOffsetY));
+            DrawCheckbox(gfx, col1X, currentY + 4, data.RegistrationCost > 0);
+            gfx.DrawString("ค่าลงทะเบียน", _fontSmall, XBrushes.Black, new XPoint(col1X + 14, currentY + textOffsetY));
+            DrawUnderlineText(gfx, col1X + 85, currentY + textOffsetY, 50, data.RegistrationCost.ToString("N0"), 3);
+            gfx.DrawString("บาท", _fontSmall, XBrushes.Black, new XPoint(bahtCol1X, currentY + textOffsetY));
 
-            cbX += 175;
-            DrawCheckbox(gfx, cbX, currentY + 4, data.InstructorFee > 0);
-            gfx.DrawString("ค่าวิทยากร", _fontSmall, XBrushes.Black, new XPoint(cbX + 14, currentY + textOffsetY));
-            DrawUnderlineText(gfx, cbX + 70, currentY + textOffsetY, 50, data.InstructorFee.ToString("N0"), 3);
-            gfx.DrawString("บาท", _fontSmall, XBrushes.Black, new XPoint(cbX + 125, currentY + textOffsetY));
+            DrawCheckbox(gfx, col2X, currentY + 4, data.InstructorFee > 0);
+            gfx.DrawString("ค่าวิทยากร", _fontSmall, XBrushes.Black, new XPoint(col2X + 14, currentY + textOffsetY));
+            DrawUnderlineText(gfx, col2X + 70, currentY + textOffsetY, 50, data.InstructorFee.ToString("N0"), 3);
+            gfx.DrawString("บาท", _fontSmall, XBrushes.Black, new XPoint(bahtCol2X, currentY + textOffsetY));
             currentY += rowHeight;
 
             // === แถว 2: ค่าอาหาร + ค่าอุปกรณ์ ===
-            cbX = labelX + 68;
-            DrawCheckbox(gfx, cbX, currentY + 4, data.FoodCost > 0);
-            gfx.DrawString("ค่าอาหาร", _fontSmall, XBrushes.Black, new XPoint(cbX + 14, currentY + textOffsetY));
-            DrawUnderlineText(gfx, cbX + 60, currentY + textOffsetY, 50, data.FoodCost.ToString("N0"), 3);
-            gfx.DrawString("บาท", _fontSmall, XBrushes.Black, new XPoint(cbX + 115, currentY + textOffsetY));
+            DrawCheckbox(gfx, col1X, currentY + 4, data.FoodCost > 0);
+            gfx.DrawString("ค่าอาหาร", _fontSmall, XBrushes.Black, new XPoint(col1X + 14, currentY + textOffsetY));
+            DrawUnderlineText(gfx, col1X + 60, currentY + textOffsetY, 50, data.FoodCost.ToString("N0"), 3);
+            gfx.DrawString("บาท", _fontSmall, XBrushes.Black, new XPoint(bahtCol1X, currentY + textOffsetY));
 
-            cbX += 150;
-            DrawCheckbox(gfx, cbX, currentY + 4, data.EquipmentCost > 0);
-            gfx.DrawString("ค่าอุปกรณ์", _fontSmall, XBrushes.Black, new XPoint(cbX + 14, currentY + textOffsetY));
-            DrawUnderlineText(gfx, cbX + 70, currentY + textOffsetY, 50, data.EquipmentCost.ToString("N0"), 3);
-            gfx.DrawString("บาท", _fontSmall, XBrushes.Black, new XPoint(cbX + 125, currentY + textOffsetY));
+            DrawCheckbox(gfx, col2X, currentY + 4, data.EquipmentCost > 0);
+            gfx.DrawString("ค่าอุปกรณ์", _fontSmall, XBrushes.Black, new XPoint(col2X + 14, currentY + textOffsetY));
+            DrawUnderlineText(gfx, col2X + 70, currentY + textOffsetY, 50, data.EquipmentCost.ToString("N0"), 3);
+            gfx.DrawString("บาท", _fontSmall, XBrushes.Black, new XPoint(bahtCol2X, currentY + textOffsetY));
             currentY += rowHeight;
 
             // === แถว 3: ค่าใช้จ่ายต่อคน + อื่นๆ (ระบุ) ===
-            cbX = labelX + 68;
-            DrawCheckbox(gfx, cbX, currentY + 4, data.CostPerPerson > 0);
-            gfx.DrawString("ค่าใช้จ่ายต่อคน", _fontSmall, XBrushes.Black, new XPoint(cbX + 14, currentY + textOffsetY));
-            DrawUnderlineText(gfx, cbX + 95, currentY + textOffsetY, 50, data.CostPerPerson.ToString("N0"), 3);
-            gfx.DrawString("บาท", _fontSmall, XBrushes.Black, new XPoint(cbX + 150, currentY + textOffsetY));
+            DrawCheckbox(gfx, col1X, currentY + 4, data.CostPerPerson > 0);
+            gfx.DrawString("ค่าใช้จ่ายต่อคน", _fontSmall, XBrushes.Black, new XPoint(col1X + 14, currentY + textOffsetY));
+            DrawUnderlineText(gfx, col1X + 95, currentY + textOffsetY, 50, data.CostPerPerson.ToString("N0"), 3);
+            gfx.DrawString("บาท", _fontSmall, XBrushes.Black, new XPoint(bahtCol1X + 10, currentY + textOffsetY));
 
-            cbX += 185;
-            DrawCheckbox(gfx, cbX, currentY + 4, data.OtherCost > 0);
-            gfx.DrawString("อื่นๆ (ระบุ)", _fontSmall, XBrushes.Black, new XPoint(cbX + 14, currentY + textOffsetY));
+            DrawCheckbox(gfx, col2X, currentY + 4, data.OtherCost > 0);
+            gfx.DrawString("อื่นๆ (ระบุ)", _fontSmall, XBrushes.Black, new XPoint(col2X + 14, currentY + textOffsetY));
 
             // แสดง OtherCostDescription + OtherCost
             string otherText = "";
@@ -656,15 +664,14 @@ namespace TrainingRequestApp.Services
             else if (data.OtherCost > 0)
                 otherText = data.OtherCost.ToString("N0");
 
-            DrawUnderlineText(gfx, cbX + 72, currentY + textOffsetY, 115, otherText, 3);
-            gfx.DrawString("บาท", _fontSmall, XBrushes.Black, new XPoint(cbX + 192, currentY + textOffsetY));
+            DrawUnderlineText(gfx, col2X + 72, currentY + textOffsetY, 115, otherText, 3);
+            gfx.DrawString("บาท", _fontSmall, XBrushes.Black, new XPoint(col2X + 192, currentY + textOffsetY));
             currentY += rowHeight;
 
             // === แถว 4: รวมสุทธิ ===
-            cbX = labelX + 68 + 185;
-            gfx.DrawString("รวมสุทธิ:", _fontBold, XBrushes.Black, new XPoint(cbX, currentY + textOffsetY));
-            DrawUnderlineText(gfx, cbX + 52, currentY + textOffsetY, 60, data.TotalCost.ToString("N0"), 3);
-            gfx.DrawString("บาท", _fontSmall, XBrushes.Black, new XPoint(cbX + 117, currentY + textOffsetY));
+            gfx.DrawString("รวมสุทธิ:", _fontBold, XBrushes.Black, new XPoint(col2X, currentY + textOffsetY));
+            DrawUnderlineText(gfx, col2X + 52, currentY + textOffsetY, 60, data.TotalCost.ToString("N0"), 3);
+            gfx.DrawString("บาท", _fontSmall, XBrushes.Black, new XPoint(col2X + 117, currentY + textOffsetY));
             currentY += rowHeight;
 
             return currentY;
@@ -697,15 +704,15 @@ namespace TrainingRequestApp.Services
             double halfWidth = contentWidth / 2;
             double labelX = contentX + padding;
             double rightColX = contentX + halfWidth + padding;
-            double lineHeight = 16;
+            double lineHeight = 18;  // เพิ่มจาก 16 เป็น 18 เพื่อให้มีพื้นที่มากขึ้น
 
             // === CENTER: จึงเรียนมาเพื่อโปรดพิจารณาอนุมัติ ===
             gfx.DrawString("จึงเรียนมาเพื่อโปรดพิจารณาอนุมัติ", _fontBold, XBrushes.Black,
-                new XRect(contentX, currentY, contentWidth, 18), XStringFormats.TopCenter);
-            currentY += 20;
+                new XRect(contentX, currentY, contentWidth, 20), XStringFormats.TopCenter);
+            currentY += 24;  // เพิ่มจาก 20 เป็น 24
 
             // === LEFT: ต้นสังกัดทบทวน (Section Manager) ===
-            gfx.DrawString("ต้นสังกัดทบทวน :", _fontBold, XBrushes.Black, new XPoint(labelX, currentY + textOffsetY));
+            gfx.DrawString("ต้นสังกัดทบทวน :", _fontSmall, XBrushes.Black, new XPoint(labelX, currentY + textOffsetY));
 
             double cbX = labelX + 100;
             bool isSectionApproved = data.Status_SectionManager?.ToUpper() == "APPROVED";
@@ -726,7 +733,7 @@ namespace TrainingRequestApp.Services
             DrawCheckbox(gfx, cbX, currentY + 4, isDepartmentRejected);
             gfx.DrawString("ไม่อนุมัติ", _fontSmall, XBrushes.Black, new XPoint(cbX + 14, currentY + textOffsetY));
 
-            currentY += lineHeight;
+            currentY += lineHeight + 2;  // เพิ่ม +2 เพื่อความชัดเจน
 
             // ลงชื่อ LEFT พร้อมเส้นใต้
             gfx.DrawString("ลงชื่อ :", _fontSmall, XBrushes.Black, new XPoint(labelX, currentY + textOffsetY));
@@ -764,7 +771,7 @@ namespace TrainingRequestApp.Services
                 gfx.DrawString(approveText, _fontTiny, XBrushes.Black, new XPoint(centerX, currentY + textOffsetY - 4));
             }
 
-            currentY += lineHeight - 4;
+            currentY += lineHeight;  // เพิ่มจาก lineHeight - 4
 
             // ตำแหน่ง LEFT พร้อมเส้นใต้
             gfx.DrawString("ตำแหน่ง :", _fontSmall, XBrushes.Black, new XPoint(labelX, currentY + textOffsetY));
@@ -783,7 +790,7 @@ namespace TrainingRequestApp.Services
             }
 
             // เส้นแบ่งกลาง (แนวตั้ง) สำหรับส่วนลายเซ็น
-            double sigTopY = currentY - (lineHeight * 2) - 16;
+            double sigTopY = currentY - (lineHeight * 3) - 6;  // ปรับให้สูงขึ้นตาม lineHeight ใหม่
             gfx.DrawLine(_borderPen, contentX + halfWidth, sigTopY, contentX + halfWidth, currentY + lineHeight + 3);
 
             return currentY + lineHeight + 5;
