@@ -858,96 +858,6 @@
                                     </div>
                                 </div>
 
-                                @* ==================== HRD Record Section (Admin/System Admin/HRD Admin/HRD Confirmation Only) ==================== *@
-                                @{
-                                    bool isHRDAdmin = string.Equals(userEmail, Model.HRDAdminId, StringComparison.OrdinalIgnoreCase);
-                                    bool isHRDConfirmation = string.Equals(userEmail, Model.HRDConfirmationId, StringComparison.OrdinalIgnoreCase);
-                                    bool canEditHRDSection = isAdmin ||
-                                                             userRole.Contains("System Admin", StringComparison.OrdinalIgnoreCase) ||
-                                                             isHRDAdmin ||
-                                                             isHRDConfirmation;
-                                }
-
-                                @if (canEditHRDSection)
-                                {
-                                    <hr class="my-5">
-                                    <div class="card shadow-sm border-warning mb-4" style="border-radius: 12px; border-width: 2px;">
-                                        <div class="card-header bg-warning text-dark py-3" style="border-radius: 10px 10px 0 0;">
-                                            <h5 class="mb-0 fw-bold">
-                                                <i class="fa fa-clipboard-check"></i>
-                                                ข้อมูลส่วน HRD บันทึกข้อมูล
-                                                <small class="text-muted">(เฉพาะ Admin/System Admin/HRD Admin/HRD Confirmation)</small>
-                                            </h5>
-                                        </div>
-                                        <div class="card-body p-4" style="background-color: #fffbf0;">
-                                            <div class="row g-3">
-                                                <!-- ติดต่อสถาบัน -->
-                                                <div class="col-md-6">
-                                                    <label asp-for="HRD_ContactDate" class="form-label fw-bold">
-                                                        📞 ติดต่อสถาบัน/ผู้สอน : วันที่
-                                                    </label>
-                                                    <input asp-for="HRD_ContactDate" type="date" class="form-control form-control-lg"
-                                                           style="border-radius: 8px;" />
-                                                </div>
-
-                                                <!-- ชื่อผู้ติดต่อ -->
-                                                <div class="col-md-6">
-                                                    <label asp-for="HRD_ContactPerson" class="form-label fw-bold">
-                                                        👤 ชื่อผู้ที่ติดต่อด้วย
-                                                    </label>
-                                                    <input asp-for="HRD_ContactPerson" type="text" class="form-control form-control-lg"
-                                                           placeholder="ระบุชื่อผู้ติดต่อ" style="border-radius: 8px;" />
-                                                </div>
-
-                                                <!-- การชำระเงิน -->
-                                                <div class="col-md-6">
-                                                    <label asp-for="HRD_PaymentDate" class="form-label fw-bold">
-                                                        💰 การชำระเงิน : ชำระเงินภายในวันที่
-                                                    </label>
-                                                    <input asp-for="HRD_PaymentDate" type="date" class="form-control form-control-lg"
-                                                           style="border-radius: 8px;" />
-                                                </div>
-
-                                                <!-- วิธีชำระเงิน -->
-                                                <div class="col-md-6">
-                                                    <label class="form-label fw-bold">💳 วิธีชำระเงิน</label>
-                                                    <div class="d-flex gap-4 mt-2">
-                                                        <div class="form-check">
-                                                            <input class="form-check-input" type="radio"
-                                                                   name="HRD_PaymentMethod" asp-for="HRD_PaymentMethod"
-                                                                   value="Check" id="payCheck"
-                                                                   @(Model.HRD_PaymentMethod == "Check" ? "checked" : "")
-                                                                   style="transform: scale(1.2);">
-                                                            <label class="form-check-label fw-medium" for="payCheck">
-                                                                เช็ค/โอนเงินผ่านบัญชี
-                                                            </label>
-                                                        </div>
-                                                        <div class="form-check">
-                                                            <input class="form-check-input" type="radio"
-                                                                   name="HRD_PaymentMethod" asp-for="HRD_PaymentMethod"
-                                                                   value="Cash" id="payCash"
-                                                                   @(Model.HRD_PaymentMethod == "Cash" ? "checked" : "")
-                                                                   style="transform: scale(1.2);">
-                                                            <label class="form-check-label fw-medium" for="payCash">
-                                                                ชำระเป็นเงินสด
-                                                            </label>
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                <!-- ลงชื่อผู้บันทึก -->
-                                                <div class="col-md-12">
-                                                    <label asp-for="HRD_RecorderSignature" class="form-label fw-bold">
-                                                        ✍️ ลงชื่อ : ผู้บันทึก
-                                                    </label>
-                                                    <input asp-for="HRD_RecorderSignature" type="text" class="form-control form-control-lg"
-                                                           placeholder="ระบุชื่อผู้บันทึก" style="border-radius: 8px;" />
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                }
-
                                 <!-- ผู้อนุมัติระดับที่ 1: Section Manager -->
                                 <hr class="my-4">
                                 <h5 class="fw-bold mb-3">👤 ผู้อนุมัติระดับที่ 1: Section Manager</h5>
@@ -1105,6 +1015,96 @@
                                         <input type="text" name="ApproveInfo_DeputyManagingDirector" class="form-control form-control-lg" value="@Model.ApproveInfo_DeputyManagingDirector" readonly style="background-color: #e9ecef;" />
                                     </div>
                                 </div>
+
+                                @* ==================== HRD Record Section (Admin/System Admin/HRD Admin/HRD Confirmation Only) ==================== *@
+                                @{
+                                    bool isHRDAdmin = string.Equals(userEmail, Model.HRDAdminId, StringComparison.OrdinalIgnoreCase);
+                                    bool isHRDConfirmation = string.Equals(userEmail, Model.HRDConfirmationId, StringComparison.OrdinalIgnoreCase);
+                                    bool canEditHRDSection = isAdmin ||
+                                                             userRole.Contains("System Admin", StringComparison.OrdinalIgnoreCase) ||
+                                                             isHRDAdmin ||
+                                                             isHRDConfirmation;
+                                }
+
+                                @if (canEditHRDSection)
+                                {
+                                    <hr class="my-5">
+                                    <div class="card shadow-sm border-warning mb-4" style="border-radius: 12px; border-width: 2px;">
+                                        <div class="card-header bg-warning text-dark py-3" style="border-radius: 10px 10px 0 0;">
+                                            <h5 class="mb-0 fw-bold">
+                                                <i class="fa fa-clipboard-check"></i>
+                                                ข้อมูลส่วน HRD บันทึกข้อมูล
+                                                <small class="text-muted">(เฉพาะ Admin/System Admin/HRD Admin/HRD Confirmation)</small>
+                                            </h5>
+                                        </div>
+                                        <div class="card-body p-4" style="background-color: #fffbf0;">
+                                            <div class="row g-3">
+                                                <!-- ติดต่อสถาบัน -->
+                                                <div class="col-md-6">
+                                                    <label asp-for="HRD_ContactDate" class="form-label fw-bold">
+                                                        📞 ติดต่อสถาบัน/ผู้สอน : วันที่
+                                                    </label>
+                                                    <input asp-for="HRD_ContactDate" type="date" class="form-control form-control-lg"
+                                                           style="border-radius: 8px;" />
+                                                </div>
+
+                                                <!-- ชื่อผู้ติดต่อ -->
+                                                <div class="col-md-6">
+                                                    <label asp-for="HRD_ContactPerson" class="form-label fw-bold">
+                                                        👤 ชื่อผู้ที่ติดต่อด้วย
+                                                    </label>
+                                                    <input asp-for="HRD_ContactPerson" type="text" class="form-control form-control-lg"
+                                                           placeholder="ระบุชื่อผู้ติดต่อ" style="border-radius: 8px;" />
+                                                </div>
+
+                                                <!-- การชำระเงิน -->
+                                                <div class="col-md-6">
+                                                    <label asp-for="HRD_PaymentDate" class="form-label fw-bold">
+                                                        💰 การชำระเงิน : ชำระเงินภายในวันที่
+                                                    </label>
+                                                    <input asp-for="HRD_PaymentDate" type="date" class="form-control form-control-lg"
+                                                           style="border-radius: 8px;" />
+                                                </div>
+
+                                                <!-- วิธีชำระเงิน -->
+                                                <div class="col-md-6">
+                                                    <label class="form-label fw-bold">💳 วิธีชำระเงิน</label>
+                                                    <div class="d-flex gap-4 mt-2">
+                                                        <div class="form-check">
+                                                            <input class="form-check-input" type="radio"
+                                                                   name="HRD_PaymentMethod" asp-for="HRD_PaymentMethod"
+                                                                   value="Check" id="payCheck"
+                                                                   @(Model.HRD_PaymentMethod == "Check" ? "checked" : "")
+                                                                   style="transform: scale(1.2);">
+                                                            <label class="form-check-label fw-medium" for="payCheck">
+                                                                เช็ค/โอนเงินผ่านบัญชี
+                                                            </label>
+                                                        </div>
+                                                        <div class="form-check">
+                                                            <input class="form-check-input" type="radio"
+                                                                   name="HRD_PaymentMethod" asp-for="HRD_PaymentMethod"
+                                                                   value="Cash" id="payCash"
+                                                                   @(Model.HRD_PaymentMethod == "Cash" ? "checked" : "")
+                                                                   style="transform: scale(1.2);">
+                                                            <label class="form-check-label fw-medium" for="payCash">
+                                                                ชำระเป็นเงินสด
+                                                            </label>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <!-- ลงชื่อผู้บันทึก -->
+                                                <div class="col-md-12">
+                                                    <label asp-for="HRD_RecorderSignature" class="form-label fw-bold">
+                                                        ✍️ ลงชื่อ : ผู้บันทึก
+                                                    </label>
+                                                    <input asp-for="HRD_RecorderSignature" type="text" class="form-control form-control-lg"
+                                                           placeholder="ระบุชื่อผู้บันทึก" style="border-radius: 8px;" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
 
                                 <!-- ✅ ปุ่มแบบ Multi-Mode -->
                                 <div class="text-center mt-5">
