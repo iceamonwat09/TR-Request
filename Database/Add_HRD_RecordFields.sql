@@ -29,7 +29,7 @@ IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('dbo.Traini
 BEGIN
     PRINT 'Adding column: HRD_ContactDate...'
     ALTER TABLE [dbo].[TrainingRequests]
-    ADD [HRD_ContactDate] DATETIME NULL;
+    ADD [HRD_ContactDate] DATE NULL;
     PRINT '✅ Added: HRD_ContactDate'
 END
 ELSE
@@ -55,7 +55,7 @@ IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('dbo.Traini
 BEGIN
     PRINT 'Adding column: HRD_PaymentDate...'
     ALTER TABLE [dbo].[TrainingRequests]
-    ADD [HRD_PaymentDate] DATETIME NULL;
+    ADD [HRD_PaymentDate] DATE NULL;
     PRINT '✅ Added: HRD_PaymentDate'
 END
 ELSE
