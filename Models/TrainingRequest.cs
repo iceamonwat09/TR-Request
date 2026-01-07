@@ -30,33 +30,55 @@ namespace TrainingRequestApp.Models
         [Display(Name = "Status")]
         public string Status { get; set; } = "Pending";
 
-        // ?? à¾ÔèÁ¿ÔÅ´ì§º»ÃĞÁÒ³áÂ¡ÃÒÂ¡ÒÃ
-        [Display(Name = "¤èÒÅ§·ĞàºÕÂ¹/ÇÔ·ÂÒ¡Ã")]
+        // ?? ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Å´ì§ºï¿½ï¿½ï¿½ï¿½Ò³ï¿½Â¡ï¿½ï¿½Â¡ï¿½ï¿½
+        [Display(Name = "ï¿½ï¿½ï¿½Å§ï¿½ï¿½ï¿½ï¿½Â¹/ï¿½Ô·ï¿½Ò¡ï¿½")]
         public decimal RegistrationCost { get; set; } = 0;
 
-        [Display(Name = "¤èÒ¤ÍÁáÁ¹ÇÔ·ÂÒ¡Ã")]
+        [Display(Name = "ï¿½ï¿½Ò¤ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ô·ï¿½Ò¡ï¿½")]
         public decimal InstructorFee { get; set; } = 0;
 
-        [Display(Name = "¤èÒÍØ»¡Ã³ì")]
+        [Display(Name = "ï¿½ï¿½ï¿½ï¿½Ø»ï¿½Ã³ï¿½")]
         public decimal EquipmentCost { get; set; } = 0;
 
-        [Display(Name = "¤èÒÍÒËÒÃ")]
+        [Display(Name = "ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½")]
         public decimal FoodCost { get; set; } = 0;
 
-        [Display(Name = "Í×è¹æ")]
+        [Display(Name = "ï¿½ï¿½ï¿½ï¿½")]
         public decimal OtherCost { get; set; } = 0;
 
-        [Display(Name = "ÃĞºØÃÒÂ¡ÒÃÍ×è¹æ")]
+        [Display(Name = "ï¿½Ğºï¿½ï¿½ï¿½Â¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½")]
         [StringLength(500)]
         public string? OtherCostDescription { get; set; }
 
-        [Display(Name = "ÃÇÁÊØ·¸Ô")]
+        [Display(Name = "ï¿½ï¿½ï¿½ï¿½Ø·ï¿½ï¿½")]
         public decimal TotalCost { get; set; } = 0;
 
-        // ? à¾ÔèÁºÃÃ·Ñ´¹Õé
+        // ? ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ã·Ñ´ï¿½ï¿½ï¿½
         [Display(Name = "CC Email")]
         [StringLength(1000)]
         public string? CCEmail { get; set; }
+
+        // ===== HRD Record Section (Admin/System Admin/HRD Admin/HRD Confirmation Only) =====
+        [Display(Name = "à¸§à¸±à¸™à¸—à¸µà¹ˆà¸•à¸´à¸”à¸•à¹ˆà¸­à¸ªà¸–à¸²à¸šà¸±à¸™")]
+        [DataType(DataType.Date)]
+        public DateTime? HRD_ContactDate { get; set; }
+
+        [Display(Name = "à¸Šà¸·à¹ˆà¸­à¸œà¸¹à¹‰à¸—à¸µà¹ˆà¸•à¸´à¸”à¸•à¹ˆà¸­à¸”à¹‰à¸§à¸¢")]
+        [StringLength(100)]
+        public string? HRD_ContactPerson { get; set; }
+
+        [Display(Name = "à¸§à¸±à¸™à¸—à¸µà¹ˆà¸Šà¸³à¸£à¸°à¹€à¸‡à¸´à¸™")]
+        [DataType(DataType.Date)]
+        public DateTime? HRD_PaymentDate { get; set; }
+
+        [Display(Name = "à¸§à¸´à¸˜à¸µà¸Šà¸³à¸£à¸°à¹€à¸‡à¸´à¸™")]
+        [StringLength(20)]
+        public string? HRD_PaymentMethod { get; set; } // "Check" or "Cash"
+
+        [Display(Name = "à¸œà¸¹à¹‰à¸šà¸±à¸™à¸—à¸¶à¸")]
+        [StringLength(100)]
+        public string? HRD_RecorderSignature { get; set; }
+
         // Navigation property for participants
         public virtual ICollection<TrainingParticipant> Participants { get; set; } = new List<TrainingParticipant>();
     }
