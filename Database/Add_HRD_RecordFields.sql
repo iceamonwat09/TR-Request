@@ -30,11 +30,25 @@ BEGIN
     PRINT 'Adding column: HRD_ContactDate...'
     ALTER TABLE [dbo].[TrainingRequests]
     ADD [HRD_ContactDate] DATE NULL;
-    PRINT '✅ Added: HRD_ContactDate'
+    PRINT '✅ Added: HRD_ContactDate (DATE)'
 END
 ELSE
 BEGIN
-    PRINT '⚠️  Column HRD_ContactDate already exists, skipping...'
+    -- ตรวจสอบว่า data type เป็น DATETIME หรือไม่
+    IF EXISTS (SELECT 1 FROM sys.columns
+               WHERE object_id = OBJECT_ID('dbo.TrainingRequests')
+               AND name = 'HRD_ContactDate'
+               AND system_type_id = TYPE_ID('datetime'))
+    BEGIN
+        PRINT 'Column HRD_ContactDate exists as DATETIME, converting to DATE...'
+        ALTER TABLE [dbo].[TrainingRequests]
+        ALTER COLUMN [HRD_ContactDate] DATE NULL;
+        PRINT '✅ Converted: HRD_ContactDate (DATETIME → DATE)'
+    END
+    ELSE
+    BEGIN
+        PRINT '⚠️  Column HRD_ContactDate already exists as DATE, skipping...'
+    END
 END
 
 -- ตรวจสอบและเพิ่มคอลัมน์ HRD_ContactPerson
@@ -56,11 +70,25 @@ BEGIN
     PRINT 'Adding column: HRD_PaymentDate...'
     ALTER TABLE [dbo].[TrainingRequests]
     ADD [HRD_PaymentDate] DATE NULL;
-    PRINT '✅ Added: HRD_PaymentDate'
+    PRINT '✅ Added: HRD_PaymentDate (DATE)'
 END
 ELSE
 BEGIN
-    PRINT '⚠️  Column HRD_PaymentDate already exists, skipping...'
+    -- ตรวจสอบว่า data type เป็น DATETIME หรือไม่
+    IF EXISTS (SELECT 1 FROM sys.columns
+               WHERE object_id = OBJECT_ID('dbo.TrainingRequests')
+               AND name = 'HRD_PaymentDate'
+               AND system_type_id = TYPE_ID('datetime'))
+    BEGIN
+        PRINT 'Column HRD_PaymentDate exists as DATETIME, converting to DATE...'
+        ALTER TABLE [dbo].[TrainingRequests]
+        ALTER COLUMN [HRD_PaymentDate] DATE NULL;
+        PRINT '✅ Converted: HRD_PaymentDate (DATETIME → DATE)'
+    END
+    ELSE
+    BEGIN
+        PRINT '⚠️  Column HRD_PaymentDate already exists as DATE, skipping...'
+    END
 END
 
 -- ตรวจสอบและเพิ่มคอลัมน์ HRD_PaymentMethod
