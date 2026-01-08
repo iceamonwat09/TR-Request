@@ -488,6 +488,12 @@ namespace TrainingRequestApp.Services
             gfx.DrawString(contactLabel, _fontSmall, XBrushes.Black, new XPoint(rightX, rightY + textOffsetY));
             XSize contactLabelSize = gfx.MeasureString(contactLabel, _fontSmall);
             DrawUnderline(gfx, rightX + contactLabelSize.Width + labelToDataGap, rightY + textOffsetY + 3, halfWidth - contactLabelSize.Width - labelToDataGap - padding - 5);
+            // แสดงวันที่ติดต่อ
+            if (data.HRD_ContactDate.HasValue)
+            {
+                string contactDate = data.HRD_ContactDate.Value.ToString("dd/MM/yyyy");
+                gfx.DrawString(contactDate, _fontSmall, XBrushes.Black, new XPoint(rightX + contactLabelSize.Width + labelToDataGap, rightY + textOffsetY));
+            }
             rightY += lineHeight;
 
             // ชื่อผู้ที่ติดต่อด้วย - เส้นชิดหัวข้อ
@@ -495,6 +501,11 @@ namespace TrainingRequestApp.Services
             gfx.DrawString(nameLabel, _fontSmall, XBrushes.Black, new XPoint(rightX, rightY + textOffsetY));
             XSize nameLabelSize = gfx.MeasureString(nameLabel, _fontSmall);
             DrawUnderline(gfx, rightX + nameLabelSize.Width + labelToDataGap, rightY + textOffsetY + 3, halfWidth - nameLabelSize.Width - labelToDataGap - padding - 5);
+            // แสดงชื่อผู้ติดต่อ
+            if (!string.IsNullOrEmpty(data.HRD_ContactPerson))
+            {
+                gfx.DrawString(data.HRD_ContactPerson, _fontSmall, XBrushes.Black, new XPoint(rightX + nameLabelSize.Width + labelToDataGap, rightY + textOffsetY));
+            }
             rightY += lineHeight;
 
             // การชำระเงิน - เส้นชิดหัวข้อ
@@ -502,14 +513,22 @@ namespace TrainingRequestApp.Services
             gfx.DrawString(payLabel, _fontSmall, XBrushes.Black, new XPoint(rightX, rightY + textOffsetY));
             XSize payLabelSize = gfx.MeasureString(payLabel, _fontSmall);
             DrawUnderline(gfx, rightX + payLabelSize.Width + labelToDataGap, rightY + textOffsetY + 3, halfWidth - payLabelSize.Width - labelToDataGap - padding - 5);
+            // แสดงวันที่ชำระเงิน
+            if (data.HRD_PaymentDate.HasValue)
+            {
+                string payDate = data.HRD_PaymentDate.Value.ToString("dd/MM/yyyy");
+                gfx.DrawString(payDate, _fontSmall, XBrushes.Black, new XPoint(rightX + payLabelSize.Width + labelToDataGap, rightY + textOffsetY));
+            }
             rightY += lineHeight + 2;
 
             double cbX = rightX + 10;
-            DrawCheckbox(gfx, cbX, rightY + 2, false);
+            bool isCheck = data.HRD_PaymentMethod == "Check";
+            bool isCash = data.HRD_PaymentMethod == "Cash";
+            DrawCheckbox(gfx, cbX, rightY + 2, isCheck);
             gfx.DrawString("เช็ค/โอนเงินผ่านบัญชี", _fontSmall, XBrushes.Black, new XPoint(cbX + 14, rightY + textOffsetY));
             rightY += lineHeight;
 
-            DrawCheckbox(gfx, cbX, rightY + 2, false);
+            DrawCheckbox(gfx, cbX, rightY + 2, isCash);
             gfx.DrawString("ชำระเป็นเงินสด", _fontSmall, XBrushes.Black, new XPoint(cbX + 14, rightY + textOffsetY));
             rightY += lineHeight + 3;
 
@@ -519,10 +538,10 @@ namespace TrainingRequestApp.Services
             XSize signLabel2Size = gfx.MeasureString(signLabel2, _fontSmall);
             DrawUnderline(gfx, rightX + signLabel2Size.Width + labelToDataGap, rightY + textOffsetY + 3, halfWidth - signLabel2Size.Width - labelToDataGap - padding - 60);
 
-            bool isHRDConfirmationApproved = data.Status_HRDConfirmation?.ToUpper() == "APPROVED";
-            if (isHRDConfirmationApproved)
+            // แสดงชื่อผู้บันทึก
+            if (!string.IsNullOrEmpty(data.HRD_RecorderSignature))
             {
-                gfx.DrawString(data.HRDConfirmationId ?? "", _fontSmall, XBrushes.Black, new XPoint(rightX + signLabel2Size.Width + labelToDataGap, rightY + textOffsetY));
+                gfx.DrawString(data.HRD_RecorderSignature, _fontSmall, XBrushes.Black, new XPoint(rightX + signLabel2Size.Width + labelToDataGap, rightY + textOffsetY));
             }
             gfx.DrawString("ผู้บันทึก", _fontSmall, XBrushes.Black, new XPoint(rightX + halfWidth - 55, rightY + textOffsetY));
 
@@ -937,6 +956,7 @@ namespace TrainingRequestApp.Services
                         tr.HRDAdminid AS HRDAdminId, tr.Status_HRDAdmin, tr.ApproveInfo_HRDAdmin,
                         tr.HRDConfirmationid AS HRDConfirmationId, tr.Status_HRDConfirmation, tr.ApproveInfo_HRDConfirmation,
                         tr.ManagingDirectorId, tr.Status_ManagingDirector, tr.ApproveInfo_ManagingDirector,
+                        tr.HRD_ContactDate, tr.HRD_ContactPerson, tr.HRD_PaymentDate, tr.HRD_PaymentMethod, tr.HRD_RecorderSignature,
                         e_sm.Level AS SectionManagerLevel,
                         e_dm.Level AS DepartmentManagerLevel,
                         e_ha.Level AS HRDAdminLevel,
@@ -1005,6 +1025,12 @@ namespace TrainingRequestApp.Services
                             data.HRDAdminLevel = reader["HRDAdminLevel"]?.ToString();
                             data.HRDConfirmationLevel = reader["HRDConfirmationLevel"]?.ToString();
                             data.ManagingDirectorLevel = reader["ManagingDirectorLevel"]?.ToString();
+                            // HRD Record Fields
+                            data.HRD_ContactDate = reader["HRD_ContactDate"] != DBNull.Value ? (DateTime?)reader["HRD_ContactDate"] : null;
+                            data.HRD_ContactPerson = reader["HRD_ContactPerson"]?.ToString();
+                            data.HRD_PaymentDate = reader["HRD_PaymentDate"] != DBNull.Value ? (DateTime?)reader["HRD_PaymentDate"] : null;
+                            data.HRD_PaymentMethod = reader["HRD_PaymentMethod"]?.ToString();
+                            data.HRD_RecorderSignature = reader["HRD_RecorderSignature"]?.ToString();
                         }
                     }
                 }
@@ -1092,6 +1118,13 @@ namespace TrainingRequestApp.Services
             public string HRDAdminLevel { get; set; }
             public string HRDConfirmationLevel { get; set; }
             public string ManagingDirectorLevel { get; set; }
+
+            // HRD Record Fields
+            public DateTime? HRD_ContactDate { get; set; }
+            public string HRD_ContactPerson { get; set; }
+            public DateTime? HRD_PaymentDate { get; set; }
+            public string HRD_PaymentMethod { get; set; }
+            public string HRD_RecorderSignature { get; set; }
 
             public List<EmployeeData> Employees { get; set; } = new List<EmployeeData>();
         }

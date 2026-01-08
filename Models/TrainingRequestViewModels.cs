@@ -66,6 +66,13 @@ namespace TrainingRequestApp.Models
         public string? Comment_DeputyManagingDirector { get; set; }
         public string? ApproveInfo_DeputyManagingDirector { get; set; }
 
+        // HRD Record Fields (Admin/System Admin/HRD Admin/HRD Confirmation Only)
+        public DateTime? HRD_ContactDate { get; set; }
+        public string? HRD_ContactPerson { get; set; }
+        public DateTime? HRD_PaymentDate { get; set; }
+        public string? HRD_PaymentMethod { get; set; }
+        public string? HRD_RecorderSignature { get; set; }
+
         public string? Status { get; set; }
         public DateTime CreatedDate { get; set; }
         public string? CreatedBy { get; set; }

@@ -188,6 +188,7 @@ namespace TrainingRequestApp.Controllers
                             HRDConfirmationId, Status_HRDConfirmation, Comment_HRDConfirmation, ApproveInfo_HRDConfirmation,
                             ManagingDirectorId, Status_ManagingDirector, Comment_ManagingDirector, ApproveInfo_ManagingDirector,
                             DeputyManagingDirectorId, Status_DeputyManagingDirector, Comment_DeputyManagingDirector, ApproveInfo_DeputyManagingDirector,
+                            HRD_ContactDate, HRD_ContactPerson, HRD_PaymentDate, HRD_PaymentMethod, HRD_RecorderSignature,
                             Status, CreatedDate, CreatedBy
                         FROM [HRDSYSTEM].[dbo].[TrainingRequests]
                         WHERE DocNo = @DocNo AND IsActive = 1";
@@ -254,10 +255,24 @@ namespace TrainingRequestApp.Controllers
                                     Status_DeputyManagingDirector = reader["Status_DeputyManagingDirector"]?.ToString(),
                                     Comment_DeputyManagingDirector = reader["Comment_DeputyManagingDirector"]?.ToString(),
                                     ApproveInfo_DeputyManagingDirector = reader["ApproveInfo_DeputyManagingDirector"]?.ToString(),
+                                    // HRD Record Fields
+                                    HRD_ContactDate = reader["HRD_ContactDate"] != DBNull.Value ? (DateTime?)reader.GetDateTime(reader.GetOrdinal("HRD_ContactDate")) : null,
+                                    HRD_ContactPerson = reader["HRD_ContactPerson"]?.ToString(),
+                                    HRD_PaymentDate = reader["HRD_PaymentDate"] != DBNull.Value ? (DateTime?)reader.GetDateTime(reader.GetOrdinal("HRD_PaymentDate")) : null,
+                                    HRD_PaymentMethod = reader["HRD_PaymentMethod"]?.ToString(),
+                                    HRD_RecorderSignature = reader["HRD_RecorderSignature"]?.ToString(),
                                     Status = reader["Status"].ToString(),
                                     CreatedDate = reader.GetDateTime(reader.GetOrdinal("CreatedDate")),
                                     CreatedBy = reader["CreatedBy"].ToString()
                                 };
+
+                                // 🔍 Debug: Log HRD fields data
+                                Console.WriteLine($"📋 HRD Fields Retrieved:");
+                                Console.WriteLine($"   ContactDate: {model.HRD_ContactDate}");
+                                Console.WriteLine($"   ContactPerson: {model.HRD_ContactPerson}");
+                                Console.WriteLine($"   PaymentDate: {model.HRD_PaymentDate}");
+                                Console.WriteLine($"   PaymentMethod: {model.HRD_PaymentMethod}");
+                                Console.WriteLine($"   RecorderSignature: {model.HRD_RecorderSignature}");
 
                                 // Fetch employees for this training request
                                 reader.Close();
@@ -1142,7 +1157,8 @@ namespace TrainingRequestApp.Controllers
                     [HRDAdminId], [Status_HRDAdmin],
                     [HRDConfirmationId], [Status_HRDConfirmation],
                     [ManagingDirectorId], [Status_ManagingDirector],
-                    [DeputyManagingDirectorId], [Status_DeputyManagingDirector]
+                    [DeputyManagingDirectorId], [Status_DeputyManagingDirector],
+                    [HRD_ContactDate], [HRD_ContactPerson], [HRD_PaymentDate], [HRD_PaymentMethod], [HRD_RecorderSignature]
                 )
                 VALUES (
                     @DocNo, @Company, @TrainingType, @Factory, @CCEmail, @Department,@Position,
@@ -1156,7 +1172,8 @@ namespace TrainingRequestApp.Controllers
                     @HRDAdminId, 'Pending',
                     @HRDConfirmationId, 'Pending',
                     @ManagingDirectorId, 'Pending',
-                    @DeputyManagingDirectorId, 'Pending'
+                    @DeputyManagingDirectorId, 'Pending',
+                    NULL, NULL, NULL, NULL, NULL
                 );
                 SELECT CAST(SCOPE_IDENTITY() AS INT);";
 
@@ -1402,6 +1419,11 @@ namespace TrainingRequestApp.Controllers
                     [Status_DeputyManagingDirector] = @Status_DeputyManagingDirector,
                     [Comment_DeputyManagingDirector] = @Comment_DeputyManagingDirector,
                     [ApproveInfo_DeputyManagingDirector] = @ApproveInfo_DeputyManagingDirector,
+                    [HRD_ContactDate] = @HRD_ContactDate,
+                    [HRD_ContactPerson] = @HRD_ContactPerson,
+                    [HRD_PaymentDate] = @HRD_PaymentDate,
+                    [HRD_PaymentMethod] = @HRD_PaymentMethod,
+                    [HRD_RecorderSignature] = @HRD_RecorderSignature,
                     [UpdatedBy] = @UpdatedBy,
                     [UpdatedDate] = GETDATE()
                 WHERE [DocNo] = @DocNo AND [IsActive] = 1";
@@ -1466,6 +1488,21 @@ namespace TrainingRequestApp.Controllers
                 cmd.Parameters.AddWithValue("@Status_DeputyManagingDirector", formData.Status_DeputyManagingDirector ?? (object)DBNull.Value);
                 cmd.Parameters.AddWithValue("@Comment_DeputyManagingDirector", formData.Comment_DeputyManagingDirector ?? (object)DBNull.Value);
                 cmd.Parameters.AddWithValue("@ApproveInfo_DeputyManagingDirector", formData.ApproveInfo_DeputyManagingDirector ?? (object)DBNull.Value);
+
+                // HRD Record Fields
+                // 🔍 Debug: Log HRD fields being saved
+                Console.WriteLine($"💾 Saving HRD Fields:");
+                Console.WriteLine($"   ContactDate: {formData.HRD_ContactDate}");
+                Console.WriteLine($"   ContactPerson: {formData.HRD_ContactPerson}");
+                Console.WriteLine($"   PaymentDate: {formData.HRD_PaymentDate}");
+                Console.WriteLine($"   PaymentMethod: {formData.HRD_PaymentMethod}");
+                Console.WriteLine($"   RecorderSignature: {formData.HRD_RecorderSignature}");
+
+                cmd.Parameters.AddWithValue("@HRD_ContactDate", formData.HRD_ContactDate ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@HRD_ContactPerson", formData.HRD_ContactPerson ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@HRD_PaymentDate", formData.HRD_PaymentDate ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@HRD_PaymentMethod", formData.HRD_PaymentMethod ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@HRD_RecorderSignature", formData.HRD_RecorderSignature ?? (object)DBNull.Value);
 
                 // ✅ UpdatedBy - ใช้ Email ของผู้แก้ไขจาก Session
                 cmd.Parameters.AddWithValue("@UpdatedBy", updatedBy);
@@ -2161,6 +2198,13 @@ namespace TrainingRequestApp.Controllers
         public string? Status_DeputyManagingDirector { get; set; }
         public string? Comment_DeputyManagingDirector { get; set; }
         public string? ApproveInfo_DeputyManagingDirector { get; set; }
+
+        // HRD Record Fields (Admin/System Admin/HRD Admin/HRD Confirmation Only)
+        public DateTime? HRD_ContactDate { get; set; }
+        public string? HRD_ContactPerson { get; set; }
+        public DateTime? HRD_PaymentDate { get; set; }
+        public string? HRD_PaymentMethod { get; set; }
+        public string? HRD_RecorderSignature { get; set; }
     }
 
     public class EmployeeData
