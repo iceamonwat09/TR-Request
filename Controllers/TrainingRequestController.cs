@@ -266,6 +266,14 @@ namespace TrainingRequestApp.Controllers
                                     CreatedBy = reader["CreatedBy"].ToString()
                                 };
 
+                                // 🔍 Debug: Log HRD fields data
+                                Console.WriteLine($"📋 HRD Fields Retrieved:");
+                                Console.WriteLine($"   ContactDate: {model.HRD_ContactDate}");
+                                Console.WriteLine($"   ContactPerson: {model.HRD_ContactPerson}");
+                                Console.WriteLine($"   PaymentDate: {model.HRD_PaymentDate}");
+                                Console.WriteLine($"   PaymentMethod: {model.HRD_PaymentMethod}");
+                                Console.WriteLine($"   RecorderSignature: {model.HRD_RecorderSignature}");
+
                                 // Fetch employees for this training request
                                 reader.Close();
                                 model.Employees = await GetEmployeesForRequest(conn, model.Id);
@@ -1482,6 +1490,14 @@ namespace TrainingRequestApp.Controllers
                 cmd.Parameters.AddWithValue("@ApproveInfo_DeputyManagingDirector", formData.ApproveInfo_DeputyManagingDirector ?? (object)DBNull.Value);
 
                 // HRD Record Fields
+                // 🔍 Debug: Log HRD fields being saved
+                Console.WriteLine($"💾 Saving HRD Fields:");
+                Console.WriteLine($"   ContactDate: {formData.HRD_ContactDate}");
+                Console.WriteLine($"   ContactPerson: {formData.HRD_ContactPerson}");
+                Console.WriteLine($"   PaymentDate: {formData.HRD_PaymentDate}");
+                Console.WriteLine($"   PaymentMethod: {formData.HRD_PaymentMethod}");
+                Console.WriteLine($"   RecorderSignature: {formData.HRD_RecorderSignature}");
+
                 cmd.Parameters.AddWithValue("@HRD_ContactDate", formData.HRD_ContactDate ?? (object)DBNull.Value);
                 cmd.Parameters.AddWithValue("@HRD_ContactPerson", formData.HRD_ContactPerson ?? (object)DBNull.Value);
                 cmd.Parameters.AddWithValue("@HRD_PaymentDate", formData.HRD_PaymentDate ?? (object)DBNull.Value);

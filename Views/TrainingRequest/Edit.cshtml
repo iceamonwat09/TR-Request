@@ -1038,6 +1038,16 @@
                                             </h5>
                                         </div>
                                         <div class="card-body p-4" style="background-color: #fffbf0;">
+                                            @* 🔍 Debug: Log HRD Model values *@
+                                            <script>
+                                                console.log('📋 HRD Fields from Model:');
+                                                console.log('   ContactDate: @Model.HRD_ContactDate');
+                                                console.log('   ContactPerson: @Model.HRD_ContactPerson');
+                                                console.log('   PaymentDate: @Model.HRD_PaymentDate');
+                                                console.log('   PaymentMethod: @Model.HRD_PaymentMethod');
+                                                console.log('   RecorderSignature: @Model.HRD_RecorderSignature');
+                                            </script>
+
                                             <div class="row g-3">
                                                 <!-- ติดต่อสถาบัน -->
                                                 <div class="col-md-6">
