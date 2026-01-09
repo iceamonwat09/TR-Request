@@ -34,6 +34,10 @@ namespace TrainingRequestApp.Models
         public string? ExpectedOutcome { get; set; }
         public string? ParticipantCount { get; set; }
 
+        // การเดินทาง และ กลุ่มเป้าหมาย
+        public string? TravelMethod { get; set; }
+        public string? TargetGroup { get; set; }
+
         // Approvers - 6 levels
         public string? SectionManagerId { get; set; }
         public string? Status_SectionManager { get; set; }

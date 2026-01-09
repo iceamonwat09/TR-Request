@@ -137,11 +137,11 @@ namespace TrainingRequestApp.Services
             gfx.DrawString("อบรมภายนอก (Public Training)", _fontSmall, XBrushes.Black, new XPoint(checkboxCol2 + 14, currentY + textOffsetY));
             currentY += rowHeight;
 
-            // === Row 2: สาขา ===
+            // === Row 2: สาขา (ใช้ Company แทน Factory) ===
             gfx.DrawString("สาขา :", _fontBold, XBrushes.Black, new XPoint(labelX, currentY + textOffsetY));
-            DrawCheckbox(gfx, checkboxCol1, currentY + 4, data.Factory == "สมุทรสาคร");
+            DrawCheckbox(gfx, checkboxCol1, currentY + 4, data.Company?.Contains("สมุทรสาคร") == true);
             gfx.DrawString("สมุทรสาคร", _fontSmall, XBrushes.Black, new XPoint(checkboxCol1 + 14, currentY + textOffsetY));
-            DrawCheckbox(gfx, checkboxCol2, currentY + 4, data.Factory == "ปราจีนบุรี");
+            DrawCheckbox(gfx, checkboxCol2, currentY + 4, data.Company?.Contains("ปราจีนบุรี") == true);
             gfx.DrawString("ปราจีนบุรี", _fontSmall, XBrushes.Black, new XPoint(checkboxCol2 + 14, currentY + textOffsetY));
             currentY += rowHeight;
 
@@ -201,10 +201,10 @@ namespace TrainingRequestApp.Services
 
             gfx.DrawString("การเดินทาง :", _fontBold, XBrushes.Black, new XPoint(rightColX, currentY + textOffsetY));
             double travelCbX = rightColX + 75;
-            DrawCheckbox(gfx, travelCbX, currentY + 4, false);
+            DrawCheckbox(gfx, travelCbX, currentY + 4, data.TravelMethod == "จัดรถรับส่ง");
             gfx.DrawString("จัดรถรับส่ง", _fontSmall, XBrushes.Black, new XPoint(travelCbX + 14, currentY + textOffsetY));
             travelCbX += 80;
-            DrawCheckbox(gfx, travelCbX, currentY + 4, false);
+            DrawCheckbox(gfx, travelCbX, currentY + 4, data.TravelMethod == "เดินทางเอง");
             gfx.DrawString("เดินทางเอง", _fontSmall, XBrushes.Black, new XPoint(travelCbX + 14, currentY + textOffsetY));
             currentY += rowHeight;
 
@@ -215,7 +215,7 @@ namespace TrainingRequestApp.Services
 
             // === Row 10: กลุ่มเป้าหมาย & จำนวนผู้เข้ารับการอบรม ===
             gfx.DrawString("กลุ่มเป้าหมาย :", _fontBold, XBrushes.Black, new XPoint(labelX, currentY + textOffsetY));
-            DrawUnderlineText(gfx, labelX + 82, currentY + textOffsetY, halfWidth - 100, "", 3);
+            DrawUnderlineText(gfx, labelX + 82, currentY + textOffsetY, halfWidth - 100, data.TargetGroup ?? "", 3);
 
             gfx.DrawString("จำนวนผู้เข้ารับการอบรม :", _fontBold, XBrushes.Black, new XPoint(rightColX, currentY + textOffsetY));
             DrawUnderlineText(gfx, rightColX + 130, currentY + textOffsetY, 30, data.TotalPeople.ToString(), 3);
@@ -950,6 +950,7 @@ namespace TrainingRequestApp.Services
                         tr.OtherCostDescription,
                         tr.TotalCost, tr.CostPerPerson,
                         tr.TrainingObjective, tr.OtherObjective, tr.ExpectedOutcome,
+                        tr.TravelMethod, tr.TargetGroup,
                         tr.Status, tr.CreatedBy, tr.CreatedDate,
                         tr.SectionManagerId, tr.Status_SectionManager, tr.ApproveInfo_SectionManager,
                         tr.DepartmentManagerId, tr.Status_DepartmentManager, tr.ApproveInfo_DepartmentManager,
@@ -1002,6 +1003,8 @@ namespace TrainingRequestApp.Services
                             data.TrainingObjective = reader["TrainingObjective"]?.ToString();
                             data.OtherObjective = reader["OtherObjective"]?.ToString();
                             data.ExpectedOutcome = reader["ExpectedOutcome"]?.ToString();
+                            data.TravelMethod = reader["TravelMethod"]?.ToString();
+                            data.TargetGroup = reader["TargetGroup"]?.ToString();
                             data.Status = reader["Status"]?.ToString();
                             data.CreatedBy = reader["CreatedBy"]?.ToString();
                             data.CreatedDate = reader["CreatedDate"] != DBNull.Value ? (DateTime)reader["CreatedDate"] : DateTime.Now;
@@ -1093,6 +1096,11 @@ namespace TrainingRequestApp.Services
             public string TrainingObjective { get; set; }
             public string OtherObjective { get; set; }
             public string ExpectedOutcome { get; set; }
+
+            // การเดินทาง และ กลุ่มเป้าหมาย
+            public string TravelMethod { get; set; }
+            public string TargetGroup { get; set; }
+
             public string Status { get; set; }
             public string CreatedBy { get; set; }
             public DateTime CreatedDate { get; set; }

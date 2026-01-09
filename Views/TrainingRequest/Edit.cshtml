@@ -161,9 +161,15 @@
                             <!-- ส่วนแรก - ข้อมูลหลัก -->
                             <div class="row g-3">
                                 <div class="col-md-6">
-                                    <div class="form-group">
+                                    <!-- ซ่อน Factory -->
+                                    <div class="form-group" style="display: none;">
                                         <label asp-for="Factory" class="form-label fw-bold">🏭 โรงงาน</label>
                                         <input asp-for="Factory" name="Factory" id="Factory" class="form-control form-control-lg" value="@Model.Factory" style="border-radius: 10px;" />
+                                    </div>
+                                    <!-- ย้าย SeminarTitle มาตำแหน่งนี้ -->
+                                    <div class="form-group">
+                                        <label asp-for="SeminarTitle" class="form-label fw-bold">📖 เรื่องสัมมนา</label>
+                                        <input asp-for="SeminarTitle" id="SeminarTitle" name="SeminarTitle" class="form-control form-control-lg" value="@Model.SeminarTitle" style="border-radius: 10px;" />
                                     </div>
                                     <div class="form-group">
                                         <label class="form-label fw-bold">
@@ -195,6 +201,25 @@
                                             <option value="">-- เลือกฝ่ายก่อน --</option>
                                         </select>
                                     </div>
+
+                                    <!-- ✅ เพิ่มช่อง การเดินทาง -->
+                                    <div class="form-group">
+                                        <label class="form-label fw-bold">🚗 การเดินทาง</label>
+                                        <div class="d-flex gap-4 mt-2">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="TravelMethod" id="travelMethod1" value="จัดรถรับส่ง" @(Model.TravelMethod == "จัดรถรับส่ง" ? "checked" : "") style="transform: scale(1.2);">
+                                                <label class="form-check-label fw-medium" for="travelMethod1">
+                                                    จัดรถรับส่ง
+                                                </label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="TravelMethod" id="travelMethod2" value="เดินทางเอง" @(Model.TravelMethod == "เดินทางเอง" ? "checked" : "") style="transform: scale(1.2);">
+                                                <label class="form-check-label fw-medium" for="travelMethod2">
+                                                    เดินทางเอง
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
 
                                 <div class="col-md-6">
@@ -214,11 +239,6 @@
                                     </div>
 
                                     <div class="form-group">
-                                        <label asp-for="SeminarTitle" class="form-label fw-bold">📖 เรื่องสัมมนา</label>
-                                        <input asp-for="SeminarTitle" id="SeminarTitle" name="SeminarTitle" class="form-control form-control-lg" value="@Model.SeminarTitle" style="border-radius: 10px;" />
-                                    </div>
-
-                                    <div class="form-group">
                                         <label asp-for="TrainingLocation" class="form-label fw-bold">📍 สถานที่อบรม</label>
                                         <input asp-for="TrainingLocation" id="TrainingLocation" name="TrainingLocation" class="form-control form-control-lg" value="@Model.TrainingLocation" style="border-radius: 10px;" />
                                     </div>
@@ -226,6 +246,12 @@
                                     <div class="form-group">
                                         <label asp-for="Instructor" class="form-label fw-bold">👨‍🏫 วิทยากร/สถาบัน</label>
                                         <input asp-for="Instructor" id="Instructor" name="Instructor" class="form-control form-control-lg" value="@Model.Instructor" style="border-radius: 10px;" />
+                                    </div>
+
+                                    <!-- ✅ เพิ่มช่อง กลุ่มเป้าหมาย -->
+                                    <div class="form-group">
+                                        <label class="form-label fw-bold">🎯 กลุ่มเป้าหมาย</label>
+                                        <input type="text" name="TargetGroup" id="TargetGroup" class="form-control form-control-lg" value="@Model.TargetGroup" placeholder="ระบุกลุ่มเป้าหมาย..." style="border-radius: 10px;" />
                                     </div>
                                 </div>
 
