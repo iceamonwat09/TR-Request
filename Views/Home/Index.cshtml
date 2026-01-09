@@ -294,9 +294,17 @@
                     <div class="col-md-3">
                         <label for="filterYear">ปี</label>
                         <select class="form-select" id="filterYear">
-                            <option value="2025" selected>2025</option>
-                            <option value="2024">2024</option>
-                            <option value="2023">2023</option>
+                            <option value="2025">2025</option>
+                            <option value="2026">2026</option>
+                            <option value="2027">2027</option>
+                            <option value="2028">2028</option>
+                            <option value="2029">2029</option>
+                            <option value="2030">2030</option>
+                            <option value="2031">2031</option>
+                            <option value="2032">2032</option>
+                            <option value="2033">2033</option>
+                            <option value="2034">2034</option>
+                            <option value="2035">2035</option>
                         </select>
                     </div>
                     <div class="col-md-3">
@@ -432,8 +440,9 @@
             updateDateTime();
             setInterval(updateDateTime, 1000);
 
-            // Set default dates
+            // Set default year and dates to current year
             const year = new Date().getFullYear();
+            document.getElementById('filterYear').value = year;
             document.getElementById('filterStartDate').value = `${year}-01-01`;
             document.getElementById('filterEndDate').value = `${year}-12-31`;
 
