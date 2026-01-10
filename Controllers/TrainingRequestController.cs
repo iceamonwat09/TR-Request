@@ -181,7 +181,7 @@ namespace TrainingRequestApp.Controllers
                             StartDate, EndDate, SeminarTitle, TrainingLocation, Instructor,
                             RegistrationCost, InstructorFee, EquipmentCost, FoodCost, OtherCost, OtherCostDescription,
                             TotalCost, CostPerPerson, PerPersonTrainingHours, TrainingObjective, OtherObjective,
-                            URLSource, AdditionalNotes, ExpectedOutcome, TotalPeople,
+                            URLSource, AdditionalNotes, ExpectedOutcome, TravelMethod, TargetGroup, TotalPeople,
                             SectionManagerId, Status_SectionManager, Comment_SectionManager, ApproveInfo_SectionManager,
                             DepartmentManagerId, Status_DepartmentManager, Comment_DepartmentManager, ApproveInfo_DepartmentManager,
                             HRDAdminId, Status_HRDAdmin, Comment_HRDAdmin, ApproveInfo_HRDAdmin,
@@ -230,6 +230,8 @@ namespace TrainingRequestApp.Controllers
                                     URLSource = reader["URLSource"]?.ToString(),
                                     AdditionalNotes = reader["AdditionalNotes"]?.ToString(),
                                     ExpectedOutcome = reader["ExpectedOutcome"]?.ToString(),
+                                    TravelMethod = reader["TravelMethod"]?.ToString(),
+                                    TargetGroup = reader["TargetGroup"]?.ToString(),
                                     ParticipantCount = reader["TotalPeople"]?.ToString(),
                                     SectionManagerId = reader["SectionManagerId"]?.ToString(),
                                     Status_SectionManager = reader["Status_SectionManager"]?.ToString(),
@@ -1151,6 +1153,7 @@ namespace TrainingRequestApp.Controllers
                     [RegistrationCost], [InstructorFee], [EquipmentCost], [FoodCost], [OtherCost], [OtherCostDescription],
                     [TotalCost], [CostPerPerson],[PerPersonTrainingHours], [TrainingObjective], [OtherObjective],
                     [URLSource], [AdditionalNotes], [ExpectedOutcome],
+                    [TravelMethod], [TargetGroup],
                     [Status], [CreatedDate], [CreatedBy], [IsActive],[TotalPeople],
                     [SectionManagerId], [Status_SectionManager],
                     [DepartmentManagerId], [Status_DepartmentManager],
@@ -1166,6 +1169,7 @@ namespace TrainingRequestApp.Controllers
                     @RegistrationCost, @InstructorFee, @EquipmentCost, @FoodCost, @OtherCost, @OtherCostDescription,
                     @TotalCost, @CostPerPerson,@PerPersonTrainingHours, @TrainingObjective, @OtherObjective,
                     @URLSource, @AdditionalNotes, @ExpectedOutcome,
+                    @TravelMethod, @TargetGroup,
                     'Pending', GETDATE(), @CreatedBy, 1,@TotalPeople,
                     @SectionManagerId, 'Pending',
                     @DepartmentManagerId, 'Pending',
@@ -1208,6 +1212,8 @@ namespace TrainingRequestApp.Controllers
                 cmd.Parameters.AddWithValue("@URLSource", formData.URLSource ?? (object)DBNull.Value);
                 cmd.Parameters.AddWithValue("@AdditionalNotes", formData.AdditionalNotes ?? (object)DBNull.Value);
                 cmd.Parameters.AddWithValue("@ExpectedOutcome", formData.ExpectedOutcome ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@TravelMethod", formData.TravelMethod ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@TargetGroup", formData.TargetGroup ?? (object)DBNull.Value);
                 cmd.Parameters.AddWithValue("@TotalPeople", formData.ParticipantCount ?? (object)DBNull.Value);
 
                 // ✅ CreatedBy - ใช้ Email ของผู้สร้างจาก Session
@@ -1394,6 +1400,8 @@ namespace TrainingRequestApp.Controllers
                     [URLSource] = @URLSource,
                     [AdditionalNotes] = @AdditionalNotes,
                     [ExpectedOutcome] = @ExpectedOutcome,
+                    [TravelMethod] = @TravelMethod,
+                    [TargetGroup] = @TargetGroup,
                     [TotalPeople] = @TotalPeople,
                     [SectionManagerId] = @SectionManagerId,
                     [Status_SectionManager] = @Status_SectionManager,
@@ -1456,6 +1464,8 @@ namespace TrainingRequestApp.Controllers
                 cmd.Parameters.AddWithValue("@URLSource", formData.URLSource ?? (object)DBNull.Value);
                 cmd.Parameters.AddWithValue("@AdditionalNotes", formData.AdditionalNotes ?? (object)DBNull.Value);
                 cmd.Parameters.AddWithValue("@ExpectedOutcome", formData.ExpectedOutcome ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@TravelMethod", formData.TravelMethod ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@TargetGroup", formData.TargetGroup ?? (object)DBNull.Value);
                 cmd.Parameters.AddWithValue("@TotalPeople", formData.ParticipantCount ?? (object)DBNull.Value);
 
                 // Approvers
@@ -2156,6 +2166,11 @@ namespace TrainingRequestApp.Controllers
         public string? URLSource { get; set; }
         public string? AdditionalNotes { get; set; }
         public string? ExpectedOutcome { get; set; }
+
+        // การเดินทาง และ กลุ่มเป้าหมาย
+        public string? TravelMethod { get; set; }
+        public string? TargetGroup { get; set; }
+
         public string? EmployeesJson { get; set; }
         public List<IFormFile>? AttachedFiles { get; set; }
         public string? ParticipantCount { get; set; }
