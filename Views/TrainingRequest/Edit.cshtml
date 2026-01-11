@@ -301,7 +301,7 @@
                                                 <!-- ค่าลงทะเบียน/วิทยากร -->
                                                 <div class="col-md-6">
                                                     <label asp-for="RegistrationCost" class="form-label fw-bold">📋 ค่าลงทะเบียน/วิทยากร (บาท)</label>
-                                                    <input asp-for="RegistrationCost" name="RegistrationCost" id="RegistrationCost" class="form-control form-control-lg budget-input" type="number" step="0.01" min="0" value="@Model.RegistrationCost" style="border-radius: 10px;" />
+                                                    <input asp-for="RegistrationCost" name="RegistrationCost" id="RegistrationCost" class="form-control form-control-lg budget-input-inhouse" type="number" step="0.01" min="0" value="@Model.RegistrationCost" style="border-radius: 10px;" />
                                                 </div>
 
 
@@ -524,7 +524,11 @@
                                         // ✅ คำนวณครั้งแรกเมื่อโหลดหน้า (สำหรับ Edit Mode)
                                         // รอให้ employeeManager โหลดข้อมูลเสร็จก่อน
                                         setTimeout(function() {
-                                            calculateTotalBudgetPublic();
+                                            // ✅ ตรวจสอบว่าเป็น Public Training ก่อนเรียก (ป้องกัน override ค่า In House)
+                                            const trainingType = document.querySelector('input[name="TrainingType"]:checked');
+                                            if (trainingType && trainingType.value === 'Public') {
+                                                calculateTotalBudgetPublic();
+                                            }
                                         }, 500);
 
                                         // ============================================================
