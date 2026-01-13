@@ -3771,7 +3771,8 @@
                 const employeesData = employeeManager.getEmployeesData();
                 console.log('👥 Employees count:', employeesData.length);
 
-                if (employeesData.length === 0) {
+                // ✅ ถาม confirm เฉพาะ Public Training (In House ไม่จำเป็นต้องมีรายชื่อพนักงาน)
+                if (employeesData.length === 0 && trainingTypeValue === 'Public') {
                     const confirmSubmit = confirm('⚠️ ยังไม่มีพนักงานในรายการ\n\nต้องการบันทึกต่อไปหรือไม่?');
                     if (!confirmSubmit) {
                         console.log('❌ User cancelled');
