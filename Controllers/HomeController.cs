@@ -52,6 +52,31 @@ namespace TrainingRequestApp.Controllers
             return View();
         }
 
+        // Controllers/HomeController.cs - เพิ่ม Action ใหม่สำหรับ Interface
+        [HttpGet]
+        public IActionResult Interface()
+        {
+            if (string.IsNullOrEmpty(HttpContext.Session.GetString("UserEmail")))
+            {
+                return RedirectToAction("Index", "Login");
+            }
+
+            // ตรวจสอบว่าเป็น Admin หรือ System Admin เท่านั้น
+            string userRole = HttpContext.Session.GetString("UserRole") ?? "User";
+            bool isAdmin = userRole.Contains("Admin", StringComparison.OrdinalIgnoreCase);
+
+            if (!isAdmin)
+            {
+                TempData["ErrorMessage"] = "คุณไม่มีสิทธิ์เข้าถึงหน้านี้ (Admin/System Admin เท่านั้น)";
+                return RedirectToAction("Index", "Home");
+            }
+
+            ViewBag.UserEmail = HttpContext.Session.GetString("UserEmail");
+            ViewBag.UserRole = HttpContext.Session.GetString("UserRole");
+
+            return View();
+        }
+
         // ====================================================================
         // 📊 DASHBOARD API ENDPOINTS
         // ====================================================================
@@ -828,6 +853,133 @@ namespace TrainingRequestApp.Controllers
                 Console.WriteLine($"❌ Error in ExportTrainingRequestPdf: {ex.Message}");
                 Console.WriteLine($"Stack Trace: {ex.StackTrace}");
                 return Json(new { success = false, message = $"เกิดข้อผิดพลาด: {ex.Message}" });
+            }
+        }
+
+        /// <summary>
+        /// API: ดึงข้อมูลสำหรับหน้า Interface (กรองเฉพาะ APPROVED, COMPLETE, RESCHEDULED)
+        /// GET: /Home/GetInterfaceRequests?startDate=...&endDate=...&docNo=...&company=...
+        /// </summary>
+        [HttpGet]
+        public async Task<IActionResult> GetInterfaceRequests(
+            DateTime? startDate = null,
+            DateTime? endDate = null,
+            string? docNo = null,
+            string? company = null)
+        {
+            // 🔍 DEBUG: Log request parameters
+            Console.WriteLine("=== GetInterfaceRequests API Called ===");
+            Console.WriteLine($"startDate: {startDate}");
+            Console.WriteLine($"endDate: {endDate}");
+            Console.WriteLine($"docNo: {docNo}");
+            Console.WriteLine($"company: {company}");
+
+            try
+            {
+                // ✅ ดึง UserRole และ UserEmail จาก Session
+                string userEmail = HttpContext.Session.GetString("UserEmail") ?? "System";
+                string userRole = HttpContext.Session.GetString("UserRole") ?? "User";
+                bool isAdmin = userRole.Contains("Admin", StringComparison.OrdinalIgnoreCase);
+
+                // ✅ ตรวจสอบสิทธิ์ - เฉพาะ Admin/System Admin เท่านั้น
+                if (!isAdmin)
+                {
+                    Console.WriteLine($"🔒 Access denied: User {userEmail} is not Admin");
+                    return Json(new { success = false, message = "คุณไม่มีสิทธิ์เข้าถึงข้อมูลนี้" });
+                }
+
+                Console.WriteLine($"UserEmail: {userEmail}");
+                Console.WriteLine($"UserRole: {userRole}");
+                Console.WriteLine($"IsAdmin: {isAdmin}");
+
+                string connectionString = _configuration.GetConnectionString("DefaultConnection");
+                var requests = new List<dynamic>();
+
+                using (SqlConnection conn = new SqlConnection(connectionString))
+                {
+                    await conn.OpenAsync();
+
+                    // ตั้งค่าเริ่มต้นเป็นเดือนปัจจุบัน
+                    DateTime filterStart = startDate ?? new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
+                    DateTime filterEnd = endDate ?? filterStart.AddMonths(1).AddDays(-1);
+
+                    // 🎯 กรองเฉพาะ Status = APPROVED, COMPLETE, RESCHEDULED
+                    string query = @"
+                SELECT
+                    tr.Id,
+                    tr.DocNo,
+                    tr.Company,
+                    tr.StartDate,
+                    tr.SeminarTitle,
+                    tr.CreatedBy,
+                    tr.Status,
+                    tr.CreatedDate,
+                    ISNULL(tr.TotalPeople, 0) AS ParticipantCount
+                FROM TrainingRequests tr
+                WHERE CAST(tr.CreatedDate AS DATE) BETWEEN @StartDate AND @EndDate
+                  AND tr.Status IN ('APPROVED', 'COMPLETE', 'RESCHEDULED')
+                  AND tr.IsActive = 1";
+
+                    // Optional filters
+                    if (!string.IsNullOrEmpty(docNo))
+                    {
+                        query += " AND tr.DocNo LIKE @DocNo";
+                        Console.WriteLine($"Filter: DocNo contains '{docNo}'");
+                    }
+
+                    if (!string.IsNullOrEmpty(company))
+                    {
+                        query += " AND tr.Company = @Company";
+                        Console.WriteLine($"Filter: Company = '{company}'");
+                    }
+
+                    query += " ORDER BY tr.CreatedDate DESC";
+
+                    using (SqlCommand cmd = new SqlCommand(query, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@StartDate", filterStart);
+                        cmd.Parameters.AddWithValue("@EndDate", filterEnd);
+
+                        if (!string.IsNullOrEmpty(docNo))
+                            cmd.Parameters.AddWithValue("@DocNo", $"%{docNo}%");
+
+                        if (!string.IsNullOrEmpty(company))
+                            cmd.Parameters.AddWithValue("@Company", company);
+
+                        using (SqlDataReader reader = await cmd.ExecuteReaderAsync())
+                        {
+                            while (await reader.ReadAsync())
+                            {
+                                requests.Add(new
+                                {
+                                    id = reader["Id"],
+                                    docNo = reader["DocNo"].ToString(),
+                                    company = reader["Company"].ToString(),
+                                    startDate = reader["StartDate"] != DBNull.Value ? Convert.ToDateTime(reader["StartDate"]) : (DateTime?)null,
+                                    seminarTitle = reader["SeminarTitle"].ToString(),
+                                    createdBy = reader["CreatedBy"].ToString(),
+                                    status = reader["Status"].ToString(),
+                                    createdDate = reader["CreatedDate"] != DBNull.Value ? Convert.ToDateTime(reader["CreatedDate"]) : DateTime.MinValue,
+                                    participantCount = Convert.ToInt32(reader["ParticipantCount"])
+                                });
+                            }
+                        }
+                    }
+                }
+
+                Console.WriteLine($"✅ GetInterfaceRequests: Found {requests.Count} requests");
+                return Json(new
+                {
+                    success = true,
+                    count = requests.Count,
+                    data = requests
+                });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ GetInterfaceRequests Error: {ex.Message}");
+                Console.WriteLine($"StackTrace: {ex.StackTrace}");
+                return Json(new { success = false, message = ex.Message });
             }
         }
     }
