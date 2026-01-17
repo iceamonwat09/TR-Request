@@ -854,7 +854,7 @@ namespace TrainingRequestApp.Controllers
                 {
                     await conn.OpenAsync();
 
-                    // 🎯 กรองเฉพาะ Status = APPROVED, COMPLETE, RESCHEDULED
+                    // 🎯 กรองเฉพาะ Status = APPROVED, COMPLETE, RESCHEDULED และ TrainingType = 'Public'
                     string query = @"
                         SELECT
                             tr.Id,
@@ -873,6 +873,7 @@ namespace TrainingRequestApp.Controllers
                             (SELECT COUNT(*) FROM TrainingRequestEmployees WHERE TrainingRequestId = tr.Id) AS EmployeeCount
                         FROM [TrainingRequests] tr
                         WHERE tr.Status IN ('APPROVED', 'COMPLETE', 'RESCHEDULED')
+                          AND tr.TrainingType = 'Public'
                           AND tr.IsActive = 1
                           AND CAST(tr.StartDate AS DATE) BETWEEN @StartDate AND @EndDate";
 
