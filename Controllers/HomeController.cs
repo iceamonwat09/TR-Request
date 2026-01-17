@@ -1026,6 +1026,7 @@ namespace TrainingRequestApp.Controllers
                         TimeSpan timeOut = TimeSpan.Parse(request.TimeOut ?? "17:00");
                         decimal trainingHours = (decimal)(timeOut - timeIn).TotalHours;
                         if (trainingHours < 0) trainingHours = 0;
+                        int trainingHoursInt = (int)Math.Round(trainingHours); // แปลงเป็นจำนวนเต็ม
 
                         // 4. Insert ลง OpenCourse และได้ OID กลับมา
                         // Note: OLO = varchar(50), time = varchar(50)
@@ -1042,8 +1043,8 @@ namespace TrainingRequestApp.Controllers
                             // OLO = varchar(50) - truncate if needed
                             string oloValue = trainingLocation?.Length > 50 ? trainingLocation.Substring(0, 50) : trainingLocation;
                             cmd.Parameters.AddWithValue("@OLO", oloValue ?? (object)DBNull.Value);
-                            // time = varchar(50) - convert to string
-                            cmd.Parameters.AddWithValue("@time", trainingHours.ToString("0.00"));
+                            // time = varchar(50) - convert to integer string (no decimals)
+                            cmd.Parameters.AddWithValue("@time", trainingHoursInt.ToString());
                             cmd.Parameters.AddWithValue("@Course_Provider", "Interface");
                             var result = await cmd.ExecuteScalarAsync();
                             openCourseId = Convert.ToInt32(result);
@@ -1093,9 +1094,26 @@ namespace TrainingRequestApp.Controllers
                         int sYear = startDate.Year;
                         string genStr = (request.Gen ?? 1).ToString(); // Gen is nvarchar(50)
 
-                        // Check_in = nvarchar(50) - truncate to max 50 chars
-                        string checkIn = $"Interface {DateTime.Now:yyyy-MM-dd HH:mm}";
+                        // Check_in = nvarchar(50) - ค้นหา Name Lastname จาก Employees โดยใช้ Email
+                        string checkIn = userEmail; // default fallback
+                        string getUserNameQuery = @"
+                            SELECT Name, lastname FROM Employees WHERE Email = @Email";
+                        using (SqlCommand cmd = new SqlCommand(getUserNameQuery, conn, transaction))
+                        {
+                            cmd.Parameters.AddWithValue("@Email", userEmail);
+                            using (var reader = await cmd.ExecuteReaderAsync())
+                            {
+                                if (await reader.ReadAsync())
+                                {
+                                    string name = reader["Name"]?.ToString() ?? "";
+                                    string lastname = reader["lastname"]?.ToString() ?? "";
+                                    checkIn = $"{name} {lastname}".Trim();
+                                }
+                            }
+                        }
+                        // Truncate to max 50 chars
                         if (checkIn.Length > 50) checkIn = checkIn.Substring(0, 50);
+                        Console.WriteLine($"📝 Check_in value: {checkIn}");
 
                         // Truncate other string fields to max 50 chars
                         string expertValue = instructor?.Length > 50 ? instructor.Substring(0, 50) : instructor;
