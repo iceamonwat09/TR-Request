@@ -1012,13 +1012,15 @@ namespace TrainingRequestApp.Controllers
 
                         Console.WriteLine($"✅ OpenCourse inserted with OID: {openCourseId}");
 
-                        // 5. ดึงรายชื่อ Employees ของ Training Request นี้
+                        // 5. ดึงรายชื่อ Employees และ Lookup หา ID_emp จากตาราง Employees
+                        // TrainingRequestEmployees.EmployeeCode → Employees.UserID → Employees.ID_emp
                         string getEmployeesQuery = @"
-                            SELECT EmployeeCode
-                            FROM TrainingRequestEmployees
-                            WHERE TrainingRequestId = @TrainingRequestId";
+                            SELECT tre.EmployeeCode, e.ID_emp
+                            FROM TrainingRequestEmployees tre
+                            LEFT JOIN Employees e ON tre.EmployeeCode = e.UserID
+                            WHERE tre.TrainingRequestId = @TrainingRequestId";
 
-                        var employeeCodes = new List<string>();
+                        var employeeList = new List<(string EmployeeCode, string ID_emp)>();
                         using (SqlCommand cmd = new SqlCommand(getEmployeesQuery, conn, transaction))
                         {
                             cmd.Parameters.AddWithValue("@TrainingRequestId", request.TrainingRequestId);
@@ -1027,17 +1029,26 @@ namespace TrainingRequestApp.Controllers
                                 while (await reader.ReadAsync())
                                 {
                                     string empCode = reader["EmployeeCode"]?.ToString() ?? "";
+                                    string idEmp = reader["ID_emp"]?.ToString() ?? "";
+
                                     if (!string.IsNullOrEmpty(empCode))
                                     {
-                                        employeeCodes.Add(empCode);
+                                        // ถ้าหา ID_emp ไม่เจอ ใช้ EmployeeCode แทน (fallback)
+                                        employeeList.Add((empCode, string.IsNullOrEmpty(idEmp) ? empCode : idEmp));
                                     }
                                 }
                             }
                         }
 
-                        Console.WriteLine($"📋 Found {employeeCodes.Count} employees for this training");
+                        Console.WriteLine($"📋 Found {employeeList.Count} employees for this training");
 
-                        // 6. Insert ลง TimeStramp สำหรับแต่ละ Employee
+                        // Log employee mapping for debugging
+                        foreach (var emp in employeeList)
+                        {
+                            Console.WriteLine($"   - EmployeeCode: {emp.EmployeeCode} → ID_emp: {emp.ID_emp}");
+                        }
+
+                        // 6. Insert ลง TimeStramp สำหรับแต่ละ Employee (ใช้ ID_emp)
                         int sYear = startDate.Year;
                         int gen = request.Gen ?? 1;
                         string checkIn = $"Interface {userEmail} {DateTime.Now:yyyy-MM-dd HH:mm:ss}";
@@ -1049,12 +1060,12 @@ namespace TrainingRequestApp.Controllers
                                    @Company, @datetime_in, @datetime_out, @Gen, @SYear, @Check_in)";
 
                         int insertedCount = 0;
-                        foreach (var empCode in employeeCodes)
+                        foreach (var emp in employeeList)
                         {
                             using (SqlCommand cmd = new SqlCommand(insertTimeStrampQuery, conn, transaction))
                             {
                                 cmd.Parameters.AddWithValue("@OID", openCourseId);
-                                cmd.Parameters.AddWithValue("@Emp", empCode);
+                                cmd.Parameters.AddWithValue("@Emp", emp.ID_emp); // ใช้ ID_emp แทน EmployeeCode
                                 cmd.Parameters.AddWithValue("@check_pass", "Pass");
                                 cmd.Parameters.AddWithValue("@Expert", instructor ?? (object)DBNull.Value);
                                 cmd.Parameters.AddWithValue("@Examiner", DBNull.Value);
