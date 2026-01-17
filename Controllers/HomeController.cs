@@ -1028,6 +1028,7 @@ namespace TrainingRequestApp.Controllers
                         if (trainingHours < 0) trainingHours = 0;
 
                         // 4. Insert ลง OpenCourse และได้ OID กลับมา
+                        // Note: OLO = varchar(50), time = varchar(50)
                         string insertOpenCourseQuery = @"
                             INSERT INTO OpenCourse (OCID, OOpenDate, Language, categoryC, OLO, time, Course_Provider)
                             OUTPUT INSERTED.OID
@@ -1038,8 +1039,11 @@ namespace TrainingRequestApp.Controllers
                         {
                             cmd.Parameters.AddWithValue("@OCID", courseId);
                             cmd.Parameters.AddWithValue("@OOpenDate", startDate);
-                            cmd.Parameters.AddWithValue("@OLO", trainingLocation ?? (object)DBNull.Value);
-                            cmd.Parameters.AddWithValue("@time", trainingHours);
+                            // OLO = varchar(50) - truncate if needed
+                            string oloValue = trainingLocation?.Length > 50 ? trainingLocation.Substring(0, 50) : trainingLocation;
+                            cmd.Parameters.AddWithValue("@OLO", oloValue ?? (object)DBNull.Value);
+                            // time = varchar(50) - convert to string
+                            cmd.Parameters.AddWithValue("@time", trainingHours.ToString("0.00"));
                             cmd.Parameters.AddWithValue("@Course_Provider", "Interface");
                             var result = await cmd.ExecuteScalarAsync();
                             openCourseId = Convert.ToInt32(result);
@@ -1084,9 +1088,18 @@ namespace TrainingRequestApp.Controllers
                         }
 
                         // 6. Insert ลง TimeStramp สำหรับแต่ละ Employee (ใช้ ID_emp)
+                        // Note: Emp = numeric(18,0), Gen = nvarchar(50), Check_in = nvarchar(50)
+                        //       Expert = nvarchar(50), Company = nvarchar(50)
                         int sYear = startDate.Year;
-                        int gen = request.Gen ?? 1;
-                        string checkIn = $"Interface {userEmail} {DateTime.Now:yyyy-MM-dd HH:mm:ss}";
+                        string genStr = (request.Gen ?? 1).ToString(); // Gen is nvarchar(50)
+
+                        // Check_in = nvarchar(50) - truncate to max 50 chars
+                        string checkIn = $"Interface {DateTime.Now:yyyy-MM-dd HH:mm}";
+                        if (checkIn.Length > 50) checkIn = checkIn.Substring(0, 50);
+
+                        // Truncate other string fields to max 50 chars
+                        string expertValue = instructor?.Length > 50 ? instructor.Substring(0, 50) : instructor;
+                        string companyValue = company?.Length > 50 ? company.Substring(0, 50) : company;
 
                         string insertTimeStrampQuery = @"
                             INSERT INTO TimeStramp (OID, Emp, check_pass, Expert, Examiner, TranslatorName,
@@ -1100,15 +1113,26 @@ namespace TrainingRequestApp.Controllers
                             using (SqlCommand cmd = new SqlCommand(insertTimeStrampQuery, conn, transaction))
                             {
                                 cmd.Parameters.AddWithValue("@OID", openCourseId);
-                                cmd.Parameters.AddWithValue("@Emp", emp.ID_emp); // ใช้ ID_emp แทน EmployeeCode
+                                // Emp = numeric(18,0) - convert ID_emp to decimal
+                                decimal empNumeric = 0;
+                                if (decimal.TryParse(emp.ID_emp, out empNumeric))
+                                {
+                                    cmd.Parameters.AddWithValue("@Emp", empNumeric);
+                                }
+                                else
+                                {
+                                    // If ID_emp is not a number, skip this employee
+                                    Console.WriteLine($"⚠️ Warning: ID_emp '{emp.ID_emp}' is not a valid number, skipping...");
+                                    continue;
+                                }
                                 cmd.Parameters.AddWithValue("@check_pass", "Pass");
-                                cmd.Parameters.AddWithValue("@Expert", instructor ?? (object)DBNull.Value);
+                                cmd.Parameters.AddWithValue("@Expert", expertValue ?? (object)DBNull.Value);
                                 cmd.Parameters.AddWithValue("@Examiner", DBNull.Value);
                                 cmd.Parameters.AddWithValue("@TranslatorName", DBNull.Value);
-                                cmd.Parameters.AddWithValue("@Company", company ?? (object)DBNull.Value);
+                                cmd.Parameters.AddWithValue("@Company", companyValue ?? (object)DBNull.Value);
                                 cmd.Parameters.AddWithValue("@datetime_in", TimeSpan.Parse(request.TimeIn ?? "08:00"));
                                 cmd.Parameters.AddWithValue("@datetime_out", TimeSpan.Parse(request.TimeOut ?? "17:00"));
-                                cmd.Parameters.AddWithValue("@Gen", gen);
+                                cmd.Parameters.AddWithValue("@Gen", genStr); // Gen is nvarchar(50)
                                 cmd.Parameters.AddWithValue("@SYear", sYear);
                                 cmd.Parameters.AddWithValue("@Check_in", checkIn);
                                 await cmd.ExecuteNonQueryAsync();
