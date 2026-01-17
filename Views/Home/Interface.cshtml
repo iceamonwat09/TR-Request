@@ -300,11 +300,59 @@
             </div>
         </div>
 
+        <!-- Filter Section -->
+        <div class="table-card mb-4">
+            <h5 class="fw-bold mb-3">
+                <i class="fa fa-filter text-primary"></i> Filter
+            </h5>
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label fw-bold">
+                        <i class="fa fa-calendar-alt text-primary"></i> Start Date
+                    </label>
+                    <input type="date" id="filterStartDate" class="form-control" />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-bold">
+                        <i class="fa fa-calendar-check text-primary"></i> End Date
+                    </label>
+                    <input type="date" id="filterEndDate" class="form-control" />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-bold">
+                        <i class="fa fa-hashtag text-primary"></i> DocNo
+                    </label>
+                    <input type="text" id="filterDocNo" class="form-control" placeholder="Enter DocNo" />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-bold">
+                        <i class="fa fa-building text-primary"></i> Company
+                    </label>
+                    <select id="filterCompany" class="form-select">
+                        <option value="">All Companies</option>
+                        <option value="F2-สมุทรสาคร">F2-สมุทรสาคร</option>
+                        <option value="F4-ปราจีนบุรี">F4-ปราจีนบุรี</option>
+                    </select>
+                </div>
+            </div>
+            <div class="row mt-3">
+                <div class="col-12 text-end">
+                    <button class="btn btn-secondary" onclick="resetFilters()">
+                        <i class="fa fa-redo"></i> Reset
+                    </button>
+                    <button class="btn btn-send" onclick="loadData()">
+                        <i class="fa fa-search"></i> Search
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <!-- Data Table -->
         <div class="table-card">
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <h5 class="fw-bold mb-0">
                     <i class="fa fa-table text-primary"></i> Training Requests
+                    <span class="badge bg-secondary ms-2" id="totalCount">0</span>
                 </h5>
                 <button class="btn btn-outline-primary btn-sm" onclick="loadData()">
                     <i class="fa fa-sync"></i> Refresh
@@ -447,11 +495,44 @@
         // ====================================================================
         $(document).ready(function() {
             initDataTable();
+            initFilters();
             loadData();
 
             // Time change listener to calculate hours
             $('#timeIn, #timeOut').on('change', calculateHours);
         });
+
+        // ====================================================================
+        // Initialize Filters with Default Values
+        // ====================================================================
+        function initFilters() {
+            const now = new Date();
+            const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+            const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+            $('#filterStartDate').val(formatDateForInput(firstDay));
+            $('#filterEndDate').val(formatDateForInput(lastDay));
+        }
+
+        // ====================================================================
+        // Format Date for Input Field (YYYY-MM-DD)
+        // ====================================================================
+        function formatDateForInput(date) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        // ====================================================================
+        // Reset Filters to Default
+        // ====================================================================
+        function resetFilters() {
+            initFilters();
+            $('#filterDocNo').val('');
+            $('#filterCompany').val('');
+            loadData();
+        }
 
         // ====================================================================
         // Initialize DataTable
@@ -485,13 +566,28 @@
             showLoading('Loading data...');
 
             try {
-                const response = await fetch('/Home/GetInterfaceRequests');
+                // Build query parameters from filter inputs
+                const params = new URLSearchParams();
+
+                const startDate = $('#filterStartDate').val();
+                const endDate = $('#filterEndDate').val();
+                const docNo = $('#filterDocNo').val();
+                const company = $('#filterCompany').val();
+
+                if (startDate) params.append('startDate', startDate);
+                if (endDate) params.append('endDate', endDate);
+                if (docNo) params.append('docNo', docNo);
+                if (company) params.append('company', company);
+
+                const url = '/Home/GetInterfaceRequests' + (params.toString() ? '?' + params.toString() : '');
+                const response = await fetch(url);
                 const result = await response.json();
 
                 if (result.success) {
                     interfaceData = result.data;
                     renderTable(result.data);
                     updateStatusCounts(result.data);
+                    $('#totalCount').text(result.data.length);
                     console.log('Loaded', result.data.length, 'records');
                 } else {
                     alert('Error: ' + result.message);

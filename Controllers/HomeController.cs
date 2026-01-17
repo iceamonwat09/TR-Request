@@ -831,19 +831,30 @@ namespace TrainingRequestApp.Controllers
 
         /// <summary>
         /// API: ดึงข้อมูล Training Requests สำหรับ Interface (Status = APPROVED, COMPLETE, RESCHEDULED)
-        /// GET: /Home/GetInterfaceRequests
+        /// GET: /Home/GetInterfaceRequests?startDate=...&endDate=...&docNo=...&company=...
         /// </summary>
         [HttpGet]
-        public async Task<IActionResult> GetInterfaceRequests()
+        public async Task<IActionResult> GetInterfaceRequests(
+            DateTime? startDate = null,
+            DateTime? endDate = null,
+            string? docNo = null,
+            string? company = null)
         {
             try
             {
+                // ตั้งค่าเริ่มต้นเป็นเดือนปัจจุบัน
+                DateTime filterStart = startDate ?? new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
+                DateTime filterEnd = endDate ?? filterStart.AddMonths(1).AddDays(-1);
+
+                Console.WriteLine($"🔹 GetInterfaceRequests: startDate={filterStart:yyyy-MM-dd}, endDate={filterEnd:yyyy-MM-dd}, docNo={docNo}, company={company}");
+
                 string connectionString = _configuration.GetConnectionString("DefaultConnection");
 
                 using (SqlConnection conn = new SqlConnection(connectionString))
                 {
                     await conn.OpenAsync();
 
+                    // 🎯 กรองเฉพาะ Status = APPROVED, COMPLETE, RESCHEDULED
                     string query = @"
                         SELECT
                             tr.Id,
@@ -858,16 +869,39 @@ namespace TrainingRequestApp.Controllers
                             tr.Status,
                             tr.TrainingType,
                             tr.TotalCost,
+                            tr.CreatedBy,
                             (SELECT COUNT(*) FROM TrainingRequestEmployees WHERE TrainingRequestId = tr.Id) AS EmployeeCount
                         FROM [TrainingRequests] tr
                         WHERE tr.Status IN ('APPROVED', 'COMPLETE', 'RESCHEDULED')
                           AND tr.IsActive = 1
-                        ORDER BY tr.StartDate DESC, tr.DocNo DESC";
+                          AND CAST(tr.StartDate AS DATE) BETWEEN @StartDate AND @EndDate";
+
+                    // Optional filters
+                    if (!string.IsNullOrEmpty(docNo))
+                    {
+                        query += " AND tr.DocNo LIKE @DocNo";
+                    }
+
+                    if (!string.IsNullOrEmpty(company))
+                    {
+                        query += " AND tr.Company = @Company";
+                    }
+
+                    query += " ORDER BY tr.StartDate DESC, tr.DocNo DESC";
 
                     var result = new List<object>();
 
                     using (SqlCommand cmd = new SqlCommand(query, conn))
                     {
+                        cmd.Parameters.AddWithValue("@StartDate", filterStart);
+                        cmd.Parameters.AddWithValue("@EndDate", filterEnd);
+
+                        if (!string.IsNullOrEmpty(docNo))
+                            cmd.Parameters.AddWithValue("@DocNo", $"%{docNo}%");
+
+                        if (!string.IsNullOrEmpty(company))
+                            cmd.Parameters.AddWithValue("@Company", company);
+
                         using (var reader = await cmd.ExecuteReaderAsync())
                         {
                             while (await reader.ReadAsync())
@@ -889,6 +923,7 @@ namespace TrainingRequestApp.Controllers
                                     trainingType = reader["TrainingType"]?.ToString() ?? "",
                                     totalCost = reader["TotalCost"] != DBNull.Value
                                         ? Convert.ToDecimal(reader["TotalCost"]) : 0,
+                                    createdBy = reader["CreatedBy"]?.ToString() ?? "",
                                     employeeCount = reader.GetInt32(reader.GetOrdinal("EmployeeCount"))
                                 });
                             }
@@ -896,7 +931,7 @@ namespace TrainingRequestApp.Controllers
                     }
 
                     Console.WriteLine($"✅ GetInterfaceRequests: Found {result.Count} records");
-                    return Json(new { success = true, data = result });
+                    return Json(new { success = true, count = result.Count, data = result });
                 }
             }
             catch (Exception ex)
