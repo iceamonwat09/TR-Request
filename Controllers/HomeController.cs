@@ -795,6 +795,425 @@ namespace TrainingRequestApp.Controllers
             return value;
         }
 
+        // ====================================================================
+        // 📡 INTERFACE API ENDPOINTS (สำหรับส่งข้อมูลไป Course, OpenCourse, TimeStramp)
+        // ====================================================================
+
+        /// <summary>
+        /// Interface Page - แสดงหน้า Interface สำหรับส่งข้อมูลไประบบอบรม
+        /// GET: /Home/Interface
+        /// </summary>
+        [HttpGet]
+        public IActionResult Interface()
+        {
+            // ตรวจสอบว่าผู้ใช้ล็อกอินหรือไม่
+            if (string.IsNullOrEmpty(HttpContext.Session.GetString("UserEmail")))
+            {
+                return RedirectToAction("Index", "Login");
+            }
+
+            // ตรวจสอบสิทธิ์ Admin
+            string? userRole = HttpContext.Session.GetString("UserRole");
+            if (string.IsNullOrEmpty(userRole) ||
+                !(userRole.Contains("Admin") || userRole.Contains("HRD") || userRole.Contains("System")))
+            {
+                TempData["Error"] = "คุณไม่มีสิทธิ์เข้าถึงหน้านี้";
+                return RedirectToAction("Index", "Home");
+            }
+
+            ViewBag.UserEmail = HttpContext.Session.GetString("UserEmail");
+            ViewBag.UserRole = userRole;
+
+            Console.WriteLine($"🔹 Interface page accessed by: {ViewBag.UserEmail}");
+
+            return View();
+        }
+
+        /// <summary>
+        /// API: ดึงข้อมูล Training Requests สำหรับ Interface (Status = APPROVED, COMPLETE, RESCHEDULED)
+        /// GET: /Home/GetInterfaceRequests?startDate=...&endDate=...&docNo=...&company=...
+        /// </summary>
+        [HttpGet]
+        public async Task<IActionResult> GetInterfaceRequests(
+            DateTime? startDate = null,
+            DateTime? endDate = null,
+            string? docNo = null,
+            string? company = null)
+        {
+            try
+            {
+                // ตั้งค่าเริ่มต้นเป็นเดือนปัจจุบัน
+                DateTime filterStart = startDate ?? new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
+                DateTime filterEnd = endDate ?? filterStart.AddMonths(1).AddDays(-1);
+
+                Console.WriteLine($"🔹 GetInterfaceRequests: startDate={filterStart:yyyy-MM-dd}, endDate={filterEnd:yyyy-MM-dd}, docNo={docNo}, company={company}");
+
+                string connectionString = _configuration.GetConnectionString("DefaultConnection");
+
+                using (SqlConnection conn = new SqlConnection(connectionString))
+                {
+                    await conn.OpenAsync();
+
+                    // 🎯 กรองเฉพาะ Status = APPROVED, COMPLETE, RESCHEDULED และ TrainingType = 'Public'
+                    string query = @"
+                        SELECT
+                            tr.Id,
+                            tr.DocNo,
+                            tr.SeminarTitle,
+                            tr.StartDate,
+                            tr.EndDate,
+                            tr.TrainingLocation,
+                            tr.Instructor,
+                            tr.Company,
+                            tr.Department,
+                            tr.Status,
+                            tr.TrainingType,
+                            tr.TotalCost,
+                            tr.CreatedBy,
+                            (SELECT COUNT(*) FROM TrainingRequestEmployees WHERE TrainingRequestId = tr.Id) AS EmployeeCount
+                        FROM [TrainingRequests] tr
+                        WHERE tr.Status IN ('APPROVED', 'COMPLETE', 'RESCHEDULED')
+                          AND tr.TrainingType = 'Public'
+                          AND tr.IsActive = 1
+                          AND CAST(tr.StartDate AS DATE) BETWEEN @StartDate AND @EndDate";
+
+                    // Optional filters
+                    if (!string.IsNullOrEmpty(docNo))
+                    {
+                        query += " AND tr.DocNo LIKE @DocNo";
+                    }
+
+                    if (!string.IsNullOrEmpty(company))
+                    {
+                        query += " AND tr.Company = @Company";
+                    }
+
+                    query += " ORDER BY tr.StartDate DESC, tr.DocNo DESC";
+
+                    var result = new List<object>();
+
+                    using (SqlCommand cmd = new SqlCommand(query, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@StartDate", filterStart);
+                        cmd.Parameters.AddWithValue("@EndDate", filterEnd);
+
+                        if (!string.IsNullOrEmpty(docNo))
+                            cmd.Parameters.AddWithValue("@DocNo", $"%{docNo}%");
+
+                        if (!string.IsNullOrEmpty(company))
+                            cmd.Parameters.AddWithValue("@Company", company);
+
+                        using (var reader = await cmd.ExecuteReaderAsync())
+                        {
+                            while (await reader.ReadAsync())
+                            {
+                                result.Add(new
+                                {
+                                    id = reader.GetInt32(reader.GetOrdinal("Id")),
+                                    docNo = reader["DocNo"]?.ToString() ?? "",
+                                    seminarTitle = reader["SeminarTitle"]?.ToString() ?? "",
+                                    startDate = reader["StartDate"] != DBNull.Value
+                                        ? Convert.ToDateTime(reader["StartDate"]).ToString("yyyy-MM-dd") : "",
+                                    endDate = reader["EndDate"] != DBNull.Value
+                                        ? Convert.ToDateTime(reader["EndDate"]).ToString("yyyy-MM-dd") : "",
+                                    trainingLocation = reader["TrainingLocation"]?.ToString() ?? "",
+                                    instructor = reader["Instructor"]?.ToString() ?? "",
+                                    company = reader["Company"]?.ToString() ?? "",
+                                    department = reader["Department"]?.ToString() ?? "",
+                                    status = reader["Status"]?.ToString() ?? "",
+                                    trainingType = reader["TrainingType"]?.ToString() ?? "",
+                                    totalCost = reader["TotalCost"] != DBNull.Value
+                                        ? Convert.ToDecimal(reader["TotalCost"]) : 0,
+                                    createdBy = reader["CreatedBy"]?.ToString() ?? "",
+                                    employeeCount = reader.GetInt32(reader.GetOrdinal("EmployeeCount"))
+                                });
+                            }
+                        }
+                    }
+
+                    Console.WriteLine($"✅ GetInterfaceRequests: Found {result.Count} records");
+                    return Json(new { success = true, count = result.Count, data = result });
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Error in GetInterfaceRequests: {ex.Message}");
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// API: ส่งข้อมูล Interface ไปบันทึกที่ Course, OpenCourse, TimeStramp
+        /// POST: /Home/SendInterfaceData
+        /// </summary>
+        [HttpPost]
+        public async Task<IActionResult> SendInterfaceData([FromBody] InterfaceDataRequest request)
+        {
+            if (request == null)
+            {
+                return Json(new { success = false, message = "ข้อมูลไม่ถูกต้อง" });
+            }
+
+            string connectionString = _configuration.GetConnectionString("DefaultConnection");
+            string userEmail = HttpContext.Session.GetString("UserEmail") ?? "Unknown";
+
+            using (SqlConnection conn = new SqlConnection(connectionString))
+            {
+                await conn.OpenAsync();
+                using (SqlTransaction transaction = conn.BeginTransaction())
+                {
+                    try
+                    {
+                        Console.WriteLine($"🔹 SendInterfaceData started for TrainingRequestId: {request.TrainingRequestId}");
+
+                        // 1. ดึงข้อมูล TrainingRequest
+                        string getRequestQuery = @"
+                            SELECT DocNo, SeminarTitle, StartDate, Instructor, Company, TrainingLocation, Status
+                            FROM TrainingRequests
+                            WHERE Id = @Id AND IsActive = 1";
+
+                        string docNo = "", seminarTitle = "", instructor = "", company = "", trainingLocation = "";
+                        DateTime startDate = DateTime.Now;
+                        string currentStatus = "";
+
+                        using (SqlCommand cmd = new SqlCommand(getRequestQuery, conn, transaction))
+                        {
+                            cmd.Parameters.AddWithValue("@Id", request.TrainingRequestId);
+                            using (var reader = await cmd.ExecuteReaderAsync())
+                            {
+                                if (await reader.ReadAsync())
+                                {
+                                    docNo = reader["DocNo"]?.ToString() ?? "";
+                                    seminarTitle = reader["SeminarTitle"]?.ToString() ?? "";
+                                    startDate = reader["StartDate"] != DBNull.Value
+                                        ? Convert.ToDateTime(reader["StartDate"]) : DateTime.Now;
+                                    instructor = reader["Instructor"]?.ToString() ?? "";
+                                    company = reader["Company"]?.ToString() ?? "";
+                                    trainingLocation = reader["TrainingLocation"]?.ToString() ?? "";
+                                    currentStatus = reader["Status"]?.ToString() ?? "";
+                                }
+                                else
+                                {
+                                    return Json(new { success = false, message = "ไม่พบข้อมูล Training Request" });
+                                }
+                            }
+                        }
+
+                        // ตรวจสอบว่าถูกส่งไปแล้วหรือไม่
+                        if (currentStatus == "COMPLETE")
+                        {
+                            return Json(new { success = false, message = "ข้อมูลนี้ถูกส่งไปแล้ว ไม่สามารถส่งซ้ำได้" });
+                        }
+
+                        // 2. Insert ลง Course และได้ ID กลับมา
+                        string insertCourseQuery = @"
+                            INSERT INTO Course (CID, CName)
+                            OUTPUT INSERTED.ID
+                            VALUES (@CID, @CName)";
+
+                        int courseId = 0;
+                        using (SqlCommand cmd = new SqlCommand(insertCourseQuery, conn, transaction))
+                        {
+                            cmd.Parameters.AddWithValue("@CID", docNo);
+                            cmd.Parameters.AddWithValue("@CName", seminarTitle);
+                            var result = await cmd.ExecuteScalarAsync();
+                            courseId = Convert.ToInt32(result);
+                        }
+
+                        Console.WriteLine($"✅ Course inserted with ID: {courseId}");
+
+                        // 3. คำนวณชั่วโมงจากเวลาเริ่ม-สิ้นสุด
+                        TimeSpan timeIn = TimeSpan.Parse(request.TimeIn ?? "08:00");
+                        TimeSpan timeOut = TimeSpan.Parse(request.TimeOut ?? "17:00");
+                        decimal trainingHours = (decimal)(timeOut - timeIn).TotalHours;
+                        if (trainingHours < 0) trainingHours = 0;
+                        int trainingHoursInt = (int)Math.Round(trainingHours); // แปลงเป็นจำนวนเต็ม
+
+                        // 4. Insert ลง OpenCourse และได้ OID กลับมา
+                        // Note: OLO = varchar(50), time = varchar(50)
+                        string insertOpenCourseQuery = @"
+                            INSERT INTO OpenCourse (OCID, OOpenDate, Language, categoryC, OLO, time, Course_Provider)
+                            OUTPUT INSERTED.OID
+                            VALUES (@OCID, @OOpenDate, NULL, NULL, @OLO, @time, @Course_Provider)";
+
+                        int openCourseId = 0;
+                        using (SqlCommand cmd = new SqlCommand(insertOpenCourseQuery, conn, transaction))
+                        {
+                            cmd.Parameters.AddWithValue("@OCID", courseId);
+                            cmd.Parameters.AddWithValue("@OOpenDate", startDate);
+                            // OLO = varchar(50) - truncate if needed
+                            string oloValue = trainingLocation?.Length > 50 ? trainingLocation.Substring(0, 50) : trainingLocation;
+                            cmd.Parameters.AddWithValue("@OLO", oloValue ?? (object)DBNull.Value);
+                            // time = varchar(50) - convert to integer string (no decimals)
+                            cmd.Parameters.AddWithValue("@time", trainingHoursInt.ToString());
+                            cmd.Parameters.AddWithValue("@Course_Provider", "Interface");
+                            var result = await cmd.ExecuteScalarAsync();
+                            openCourseId = Convert.ToInt32(result);
+                        }
+
+                        Console.WriteLine($"✅ OpenCourse inserted with OID: {openCourseId}");
+
+                        // 5. ดึงรายชื่อ Employees และ Lookup หา ID_emp จากตาราง Employees
+                        // TrainingRequestEmployees.EmployeeCode → Employees.UserID → Employees.ID_emp
+                        string getEmployeesQuery = @"
+                            SELECT tre.EmployeeCode, e.ID_emp
+                            FROM TrainingRequestEmployees tre
+                            LEFT JOIN Employees e ON tre.EmployeeCode = e.UserID
+                            WHERE tre.TrainingRequestId = @TrainingRequestId";
+
+                        var employeeList = new List<(string EmployeeCode, string ID_emp)>();
+                        using (SqlCommand cmd = new SqlCommand(getEmployeesQuery, conn, transaction))
+                        {
+                            cmd.Parameters.AddWithValue("@TrainingRequestId", request.TrainingRequestId);
+                            using (var reader = await cmd.ExecuteReaderAsync())
+                            {
+                                while (await reader.ReadAsync())
+                                {
+                                    string empCode = reader["EmployeeCode"]?.ToString() ?? "";
+                                    string idEmp = reader["ID_emp"]?.ToString() ?? "";
+
+                                    if (!string.IsNullOrEmpty(empCode))
+                                    {
+                                        // ถ้าหา ID_emp ไม่เจอ ใช้ EmployeeCode แทน (fallback)
+                                        employeeList.Add((empCode, string.IsNullOrEmpty(idEmp) ? empCode : idEmp));
+                                    }
+                                }
+                            }
+                        }
+
+                        Console.WriteLine($"📋 Found {employeeList.Count} employees for this training");
+
+                        // Log employee mapping for debugging
+                        foreach (var emp in employeeList)
+                        {
+                            Console.WriteLine($"   - EmployeeCode: {emp.EmployeeCode} → ID_emp: {emp.ID_emp}");
+                        }
+
+                        // 6. Insert ลง TimeStramp สำหรับแต่ละ Employee (ใช้ ID_emp)
+                        // Note: Emp = numeric(18,0), Gen = nvarchar(50), Check_in = nvarchar(50)
+                        //       Expert = nvarchar(50), Company = nvarchar(50)
+                        int sYear = startDate.Year;
+                        string genStr = (request.Gen ?? 1).ToString(); // Gen is nvarchar(50)
+
+                        // Check_in = nvarchar(50) - ค้นหา Name Lastname จาก Employees โดยใช้ Email
+                        string checkIn = userEmail; // default fallback
+                        string getUserNameQuery = @"
+                            SELECT Name, lastname FROM Employees WHERE Email = @Email";
+                        using (SqlCommand cmd = new SqlCommand(getUserNameQuery, conn, transaction))
+                        {
+                            cmd.Parameters.AddWithValue("@Email", userEmail);
+                            using (var reader = await cmd.ExecuteReaderAsync())
+                            {
+                                if (await reader.ReadAsync())
+                                {
+                                    string name = reader["Name"]?.ToString() ?? "";
+                                    string lastname = reader["lastname"]?.ToString() ?? "";
+                                    checkIn = $"{name} {lastname}".Trim();
+                                }
+                            }
+                        }
+                        // Truncate to max 50 chars
+                        if (checkIn.Length > 50) checkIn = checkIn.Substring(0, 50);
+                        Console.WriteLine($"📝 Check_in value: {checkIn}");
+
+                        // Truncate other string fields to max 50 chars
+                        string expertValue = instructor?.Length > 50 ? instructor.Substring(0, 50) : instructor;
+                        string companyValue = company?.Length > 50 ? company.Substring(0, 50) : company;
+
+                        string insertTimeStrampQuery = @"
+                            INSERT INTO TimeStramp (OID, Emp, check_pass, Expert, Examiner, TranslatorName,
+                                                   Company, datetime_in, datetime_out, Gen, SYear, Check_in)
+                            VALUES (@OID, @Emp, @check_pass, @Expert, @Examiner, @TranslatorName,
+                                   @Company, @datetime_in, @datetime_out, @Gen, @SYear, @Check_in)";
+
+                        int insertedCount = 0;
+                        foreach (var emp in employeeList)
+                        {
+                            using (SqlCommand cmd = new SqlCommand(insertTimeStrampQuery, conn, transaction))
+                            {
+                                cmd.Parameters.AddWithValue("@OID", openCourseId);
+                                // Emp = numeric(18,0) - convert ID_emp to decimal
+                                decimal empNumeric = 0;
+                                if (decimal.TryParse(emp.ID_emp, out empNumeric))
+                                {
+                                    cmd.Parameters.AddWithValue("@Emp", empNumeric);
+                                }
+                                else
+                                {
+                                    // If ID_emp is not a number, skip this employee
+                                    Console.WriteLine($"⚠️ Warning: ID_emp '{emp.ID_emp}' is not a valid number, skipping...");
+                                    continue;
+                                }
+                                cmd.Parameters.AddWithValue("@check_pass", "Pass");
+                                cmd.Parameters.AddWithValue("@Expert", expertValue ?? (object)DBNull.Value);
+                                cmd.Parameters.AddWithValue("@Examiner", DBNull.Value);
+                                cmd.Parameters.AddWithValue("@TranslatorName", DBNull.Value);
+                                cmd.Parameters.AddWithValue("@Company", companyValue ?? (object)DBNull.Value);
+                                cmd.Parameters.AddWithValue("@datetime_in", TimeSpan.Parse(request.TimeIn ?? "08:00"));
+                                cmd.Parameters.AddWithValue("@datetime_out", TimeSpan.Parse(request.TimeOut ?? "17:00"));
+                                cmd.Parameters.AddWithValue("@Gen", genStr); // Gen is nvarchar(50)
+                                cmd.Parameters.AddWithValue("@SYear", sYear);
+                                cmd.Parameters.AddWithValue("@Check_in", checkIn);
+                                await cmd.ExecuteNonQueryAsync();
+                                insertedCount++;
+                            }
+                        }
+
+                        Console.WriteLine($"✅ TimeStramp inserted for {insertedCount} employees");
+
+                        // 7. Update Status เป็น COMPLETE
+                        string updateStatusQuery = @"
+                            UPDATE TrainingRequests
+                            SET Status = 'COMPLETE',
+                                UpdatedDate = GETDATE(),
+                                UpdatedBy = @UpdatedBy
+                            WHERE Id = @Id";
+
+                        using (SqlCommand cmd = new SqlCommand(updateStatusQuery, conn, transaction))
+                        {
+                            cmd.Parameters.AddWithValue("@Id", request.TrainingRequestId);
+                            cmd.Parameters.AddWithValue("@UpdatedBy", userEmail);
+                            await cmd.ExecuteNonQueryAsync();
+                        }
+
+                        Console.WriteLine($"✅ TrainingRequest status updated to COMPLETE");
+
+                        // Commit Transaction
+                        transaction.Commit();
+
+                        Console.WriteLine($"✅ SendInterfaceData completed successfully!");
+
+                        return Json(new {
+                            success = true,
+                            message = $"ส่งข้อมูลสำเร็จ! บันทึกพนักงาน {insertedCount} คน",
+                            courseId = courseId,
+                            openCourseId = openCourseId,
+                            employeeCount = insertedCount
+                        });
+                    }
+                    catch (Exception ex)
+                    {
+                        // Rollback on error
+                        transaction.Rollback();
+                        Console.WriteLine($"❌ Error in SendInterfaceData: {ex.Message}");
+                        Console.WriteLine($"Stack Trace: {ex.StackTrace}");
+                        return Json(new { success = false, message = $"เกิดข้อผิดพลาด: {ex.Message}" });
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Request Model สำหรับ SendInterfaceData
+        /// </summary>
+        public class InterfaceDataRequest
+        {
+            public int TrainingRequestId { get; set; }
+            public string? TimeIn { get; set; } = "08:00";
+            public string? TimeOut { get; set; } = "17:00";
+            public int? Gen { get; set; } = 1;
+        }
+
         /// <summary>
         /// Export Training Request as PDF
         /// GET: /Home/ExportTrainingRequestPdf/5
