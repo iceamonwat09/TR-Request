@@ -654,7 +654,13 @@
             const result = await response.json();
 
             if (result.success) {
-                const labels = result.data.map(d => d.status);
+                // แปลง Label สถานะให้แสดงผลถูกต้อง
+                const labels = result.data.map(d => {
+                    if (d.status === 'WAITING_FOR_MANAGING_DIRECTOR') {
+                        return 'WAITING_FOR_DIRECTOR';
+                    }
+                    return d.status;
+                });
                 const counts = result.data.map(d => d.count);
                 // 🎨 Material Design Colors - รองรับสถานะทั้งหมด 12 สถานะ
                 // ✅ APPROVED, COMPLETE → เขียว
