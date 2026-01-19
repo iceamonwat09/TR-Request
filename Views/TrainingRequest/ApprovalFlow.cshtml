@@ -486,7 +486,7 @@
             </div>
         </div>
 
-        <!-- Level 5: Managing Director -->
+        <!-- Level 5: Director -->
         @{
             var mdStatus = Model.Status_ManagingDirector ?? "Pending";
             var mdClass = GetStatusClass(mdStatus, Model.Status, "WAITING_FOR_MANAGING_DIRECTOR");
@@ -495,7 +495,7 @@
             <div class="timeline-marker @mdClass">5</div>
             <div class="timeline-content @mdClass">
                 <div class="timeline-header">
-                    <div class="timeline-title">🔹 Managing Director</div>
+                    <div class="timeline-title">🔹 Director</div>
                     <span class="status-badge @mdClass">@GetStatusDisplay(mdStatus, Model.Status, "WAITING_FOR_MANAGING_DIRECTOR")</span>
                 </div>
                 <div class="approver-info">
