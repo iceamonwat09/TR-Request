@@ -299,7 +299,8 @@
                                 <option value="WAITING_FOR_DEPARTMENT_MANAGER">WAITING_FOR_DEPARTMENT_MANAGER</option>
                                 <option value="WAITING_FOR_HRD_ADMIN">WAITING_FOR_HRD_ADMIN</option>
                                 <option value="WAITING_FOR_HRD_CONFIRMATION">WAITING_FOR_HRD_CONFIRMATION</option>
-                                <option value="WAITING_FOR_MANAGING_DIRECTOR">WAITING_FOR_MANAGING_DIRECTOR</option>
+                                <option value="WAITING_FOR_MANAGING_DIRECTOR">WAITING_FOR_DIRECTOR</option>
+                                <option value="WAITING_FOR_DEPUTY_MANAGING_DIRECTOR">WAITING_FOR_DEPUTY_MANAGING_DIRECTOR</option>
                                 <option value="Approved">Approved</option>
                                 <option value="Rejected">Rejected</option>
                                 <option value="Revise">Revise</option>
@@ -524,7 +525,9 @@
                 case 'WAITING_FOR_HRD_CONFIRMATION':
                     return '<span class="badge bg-info text-dark"><i class="fas fa-hourglass-half"></i> ' + status + '</span>';
                 case 'WAITING_FOR_MANAGING_DIRECTOR':
-                    return '<span class="badge bg-dark"><i class="fas fa-hourglass-half"></i> ' + status + '</span>';
+                    return '<span class="badge bg-dark"><i class="fas fa-hourglass-half"></i> WAITING_FOR_DIRECTOR</span>';
+                case 'WAITING_FOR_DEPUTY_MANAGING_DIRECTOR':
+                    return '<span class="badge bg-secondary"><i class="fas fa-hourglass-half"></i> WAITING_FOR_DEPUTY_MANAGING_DIRECTOR</span>';
                 case 'Approved':
                 case 'APPROVED':
                     return '<span class="badge bg-success"><i class="fas fa-check-circle"></i> ' + status + '</span>';
