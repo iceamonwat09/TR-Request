@@ -82,7 +82,7 @@ namespace TrainingRequestApp.Services
                 "DepartmentManager" => "ผู้จัดการฝ่าย (Department Manager)",
                 "HRDAdmin" => "เจ้าหน้าที่พัฒนาบุคลากร (HRD Admin)",
                 "HRDConfirmation" => "ผู้รับรองการฝึกอบรม (HRD Confirmation)",
-                "ManagingDirector" => "กรรมการผู้จัดการ (Managing Director)",
+                "ManagingDirector" => "กรรมการผู้จัดการ (Director)",
                 "DeputyManagingDirector" => "รองกรรมการผู้จัดการ (Deputy Managing Director)", // 🆕
                 _ => "ผู้อนุมัติ"
             };
@@ -760,7 +760,7 @@ namespace TrainingRequestApp.Services
                 "WAITING_FOR_DEPARTMENT_MANAGER" => "รอ Department Manager อนุมัติ",
                 "WAITING_FOR_HRD_ADMIN" => "รอ HRD Admin อนุมัติ",
                 "WAITING_FOR_HRD_CONFIRMATION" => "รอ HRD Confirmation อนุมัติ",
-                "WAITING_FOR_MANAGING_DIRECTOR" => "รอ Managing Director อนุมัติ",
+                "WAITING_FOR_MANAGING_DIRECTOR" => "รอ Director อนุมัติ",
                 "WAITING_FOR_DEPUTY_MANAGING_DIRECTOR" => "รอ Deputy Managing Director อนุมัติ", // 🆕
                 "Revise" => "ส่งกลับแก้ไข",
                 "Revision Admin" => "ส่งกลับ HRD Admin แก้ไข",
@@ -1041,7 +1041,7 @@ namespace TrainingRequestApp.Services
                 "WAITING_FOR_DEPARTMENT_MANAGER" => "ผู้จัดการฝ่าย (Department Manager)",
                 "WAITING_FOR_HRD_ADMIN" => "เจ้าหน้าที่พัฒนาบุคลากร (HRD Admin)",
                 "WAITING_FOR_HRD_CONFIRMATION" => "ผู้รับรองการฝึกอบรม (HRD Confirmation)",
-                "WAITING_FOR_MANAGING_DIRECTOR" => "กรรมการผู้จัดการ (Managing Director)",
+                "WAITING_FOR_MANAGING_DIRECTOR" => "กรรมการผู้จัดการ (Director)",
                 "WAITING_FOR_DEPUTY_MANAGING_DIRECTOR" => "รองกรรมการผู้จัดการ (Deputy Managing Director)", // 🆕
                 _ => "ผู้อนุมัติ"
             };
@@ -1129,7 +1129,7 @@ namespace TrainingRequestApp.Services
                 "WAITING_FOR_DEPARTMENT_MANAGER" => "ผู้จัดการฝ่าย (Department Manager)",
                 "WAITING_FOR_HRD_ADMIN" => "เจ้าหน้าที่พัฒนาบุคลากร (HRD Admin)",
                 "WAITING_FOR_HRD_CONFIRMATION" => "ผู้รับรองการฝึกอบรม (HRD Confirmation)",
-                "WAITING_FOR_MANAGING_DIRECTOR" => "กรรมการผู้จัดการ (Managing Director)",
+                "WAITING_FOR_MANAGING_DIRECTOR" => "กรรมการผู้จัดการ (Director)",
                 "WAITING_FOR_DEPUTY_MANAGING_DIRECTOR" => "รองกรรมการผู้จัดการ (Deputy Managing Director)", // 🆕
                 _ => "ผู้อนุมัติ"
             };
@@ -1540,7 +1540,7 @@ namespace TrainingRequestApp.Services
         <td style='padding: 10px;'><span class='status-badge {GetStatusClass(request.Status_HRDConfirmation)}'>{request.Status_HRDConfirmation ?? "รออนุมัติ"}</span></td>
     </tr>
     <tr style='border-bottom: 1px solid #e0e0e0;'>
-        <td style='padding: 10px; font-weight: bold;'>กรรมการผู้จัดการ (Managing Director)</td>
+        <td style='padding: 10px; font-weight: bold;'>กรรมการผู้จัดการ (Director)</td>
         <td style='padding: 10px;'>{request.ManagingDirectorId ?? "-"}</td>
         <td style='padding: 10px;'><span class='status-badge {GetStatusClass(request.Status_ManagingDirector)}'>{request.Status_ManagingDirector ?? "รออนุมัติ"}</span></td>
     </tr>
