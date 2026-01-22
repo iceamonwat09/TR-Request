@@ -417,14 +417,14 @@ namespace TrainingRequestApp.Services
             gfx.DrawString("ผลการพิจารณา :", _fontBold, XBrushes.Black, new XPoint(leftX, leftY + textOffsetY));
             leftY += lineHeight + 3;
 
-            bool isManagingApproved = data.Status_ManagingDirector?.ToUpper() == "APPROVED";
-            bool isManagingRejected = data.Status_ManagingDirector?.ToUpper() == "REJECTED";
+            bool isDeputyManagingApproved = data.Status_DeputyManagingDirector?.ToUpper() == "APPROVED";
+            bool isDeputyManagingRejected = data.Status_DeputyManagingDirector?.ToUpper() == "REJECTED";
 
-            DrawCheckbox(gfx, leftX + 5, leftY + 2, isManagingApproved);
+            DrawCheckbox(gfx, leftX + 5, leftY + 2, isDeputyManagingApproved);
             gfx.DrawString("อนุมัติให้ฝึกอบรมสัมมนา", _fontSmall, XBrushes.Black, new XPoint(leftX + 20, leftY + textOffsetY));
             leftY += lineHeight;
 
-            DrawCheckbox(gfx, leftX + 5, leftY + 2, isManagingRejected);
+            DrawCheckbox(gfx, leftX + 5, leftY + 2, isDeputyManagingRejected);
             gfx.DrawString("ไม่อนุมัติ/ส่งกลับให้ต้นสังกัดทบทวนใหม่", _fontSmall, XBrushes.Black, new XPoint(leftX + 20, leftY + textOffsetY));
             leftY += lineHeight + 2;
 
@@ -444,19 +444,19 @@ namespace TrainingRequestApp.Services
             double signUnderlineWidth = halfWidth - signLabelSize.Width - labelToDataGap - padding - 5;
             DrawUnderline(gfx, signDataX, leftY + textOffsetY + 3, signUnderlineWidth);
 
-            if (isManagingApproved && !string.IsNullOrEmpty(data.ManagingDirectorId))
+            if (isDeputyManagingApproved && !string.IsNullOrEmpty(data.DeputyManagingDirectorId))
             {
                 // จัดกึ่งกลางในพื้นที่ underline
-                XSize dataSize = gfx.MeasureString(data.ManagingDirectorId, _fontSmall);
+                XSize dataSize = gfx.MeasureString(data.DeputyManagingDirectorId, _fontSmall);
                 double centerX = signDataX + (signUnderlineWidth / 2) - (dataSize.Width / 2);
-                gfx.DrawString(data.ManagingDirectorId, _fontSmall, XBrushes.Black, new XPoint(centerX, leftY + textOffsetY));
+                gfx.DrawString(data.DeputyManagingDirectorId, _fontSmall, XBrushes.Black, new XPoint(centerX, leftY + textOffsetY));
             }
             leftY += lineHeight;
 
             // ApproveInfo (วงเล็บ) - จัดกึ่งกลางในพื้นที่ underline
-            if (isManagingApproved && !string.IsNullOrEmpty(data.ApproveInfo_ManagingDirector))
+            if (isDeputyManagingApproved && !string.IsNullOrEmpty(data.ApproveInfo_DeputyManagingDirector))
             {
-                string approveText = $"( {data.ApproveInfo_ManagingDirector} )";
+                string approveText = $"( {data.ApproveInfo_DeputyManagingDirector} )";
                 XSize textSize = gfx.MeasureString(approveText, _fontTiny);
                 double centerX = signDataX + (signUnderlineWidth / 2) - (textSize.Width / 2);
                 gfx.DrawString(approveText, _fontTiny, XBrushes.Black, new XPoint(centerX, leftY + textOffsetY - 3));
@@ -471,9 +471,9 @@ namespace TrainingRequestApp.Services
             double posUnderlineWidth = halfWidth - posLabelSize.Width - labelToDataGap - padding - 5;
             DrawUnderline(gfx, posDataX, leftY + textOffsetY + 3, posUnderlineWidth);
 
-            if (isManagingApproved && !string.IsNullOrEmpty(data.ManagingDirectorLevel))
+            if (isDeputyManagingApproved && !string.IsNullOrEmpty(data.DeputyManagingDirectorLevel))
             {
-                gfx.DrawString(data.ManagingDirectorLevel, _fontSmall, XBrushes.Black, new XPoint(posDataX, leftY + textOffsetY));
+                gfx.DrawString(data.DeputyManagingDirectorLevel, _fontSmall, XBrushes.Black, new XPoint(posDataX, leftY + textOffsetY));
             }
 
             // ===== RIGHT: ข้อมูลส่วน HRD บันทึกข้อมูล =====
@@ -778,106 +778,147 @@ namespace TrainingRequestApp.Services
         }
 
         // ==========================================
-        // [FIX v3.1] DrawSignatureSection - ApproveInfo กึ่งกลาง, ตำแหน่งชิดซ้าย
+        // [FIX v3.6] DrawSignatureSection - 3 คอลัมน์ (Section Manager, Department Manager, Managing Director)
         // ==========================================
         private double DrawSignatureSection(XGraphics gfx, TrainingRequestData data, double contentX, double currentY, double contentWidth, double padding, double textOffsetY, double sectionBottom)
         {
-            double halfWidth = contentWidth / 2;
-            double labelX = contentX + padding;
-            double rightColX = contentX + halfWidth + padding;
+            // แบ่งเป็น 3 คอลัมน์
+            double colWidth = contentWidth / 3;
+            double col1X = contentX + padding;           // Section Manager
+            double col2X = contentX + colWidth + padding; // Department Manager
+            double col3X = contentX + (colWidth * 2) + padding; // Managing Director
             double lineHeight = 15;
 
-            // บันทึกตำแหน่งเริ่มต้นสำหรับเส้นแบ่งกลาง
-            double sigStartY = currentY;
-
-            // === ROW 1: หัวข้อทั้งสองฝั่ง ===
-            gfx.DrawString("จึงเรียนมาเพื่อโปรดพิจารณาอนุมัติ", _fontBold, XBrushes.Black, new XPoint(labelX, currentY + textOffsetY));
-            gfx.DrawString("ต้นสังกัดทบทวน :", _fontBold, XBrushes.Black, new XPoint(rightColX, currentY + textOffsetY));
+            // === ROW 1: หัวข้อทั้ง 3 คอลัมน์ ===
+            gfx.DrawString("จึงเรียนมาเพื่อโปรดพิจารณาอนุมัติ", _fontBold, XBrushes.Black, new XPoint(col1X, currentY + textOffsetY));
+            gfx.DrawString("ต้นสังกัดทบทวน :", _fontBold, XBrushes.Black, new XPoint(col2X, currentY + textOffsetY));
+            gfx.DrawString("กรรมการผู้จัดการ :", _fontBold, XBrushes.Black, new XPoint(col3X, currentY + textOffsetY));
             currentY += lineHeight + 2;
 
             // === ROW 2: Checkbox อนุมัติ/ไม่อนุมัติ ===
-            double cbX = labelX;
             bool isSectionApproved = data.Status_SectionManager?.ToUpper() == "APPROVED";
             bool isSectionRejected = data.Status_SectionManager?.ToUpper() == "REJECTED";
+            bool isDepartmentApproved = data.Status_DepartmentManager?.ToUpper() == "APPROVED";
+            bool isDepartmentRejected = data.Status_DepartmentManager?.ToUpper() == "REJECTED";
+            bool isManagingApproved = data.Status_ManagingDirector?.ToUpper() == "APPROVED";
+            bool isManagingRejected = data.Status_ManagingDirector?.ToUpper() == "REJECTED";
+
+            // Column 1: Section Manager
+            double cbX = col1X;
             DrawCheckbox(gfx, cbX, currentY + 4, isSectionApproved);
             gfx.DrawString("อนุมัติ", _fontSmall, XBrushes.Black, new XPoint(cbX + 14, currentY + textOffsetY));
-            cbX += 60;
+            cbX += 50;
             DrawCheckbox(gfx, cbX, currentY + 4, isSectionRejected);
             gfx.DrawString("ไม่อนุมัติ", _fontSmall, XBrushes.Black, new XPoint(cbX + 14, currentY + textOffsetY));
 
-            cbX = rightColX;
-            bool isDepartmentApproved = data.Status_DepartmentManager?.ToUpper() == "APPROVED";
-            bool isDepartmentRejected = data.Status_DepartmentManager?.ToUpper() == "REJECTED";
+            // Column 2: Department Manager
+            cbX = col2X;
             DrawCheckbox(gfx, cbX, currentY + 4, isDepartmentApproved);
             gfx.DrawString("อนุมัติ", _fontSmall, XBrushes.Black, new XPoint(cbX + 14, currentY + textOffsetY));
-            cbX += 60;
+            cbX += 50;
             DrawCheckbox(gfx, cbX, currentY + 4, isDepartmentRejected);
+            gfx.DrawString("ไม่อนุมัติ", _fontSmall, XBrushes.Black, new XPoint(cbX + 14, currentY + textOffsetY));
+
+            // Column 3: Managing Director
+            cbX = col3X;
+            DrawCheckbox(gfx, cbX, currentY + 4, isManagingApproved);
+            gfx.DrawString("อนุมัติ", _fontSmall, XBrushes.Black, new XPoint(cbX + 14, currentY + textOffsetY));
+            cbX += 50;
+            DrawCheckbox(gfx, cbX, currentY + 4, isManagingRejected);
             gfx.DrawString("ไม่อนุมัติ", _fontSmall, XBrushes.Black, new XPoint(cbX + 14, currentY + textOffsetY));
             currentY += lineHeight + 1;
 
-            // === ROW 3: ลงชื่อ (จัดกึ่งกลางในพื้นที่ underline) ===
-            double underlineWidth = halfWidth - 55;
+            // === ROW 3: ลงชื่อ ===
+            double underlineWidth = colWidth - 50;
 
-            // LEFT
-            gfx.DrawString("ลงชื่อ :", _fontSmall, XBrushes.Black, new XPoint(labelX, currentY + textOffsetY));
-            DrawUnderline(gfx, labelX + 40, currentY + textOffsetY + 3, underlineWidth);
+            // Column 1: Section Manager
+            gfx.DrawString("ลงชื่อ :", _fontSmall, XBrushes.Black, new XPoint(col1X, currentY + textOffsetY));
+            DrawUnderline(gfx, col1X + 35, currentY + textOffsetY + 3, underlineWidth);
             if (isSectionApproved && !string.IsNullOrEmpty(data.SectionManagerId))
             {
-                XSize textSize = gfx.MeasureString(data.SectionManagerId, _fontSmall);
-                double centerX = labelX + 40 + (underlineWidth / 2) - (textSize.Width / 2);
-                gfx.DrawString(data.SectionManagerId, _fontSmall, XBrushes.Black, new XPoint(centerX, currentY + textOffsetY));
+                XSize textSize = gfx.MeasureString(data.SectionManagerId, _fontTiny);
+                double centerX = col1X + 35 + (underlineWidth / 2) - (textSize.Width / 2);
+                gfx.DrawString(data.SectionManagerId, _fontTiny, XBrushes.Black, new XPoint(centerX, currentY + textOffsetY));
             }
 
-            // RIGHT
-            gfx.DrawString("ลงชื่อ :", _fontSmall, XBrushes.Black, new XPoint(rightColX, currentY + textOffsetY));
-            DrawUnderline(gfx, rightColX + 40, currentY + textOffsetY + 3, underlineWidth);
+            // Column 2: Department Manager
+            gfx.DrawString("ลงชื่อ :", _fontSmall, XBrushes.Black, new XPoint(col2X, currentY + textOffsetY));
+            DrawUnderline(gfx, col2X + 35, currentY + textOffsetY + 3, underlineWidth);
             if (isDepartmentApproved && !string.IsNullOrEmpty(data.DepartmentManagerId))
             {
-                XSize textSize = gfx.MeasureString(data.DepartmentManagerId, _fontSmall);
-                double centerX = rightColX + 40 + (underlineWidth / 2) - (textSize.Width / 2);
-                gfx.DrawString(data.DepartmentManagerId, _fontSmall, XBrushes.Black, new XPoint(centerX, currentY + textOffsetY));
+                XSize textSize = gfx.MeasureString(data.DepartmentManagerId, _fontTiny);
+                double centerX = col2X + 35 + (underlineWidth / 2) - (textSize.Width / 2);
+                gfx.DrawString(data.DepartmentManagerId, _fontTiny, XBrushes.Black, new XPoint(centerX, currentY + textOffsetY));
+            }
+
+            // Column 3: Managing Director
+            gfx.DrawString("ลงชื่อ :", _fontSmall, XBrushes.Black, new XPoint(col3X, currentY + textOffsetY));
+            DrawUnderline(gfx, col3X + 35, currentY + textOffsetY + 3, underlineWidth);
+            if (isManagingApproved && !string.IsNullOrEmpty(data.ManagingDirectorId))
+            {
+                XSize textSize = gfx.MeasureString(data.ManagingDirectorId, _fontTiny);
+                double centerX = col3X + 35 + (underlineWidth / 2) - (textSize.Width / 2);
+                gfx.DrawString(data.ManagingDirectorId, _fontTiny, XBrushes.Black, new XPoint(centerX, currentY + textOffsetY));
             }
             currentY += lineHeight;
 
-            // === ROW 4: ApproveInfo (วงเล็บ) - จัดกึ่งกลางในพื้นที่ underline ของ "ลงชื่อ" ===
-            // LEFT
+            // === ROW 4: ApproveInfo (วงเล็บ) ===
+            // Column 1
             if (isSectionApproved && !string.IsNullOrEmpty(data.ApproveInfo_SectionManager))
             {
                 string approveText = $"( {data.ApproveInfo_SectionManager} )";
                 XSize textSize = gfx.MeasureString(approveText, _fontTiny);
-                // กึ่งกลางในพื้นที่ underline (เริ่มจาก labelX + 40)
-                double centerX = labelX + 40 + (underlineWidth / 2) - (textSize.Width / 2);
+                double centerX = col1X + 35 + (underlineWidth / 2) - (textSize.Width / 2);
                 gfx.DrawString(approveText, _fontTiny, XBrushes.Black, new XPoint(centerX, currentY + textOffsetY - 5));
             }
 
-            // RIGHT
+            // Column 2
             if (isDepartmentApproved && !string.IsNullOrEmpty(data.ApproveInfo_DepartmentManager))
             {
                 string approveText = $"( {data.ApproveInfo_DepartmentManager} )";
                 XSize textSize = gfx.MeasureString(approveText, _fontTiny);
-                // กึ่งกลางในพื้นที่ underline (เริ่มจาก rightColX + 40)
-                double centerX = rightColX + 40 + (underlineWidth / 2) - (textSize.Width / 2);
+                double centerX = col2X + 35 + (underlineWidth / 2) - (textSize.Width / 2);
+                gfx.DrawString(approveText, _fontTiny, XBrushes.Black, new XPoint(centerX, currentY + textOffsetY - 5));
+            }
+
+            // Column 3
+            if (isManagingApproved && !string.IsNullOrEmpty(data.ApproveInfo_ManagingDirector))
+            {
+                string approveText = $"( {data.ApproveInfo_ManagingDirector} )";
+                XSize textSize = gfx.MeasureString(approveText, _fontTiny);
+                double centerX = col3X + 35 + (underlineWidth / 2) - (textSize.Width / 2);
                 gfx.DrawString(approveText, _fontTiny, XBrushes.Black, new XPoint(centerX, currentY + textOffsetY - 5));
             }
             currentY += lineHeight - 3;
 
-            // === ROW 5: ตำแหน่ง (ชิดซ้ายเหมือนเดิม) ===
-            gfx.DrawString("ตำแหน่ง :", _fontSmall, XBrushes.Black, new XPoint(labelX, currentY + textOffsetY));
-            DrawUnderline(gfx, labelX + 52, currentY + textOffsetY + 3, halfWidth - 65);
+            // === ROW 5: ตำแหน่ง ===
+            double posUnderlineWidth = colWidth - 60;
+
+            // Column 1
+            gfx.DrawString("ตำแหน่ง :", _fontSmall, XBrushes.Black, new XPoint(col1X, currentY + textOffsetY));
+            DrawUnderline(gfx, col1X + 45, currentY + textOffsetY + 3, posUnderlineWidth);
             if (isSectionApproved && !string.IsNullOrEmpty(data.SectionManagerLevel))
             {
-                gfx.DrawString(data.SectionManagerLevel, _fontSmall, XBrushes.Black, new XPoint(labelX + 52, currentY + textOffsetY));
+                gfx.DrawString(data.SectionManagerLevel, _fontTiny, XBrushes.Black, new XPoint(col1X + 45, currentY + textOffsetY));
             }
 
-            gfx.DrawString("ตำแหน่ง :", _fontSmall, XBrushes.Black, new XPoint(rightColX, currentY + textOffsetY));
-            DrawUnderline(gfx, rightColX + 52, currentY + textOffsetY + 3, halfWidth - 65);
+            // Column 2
+            gfx.DrawString("ตำแหน่ง :", _fontSmall, XBrushes.Black, new XPoint(col2X, currentY + textOffsetY));
+            DrawUnderline(gfx, col2X + 45, currentY + textOffsetY + 3, posUnderlineWidth);
             if (isDepartmentApproved && !string.IsNullOrEmpty(data.DepartmentManagerLevel))
             {
-                gfx.DrawString(data.DepartmentManagerLevel, _fontSmall, XBrushes.Black, new XPoint(rightColX + 52, currentY + textOffsetY));
+                gfx.DrawString(data.DepartmentManagerLevel, _fontTiny, XBrushes.Black, new XPoint(col2X + 45, currentY + textOffsetY));
             }
 
-            // เส้นแบ่งกลาง (แนวตั้ง)
-            gfx.DrawLine(_borderPen, contentX + halfWidth, sigStartY, contentX + halfWidth, currentY + lineHeight);
+            // Column 3
+            gfx.DrawString("ตำแหน่ง :", _fontSmall, XBrushes.Black, new XPoint(col3X, currentY + textOffsetY));
+            DrawUnderline(gfx, col3X + 45, currentY + textOffsetY + 3, posUnderlineWidth);
+            if (isManagingApproved && !string.IsNullOrEmpty(data.ManagingDirectorLevel))
+            {
+                gfx.DrawString(data.ManagingDirectorLevel, _fontTiny, XBrushes.Black, new XPoint(col3X + 45, currentY + textOffsetY));
+            }
+
+            // ไม่มีเส้นแบ่งกลาง ตามที่ผู้ใช้ต้องการ
 
             return currentY + lineHeight;
         }
@@ -957,18 +998,21 @@ namespace TrainingRequestApp.Services
                         tr.HRDAdminid AS HRDAdminId, tr.Status_HRDAdmin, tr.ApproveInfo_HRDAdmin,
                         tr.HRDConfirmationid AS HRDConfirmationId, tr.Status_HRDConfirmation, tr.ApproveInfo_HRDConfirmation,
                         tr.ManagingDirectorId, tr.Status_ManagingDirector, tr.ApproveInfo_ManagingDirector,
+                        tr.DeputyManagingDirectorId, tr.Status_DeputyManagingDirector, tr.ApproveInfo_DeputyManagingDirector,
                         tr.HRD_ContactDate, tr.HRD_ContactPerson, tr.HRD_PaymentDate, tr.HRD_PaymentMethod, tr.HRD_RecorderSignature,
                         e_sm.Level AS SectionManagerLevel,
                         e_dm.Level AS DepartmentManagerLevel,
                         e_ha.Level AS HRDAdminLevel,
                         e_hc.Level AS HRDConfirmationLevel,
-                        e_md.Level AS ManagingDirectorLevel
+                        e_md.Level AS ManagingDirectorLevel,
+                        e_dmd.Level AS DeputyManagingDirectorLevel
                     FROM TrainingRequests tr
                     LEFT JOIN Employees e_sm ON tr.SectionManagerId = e_sm.Email
                     LEFT JOIN Employees e_dm ON tr.DepartmentManagerId = e_dm.Email
                     LEFT JOIN Employees e_ha ON tr.HRDAdminid = e_ha.Email
                     LEFT JOIN Employees e_hc ON tr.HRDConfirmationid = e_hc.Email
                     LEFT JOIN Employees e_md ON tr.ManagingDirectorId = e_md.Email
+                    LEFT JOIN Employees e_dmd ON tr.DeputyManagingDirectorId = e_dmd.Email
                     WHERE tr.Id = @Id AND tr.IsActive = 1";
 
                 using (SqlCommand cmd = new SqlCommand(query, conn))
@@ -1023,11 +1067,15 @@ namespace TrainingRequestApp.Services
                             data.ManagingDirectorId = reader["ManagingDirectorId"]?.ToString();
                             data.Status_ManagingDirector = reader["Status_ManagingDirector"]?.ToString();
                             data.ApproveInfo_ManagingDirector = reader["ApproveInfo_ManagingDirector"]?.ToString();
+                            data.DeputyManagingDirectorId = reader["DeputyManagingDirectorId"]?.ToString();
+                            data.Status_DeputyManagingDirector = reader["Status_DeputyManagingDirector"]?.ToString();
+                            data.ApproveInfo_DeputyManagingDirector = reader["ApproveInfo_DeputyManagingDirector"]?.ToString();
                             data.SectionManagerLevel = reader["SectionManagerLevel"]?.ToString();
                             data.DepartmentManagerLevel = reader["DepartmentManagerLevel"]?.ToString();
                             data.HRDAdminLevel = reader["HRDAdminLevel"]?.ToString();
                             data.HRDConfirmationLevel = reader["HRDConfirmationLevel"]?.ToString();
                             data.ManagingDirectorLevel = reader["ManagingDirectorLevel"]?.ToString();
+                            data.DeputyManagingDirectorLevel = reader["DeputyManagingDirectorLevel"]?.ToString();
                             // HRD Record Fields
                             data.HRD_ContactDate = reader["HRD_ContactDate"] != DBNull.Value ? (DateTime?)reader["HRD_ContactDate"] : null;
                             data.HRD_ContactPerson = reader["HRD_ContactPerson"]?.ToString();
@@ -1121,11 +1169,17 @@ namespace TrainingRequestApp.Services
             public string Status_ManagingDirector { get; set; }
             public string ApproveInfo_ManagingDirector { get; set; }
 
+            // Deputy Managing Director (รองกรรมการผู้จัดการ)
+            public string DeputyManagingDirectorId { get; set; }
+            public string Status_DeputyManagingDirector { get; set; }
+            public string ApproveInfo_DeputyManagingDirector { get; set; }
+
             public string SectionManagerLevel { get; set; }
             public string DepartmentManagerLevel { get; set; }
             public string HRDAdminLevel { get; set; }
             public string HRDConfirmationLevel { get; set; }
             public string ManagingDirectorLevel { get; set; }
+            public string DeputyManagingDirectorLevel { get; set; }
 
             // HRD Record Fields
             public DateTime? HRD_ContactDate { get; set; }
