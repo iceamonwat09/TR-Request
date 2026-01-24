@@ -342,7 +342,7 @@ namespace TrainingRequestApp.Services
 
             if (isHRDAdminApproved && !string.IsNullOrEmpty(data.ApproveInfo_HRDAdmin))
             {
-                gfx.DrawString(data.ApproveInfo_HRDAdmin, _fontTiny, XBrushes.Black, new XPoint(leftDataX1, currentY + textOffsetY + 1));
+                gfx.DrawString(FormatApproveInfo(data.ApproveInfo_HRDAdmin), _fontTiny, XBrushes.Black, new XPoint(leftDataX1, currentY + textOffsetY + 1));
             }
 
             // คอลัมน์ขวา
@@ -355,7 +355,7 @@ namespace TrainingRequestApp.Services
 
             if (isHRDConfirmationApproved && !string.IsNullOrEmpty(data.ApproveInfo_HRDConfirmation))
             {
-                gfx.DrawString(data.ApproveInfo_HRDConfirmation, _fontTiny, XBrushes.Black, new XPoint(rightDataX1, currentY + textOffsetY + 1));
+                gfx.DrawString(FormatApproveInfo(data.ApproveInfo_HRDConfirmation), _fontTiny, XBrushes.Black, new XPoint(rightDataX1, currentY + textOffsetY + 1));
             }
             currentY += lineHeight;
 
@@ -456,7 +456,7 @@ namespace TrainingRequestApp.Services
             // ApproveInfo (วงเล็บ) - จัดกึ่งกลางในพื้นที่ underline
             if (isDeputyManagingApproved && !string.IsNullOrEmpty(data.ApproveInfo_DeputyManagingDirector))
             {
-                string approveText = $"( {data.ApproveInfo_DeputyManagingDirector} )";
+                string approveText = $"( {FormatApproveInfo(data.ApproveInfo_DeputyManagingDirector)} )";
                 XSize textSize = gfx.MeasureString(approveText, _fontTiny);
                 double centerX = signDataX + (signUnderlineWidth / 2) - (textSize.Width / 2);
                 gfx.DrawString(approveText, _fontTiny, XBrushes.Black, new XPoint(centerX, leftY + textOffsetY - 3));
@@ -587,6 +587,32 @@ namespace TrainingRequestApp.Services
         {
             gfx.DrawString(text ?? "", _fontSmall, XBrushes.Black, new XPoint(x, y));
             gfx.DrawLine(_dottedPen, x, y + lineOffset, x + width, y + lineOffset);
+        }
+
+        /// <summary>
+        /// ตัดส่วน @domain.com ออกจาก ApproveInfo
+        /// จาก: "email@gmail.com / 18/01/2026 / 22:23"
+        /// เป็น: "email / 18/01/2026 / 22:23"
+        /// </summary>
+        private string FormatApproveInfo(string approveInfo)
+        {
+            if (string.IsNullOrEmpty(approveInfo))
+                return approveInfo;
+
+            // หา @ และตัดส่วน @domain.com ออกจนถึง /
+            int atIndex = approveInfo.IndexOf('@');
+            if (atIndex > 0)
+            {
+                int slashIndex = approveInfo.IndexOf('/', atIndex);
+                if (slashIndex > atIndex)
+                {
+                    // ตัดส่วน @domain.com ออก (รวม space ก่อน /)
+                    string username = approveInfo.Substring(0, atIndex);
+                    string rest = approveInfo.Substring(slashIndex - 1); // เอา space และ / ต่อไป
+                    return username + rest;
+                }
+            }
+            return approveInfo;
         }
 
         private double DrawParticipantList(XGraphics gfx, TrainingRequestData data, double contentX, double currentY, double contentWidth, double padding, double textOffsetY)
@@ -866,7 +892,7 @@ namespace TrainingRequestApp.Services
             // Column 1
             if (isSectionApproved && !string.IsNullOrEmpty(data.ApproveInfo_SectionManager))
             {
-                string approveText = $"( {data.ApproveInfo_SectionManager} )";
+                string approveText = $"( {FormatApproveInfo(data.ApproveInfo_SectionManager)} )";
                 XSize textSize = gfx.MeasureString(approveText, _fontTiny);
                 double centerX = col1X + 35 + (underlineWidth / 2) - (textSize.Width / 2);
                 gfx.DrawString(approveText, _fontTiny, XBrushes.Black, new XPoint(centerX, currentY + textOffsetY - 5));
@@ -875,7 +901,7 @@ namespace TrainingRequestApp.Services
             // Column 2
             if (isDepartmentApproved && !string.IsNullOrEmpty(data.ApproveInfo_DepartmentManager))
             {
-                string approveText = $"( {data.ApproveInfo_DepartmentManager} )";
+                string approveText = $"( {FormatApproveInfo(data.ApproveInfo_DepartmentManager)} )";
                 XSize textSize = gfx.MeasureString(approveText, _fontTiny);
                 double centerX = col2X + 35 + (underlineWidth / 2) - (textSize.Width / 2);
                 gfx.DrawString(approveText, _fontTiny, XBrushes.Black, new XPoint(centerX, currentY + textOffsetY - 5));
@@ -884,7 +910,7 @@ namespace TrainingRequestApp.Services
             // Column 3
             if (isManagingApproved && !string.IsNullOrEmpty(data.ApproveInfo_ManagingDirector))
             {
-                string approveText = $"( {data.ApproveInfo_ManagingDirector} )";
+                string approveText = $"( {FormatApproveInfo(data.ApproveInfo_ManagingDirector)} )";
                 XSize textSize = gfx.MeasureString(approveText, _fontTiny);
                 double centerX = col3X + 35 + (underlineWidth / 2) - (textSize.Width / 2);
                 gfx.DrawString(approveText, _fontTiny, XBrushes.Black, new XPoint(centerX, currentY + textOffsetY - 5));
