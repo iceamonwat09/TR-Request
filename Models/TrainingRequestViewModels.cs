@@ -70,12 +70,29 @@ namespace TrainingRequestApp.Models
         public string? Comment_DeputyManagingDirector { get; set; }
         public string? ApproveInfo_DeputyManagingDirector { get; set; }
 
+        // Knowledge Management (KM) Section
+        public bool? KM_SubmitDocument { get; set; }
+        public bool? KM_CreateReport { get; set; }
+        public DateTime? KM_CreateReportDate { get; set; }
+        public bool? KM_KnowledgeSharing { get; set; }
+        public DateTime? KM_KnowledgeSharingDate { get; set; }
+
         // HRD Record Fields (Admin/System Admin/HRD Admin/HRD Confirmation Only)
         public DateTime? HRD_ContactDate { get; set; }
         public string? HRD_ContactPerson { get; set; }
         public DateTime? HRD_PaymentDate { get; set; }
         public string? HRD_PaymentMethod { get; set; }
         public string? HRD_RecorderSignature { get; set; }
+
+        // HRD Budget & Membership Fields
+        public string? HRD_BudgetPlan { get; set; }
+        public string? HRD_BudgetUsage { get; set; }
+        public decimal? HRD_DepartmentBudgetRemaining { get; set; }
+        public string? HRD_MembershipType { get; set; }
+        public decimal? HRD_MembershipCost { get; set; }
+
+        // Training History (HRD Section)
+        public List<TrainingHistoryViewModel> TrainingHistories { get; set; } = new List<TrainingHistoryViewModel>();
 
         public string? Status { get; set; }
         public DateTime CreatedDate { get; set; }
@@ -98,5 +115,15 @@ namespace TrainingRequestApp.Models
         public int? RemainingHours { get; set; }
         public decimal? RemainingCost { get; set; }
         public string? Notes { get; set; }
+    }
+
+    public class TrainingHistoryViewModel
+    {
+        public int Id { get; set; }
+        public string? EmployeeCode { get; set; }
+        public string? EmployeeName { get; set; }
+        public string? HistoryType { get; set; } // Never, Ever, Similar
+        public DateTime? TrainingDate { get; set; }
+        public string? CourseName { get; set; }
     }
 }

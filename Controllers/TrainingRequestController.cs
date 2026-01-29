@@ -188,7 +188,9 @@ namespace TrainingRequestApp.Controllers
                             HRDConfirmationId, Status_HRDConfirmation, Comment_HRDConfirmation, ApproveInfo_HRDConfirmation,
                             ManagingDirectorId, Status_ManagingDirector, Comment_ManagingDirector, ApproveInfo_ManagingDirector,
                             DeputyManagingDirectorId, Status_DeputyManagingDirector, Comment_DeputyManagingDirector, ApproveInfo_DeputyManagingDirector,
+                            KM_SubmitDocument, KM_CreateReport, KM_CreateReportDate, KM_KnowledgeSharing, KM_KnowledgeSharingDate,
                             HRD_ContactDate, HRD_ContactPerson, HRD_PaymentDate, HRD_PaymentMethod, HRD_RecorderSignature,
+                            HRD_BudgetPlan, HRD_BudgetUsage, HRD_DepartmentBudgetRemaining, HRD_MembershipType, HRD_MembershipCost,
                             Status, CreatedDate, CreatedBy
                         FROM [HRDSYSTEM].[dbo].[TrainingRequests]
                         WHERE DocNo = @DocNo AND IsActive = 1";
@@ -257,12 +259,24 @@ namespace TrainingRequestApp.Controllers
                                     Status_DeputyManagingDirector = reader["Status_DeputyManagingDirector"]?.ToString(),
                                     Comment_DeputyManagingDirector = reader["Comment_DeputyManagingDirector"]?.ToString(),
                                     ApproveInfo_DeputyManagingDirector = reader["ApproveInfo_DeputyManagingDirector"]?.ToString(),
+                                    // Knowledge Management Fields
+                                    KM_SubmitDocument = reader["KM_SubmitDocument"] != DBNull.Value ? (bool?)reader.GetBoolean(reader.GetOrdinal("KM_SubmitDocument")) : null,
+                                    KM_CreateReport = reader["KM_CreateReport"] != DBNull.Value ? (bool?)reader.GetBoolean(reader.GetOrdinal("KM_CreateReport")) : null,
+                                    KM_CreateReportDate = reader["KM_CreateReportDate"] != DBNull.Value ? (DateTime?)reader.GetDateTime(reader.GetOrdinal("KM_CreateReportDate")) : null,
+                                    KM_KnowledgeSharing = reader["KM_KnowledgeSharing"] != DBNull.Value ? (bool?)reader.GetBoolean(reader.GetOrdinal("KM_KnowledgeSharing")) : null,
+                                    KM_KnowledgeSharingDate = reader["KM_KnowledgeSharingDate"] != DBNull.Value ? (DateTime?)reader.GetDateTime(reader.GetOrdinal("KM_KnowledgeSharingDate")) : null,
                                     // HRD Record Fields
                                     HRD_ContactDate = reader["HRD_ContactDate"] != DBNull.Value ? (DateTime?)reader.GetDateTime(reader.GetOrdinal("HRD_ContactDate")) : null,
                                     HRD_ContactPerson = reader["HRD_ContactPerson"]?.ToString(),
                                     HRD_PaymentDate = reader["HRD_PaymentDate"] != DBNull.Value ? (DateTime?)reader.GetDateTime(reader.GetOrdinal("HRD_PaymentDate")) : null,
                                     HRD_PaymentMethod = reader["HRD_PaymentMethod"]?.ToString(),
                                     HRD_RecorderSignature = reader["HRD_RecorderSignature"]?.ToString(),
+                                    // HRD Budget & Membership Fields
+                                    HRD_BudgetPlan = reader["HRD_BudgetPlan"]?.ToString(),
+                                    HRD_BudgetUsage = reader["HRD_BudgetUsage"]?.ToString(),
+                                    HRD_DepartmentBudgetRemaining = reader["HRD_DepartmentBudgetRemaining"] != DBNull.Value ? (decimal?)reader.GetDecimal(reader.GetOrdinal("HRD_DepartmentBudgetRemaining")) : null,
+                                    HRD_MembershipType = reader["HRD_MembershipType"]?.ToString(),
+                                    HRD_MembershipCost = reader["HRD_MembershipCost"] != DBNull.Value ? (decimal?)reader.GetDecimal(reader.GetOrdinal("HRD_MembershipCost")) : null,
                                     Status = reader["Status"].ToString(),
                                     CreatedDate = reader.GetDateTime(reader.GetOrdinal("CreatedDate")),
                                     CreatedBy = reader["CreatedBy"].ToString()
@@ -279,6 +293,9 @@ namespace TrainingRequestApp.Controllers
                                 // Fetch employees for this training request
                                 reader.Close();
                                 model.Employees = await GetEmployeesForRequest(conn, model.Id);
+
+                                // Fetch training history for this request
+                                model.TrainingHistories = await GetTrainingHistoriesForRequest(conn, model.Id);
 
                                 // ✅ Multi-Mode Logic
                                 // userEmail already retrieved at line 157, use it directly
@@ -408,7 +425,14 @@ namespace TrainingRequestApp.Controllers
                                 Console.WriteLine("✅ Employees updated");
                             }
 
-                            // 4. Handle file attachments if provided (รองรับหลายไฟล์)
+                            // 4. Save Training History (HRD Section)
+                            if (!string.IsNullOrEmpty(formData.TrainingHistoryJson))
+                            {
+                                await SaveTrainingHistories(conn, transaction, trainingRequestId, formData.TrainingHistoryJson);
+                                Console.WriteLine("✅ Training History updated");
+                            }
+
+                            // 5. Handle file attachments if provided (รองรับหลายไฟล์)
                             if (formData.AttachedFiles != null && formData.AttachedFiles.Count > 0)
                             {
                                 foreach (var file in formData.AttachedFiles)
@@ -1161,6 +1185,7 @@ namespace TrainingRequestApp.Controllers
                     [HRDConfirmationId], [Status_HRDConfirmation],
                     [ManagingDirectorId], [Status_ManagingDirector],
                     [DeputyManagingDirectorId], [Status_DeputyManagingDirector],
+                    [KM_SubmitDocument], [KM_CreateReport], [KM_CreateReportDate], [KM_KnowledgeSharing], [KM_KnowledgeSharingDate],
                     [HRD_ContactDate], [HRD_ContactPerson], [HRD_PaymentDate], [HRD_PaymentMethod], [HRD_RecorderSignature]
                 )
                 VALUES (
@@ -1177,6 +1202,7 @@ namespace TrainingRequestApp.Controllers
                     @HRDConfirmationId, 'Pending',
                     @ManagingDirectorId, 'Pending',
                     @DeputyManagingDirectorId, 'Pending',
+                    @KM_SubmitDocument, @KM_CreateReport, @KM_CreateReportDate, @KM_KnowledgeSharing, @KM_KnowledgeSharingDate,
                     NULL, NULL, NULL, NULL, NULL
                 );
                 SELECT CAST(SCOPE_IDENTITY() AS INT);";
@@ -1226,6 +1252,13 @@ namespace TrainingRequestApp.Controllers
                 cmd.Parameters.AddWithValue("@HRDConfirmationId", hrdConfirmationEmail ?? (object)DBNull.Value);
                 cmd.Parameters.AddWithValue("@ManagingDirectorId", formData.ManagingDirectorId ?? (object)DBNull.Value);
                 cmd.Parameters.AddWithValue("@DeputyManagingDirectorId", formData.DeputyManagingDirectorId ?? (object)DBNull.Value);
+
+                // Knowledge Management Fields
+                cmd.Parameters.AddWithValue("@KM_SubmitDocument", formData.KM_SubmitDocument ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@KM_CreateReport", formData.KM_CreateReport ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@KM_CreateReportDate", formData.KM_CreateReportDate ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@KM_KnowledgeSharing", formData.KM_KnowledgeSharing ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@KM_KnowledgeSharingDate", formData.KM_KnowledgeSharingDate ?? (object)DBNull.Value);
 
                 var result = await cmd.ExecuteScalarAsync();
                 return Convert.ToInt32(result);
@@ -1369,6 +1402,87 @@ namespace TrainingRequestApp.Controllers
             return employees;
         }
 
+        private async Task<List<TrainingHistoryViewModel>> GetTrainingHistoriesForRequest(SqlConnection conn, int trainingRequestId)
+        {
+            var histories = new List<TrainingHistoryViewModel>();
+            string query = @"
+                SELECT Id, EmployeeCode, EmployeeName, HistoryType, TrainingDate, CourseName
+                FROM [HRDSYSTEM].[dbo].[TrainingHistory]
+                WHERE TrainingRequestId = @TrainingRequestId
+                ORDER BY Id";
+
+            using (SqlCommand cmd = new SqlCommand(query, conn))
+            {
+                cmd.Parameters.AddWithValue("@TrainingRequestId", trainingRequestId);
+
+                using (var reader = await cmd.ExecuteReaderAsync())
+                {
+                    while (await reader.ReadAsync())
+                    {
+                        histories.Add(new TrainingHistoryViewModel
+                        {
+                            Id = reader.GetInt32(reader.GetOrdinal("Id")),
+                            EmployeeCode = reader["EmployeeCode"]?.ToString(),
+                            EmployeeName = reader["EmployeeName"]?.ToString(),
+                            HistoryType = reader["HistoryType"]?.ToString(),
+                            TrainingDate = reader["TrainingDate"] != DBNull.Value ? (DateTime?)reader.GetDateTime(reader.GetOrdinal("TrainingDate")) : null,
+                            CourseName = reader["CourseName"]?.ToString()
+                        });
+                    }
+                }
+            }
+
+            return histories;
+        }
+
+        private async Task SaveTrainingHistories(SqlConnection conn, SqlTransaction transaction, int trainingRequestId, string trainingHistoryJson)
+        {
+            // Delete existing histories
+            string deleteQuery = "DELETE FROM [HRDSYSTEM].[dbo].[TrainingHistory] WHERE TrainingRequestId = @TrainingRequestId";
+            using (SqlCommand deleteCmd = new SqlCommand(deleteQuery, conn, transaction))
+            {
+                deleteCmd.Parameters.AddWithValue("@TrainingRequestId", trainingRequestId);
+                await deleteCmd.ExecuteNonQueryAsync();
+            }
+
+            // Insert new histories
+            if (string.IsNullOrEmpty(trainingHistoryJson) || trainingHistoryJson == "[]") return;
+
+            var histories = JsonSerializer.Deserialize<TrainingHistoryData[]>(trainingHistoryJson);
+            if (histories == null || histories.Length == 0) return;
+
+            string insertQuery = @"
+                INSERT INTO [HRDSYSTEM].[dbo].[TrainingHistory]
+                    ([TrainingRequestId], [EmployeeCode], [EmployeeName], [HistoryType], [TrainingDate], [CourseName], [CreatedDate])
+                VALUES
+                    (@TrainingRequestId, @EmployeeCode, @EmployeeName, @HistoryType, @TrainingDate, @CourseName, GETDATE())";
+
+            foreach (var h in histories)
+            {
+                using (SqlCommand cmd = new SqlCommand(insertQuery, conn, transaction))
+                {
+                    cmd.Parameters.AddWithValue("@TrainingRequestId", trainingRequestId);
+                    cmd.Parameters.AddWithValue("@EmployeeCode", h.employeeCode ?? (object)DBNull.Value);
+                    cmd.Parameters.AddWithValue("@EmployeeName", h.employeeName ?? (object)DBNull.Value);
+                    cmd.Parameters.AddWithValue("@HistoryType", h.historyType ?? (object)DBNull.Value);
+
+                    DateTime? trainingDate = null;
+                    if (!string.IsNullOrEmpty(h.trainingDate))
+                    {
+                        // Try parse date from dd/MM/yyyy or yyyy-MM-dd formats
+                        if (DateTime.TryParseExact(h.trainingDate, "yyyy-MM-dd", null, System.Globalization.DateTimeStyles.None, out DateTime parsed))
+                            trainingDate = parsed;
+                        else if (DateTime.TryParseExact(h.trainingDate, "dd/MM/yyyy", null, System.Globalization.DateTimeStyles.None, out DateTime parsed2))
+                            trainingDate = parsed2;
+                    }
+                    cmd.Parameters.AddWithValue("@TrainingDate", trainingDate ?? (object)DBNull.Value);
+                    cmd.Parameters.AddWithValue("@CourseName", h.courseName ?? (object)DBNull.Value);
+
+                    await cmd.ExecuteNonQueryAsync();
+                }
+            }
+        }
+
         private async Task UpdateTrainingRequestData(SqlConnection conn, SqlTransaction transaction,
             TrainingRequestFormData formData, string docNo, string updatedBy)
         {
@@ -1427,11 +1541,21 @@ namespace TrainingRequestApp.Controllers
                     [Status_DeputyManagingDirector] = @Status_DeputyManagingDirector,
                     [Comment_DeputyManagingDirector] = @Comment_DeputyManagingDirector,
                     [ApproveInfo_DeputyManagingDirector] = @ApproveInfo_DeputyManagingDirector,
+                    [KM_SubmitDocument] = @KM_SubmitDocument,
+                    [KM_CreateReport] = @KM_CreateReport,
+                    [KM_CreateReportDate] = @KM_CreateReportDate,
+                    [KM_KnowledgeSharing] = @KM_KnowledgeSharing,
+                    [KM_KnowledgeSharingDate] = @KM_KnowledgeSharingDate,
                     [HRD_ContactDate] = @HRD_ContactDate,
                     [HRD_ContactPerson] = @HRD_ContactPerson,
                     [HRD_PaymentDate] = @HRD_PaymentDate,
                     [HRD_PaymentMethod] = @HRD_PaymentMethod,
                     [HRD_RecorderSignature] = @HRD_RecorderSignature,
+                    [HRD_BudgetPlan] = @HRD_BudgetPlan,
+                    [HRD_BudgetUsage] = @HRD_BudgetUsage,
+                    [HRD_DepartmentBudgetRemaining] = @HRD_DepartmentBudgetRemaining,
+                    [HRD_MembershipType] = @HRD_MembershipType,
+                    [HRD_MembershipCost] = @HRD_MembershipCost,
                     [UpdatedBy] = @UpdatedBy,
                     [UpdatedDate] = GETDATE()
                 WHERE [DocNo] = @DocNo AND [IsActive] = 1";
@@ -1499,20 +1623,26 @@ namespace TrainingRequestApp.Controllers
                 cmd.Parameters.AddWithValue("@Comment_DeputyManagingDirector", formData.Comment_DeputyManagingDirector ?? (object)DBNull.Value);
                 cmd.Parameters.AddWithValue("@ApproveInfo_DeputyManagingDirector", formData.ApproveInfo_DeputyManagingDirector ?? (object)DBNull.Value);
 
-                // HRD Record Fields
-                // 🔍 Debug: Log HRD fields being saved
-                Console.WriteLine($"💾 Saving HRD Fields:");
-                Console.WriteLine($"   ContactDate: {formData.HRD_ContactDate}");
-                Console.WriteLine($"   ContactPerson: {formData.HRD_ContactPerson}");
-                Console.WriteLine($"   PaymentDate: {formData.HRD_PaymentDate}");
-                Console.WriteLine($"   PaymentMethod: {formData.HRD_PaymentMethod}");
-                Console.WriteLine($"   RecorderSignature: {formData.HRD_RecorderSignature}");
+                // Knowledge Management Fields
+                cmd.Parameters.AddWithValue("@KM_SubmitDocument", formData.KM_SubmitDocument ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@KM_CreateReport", formData.KM_CreateReport ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@KM_CreateReportDate", formData.KM_CreateReportDate ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@KM_KnowledgeSharing", formData.KM_KnowledgeSharing ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@KM_KnowledgeSharingDate", formData.KM_KnowledgeSharingDate ?? (object)DBNull.Value);
 
+                // HRD Record Fields
                 cmd.Parameters.AddWithValue("@HRD_ContactDate", formData.HRD_ContactDate ?? (object)DBNull.Value);
                 cmd.Parameters.AddWithValue("@HRD_ContactPerson", formData.HRD_ContactPerson ?? (object)DBNull.Value);
                 cmd.Parameters.AddWithValue("@HRD_PaymentDate", formData.HRD_PaymentDate ?? (object)DBNull.Value);
                 cmd.Parameters.AddWithValue("@HRD_PaymentMethod", formData.HRD_PaymentMethod ?? (object)DBNull.Value);
                 cmd.Parameters.AddWithValue("@HRD_RecorderSignature", formData.HRD_RecorderSignature ?? (object)DBNull.Value);
+
+                // HRD Budget & Membership Fields
+                cmd.Parameters.AddWithValue("@HRD_BudgetPlan", formData.HRD_BudgetPlan ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@HRD_BudgetUsage", formData.HRD_BudgetUsage ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@HRD_DepartmentBudgetRemaining", formData.HRD_DepartmentBudgetRemaining ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@HRD_MembershipType", formData.HRD_MembershipType ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@HRD_MembershipCost", formData.HRD_MembershipCost ?? (object)DBNull.Value);
 
                 // ✅ UpdatedBy - ใช้ Email ของผู้แก้ไขจาก Session
                 cmd.Parameters.AddWithValue("@UpdatedBy", updatedBy);
@@ -2214,12 +2344,38 @@ namespace TrainingRequestApp.Controllers
         public string? Comment_DeputyManagingDirector { get; set; }
         public string? ApproveInfo_DeputyManagingDirector { get; set; }
 
+        // Knowledge Management (KM) Section
+        public bool? KM_SubmitDocument { get; set; }
+        public bool? KM_CreateReport { get; set; }
+        public DateTime? KM_CreateReportDate { get; set; }
+        public bool? KM_KnowledgeSharing { get; set; }
+        public DateTime? KM_KnowledgeSharingDate { get; set; }
+
         // HRD Record Fields (Admin/System Admin/HRD Admin/HRD Confirmation Only)
         public DateTime? HRD_ContactDate { get; set; }
         public string? HRD_ContactPerson { get; set; }
         public DateTime? HRD_PaymentDate { get; set; }
         public string? HRD_PaymentMethod { get; set; }
         public string? HRD_RecorderSignature { get; set; }
+
+        // HRD Budget & Membership Fields
+        public string? HRD_BudgetPlan { get; set; }
+        public string? HRD_BudgetUsage { get; set; }
+        public decimal? HRD_DepartmentBudgetRemaining { get; set; }
+        public string? HRD_MembershipType { get; set; }
+        public decimal? HRD_MembershipCost { get; set; }
+
+        // Training History JSON
+        public string? TrainingHistoryJson { get; set; }
+    }
+
+    public class TrainingHistoryData
+    {
+        public string? employeeCode { get; set; }
+        public string? employeeName { get; set; }
+        public string? historyType { get; set; } // Never, Ever, Similar
+        public string? trainingDate { get; set; }
+        public string? courseName { get; set; }
     }
 
     public class EmployeeData

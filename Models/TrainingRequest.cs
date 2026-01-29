@@ -79,6 +79,43 @@ namespace TrainingRequestApp.Models
         [StringLength(100)]
         public string? HRD_RecorderSignature { get; set; }
 
+        // ===== Knowledge Management (KM) Section =====
+        [Display(Name = "นำส่งเอกสาร")]
+        public bool? KM_SubmitDocument { get; set; }
+
+        [Display(Name = "จัดทำรายงาน/PPT")]
+        public bool? KM_CreateReport { get; set; }
+
+        [Display(Name = "วันที่ดำเนินการ (รายงาน/PPT)")]
+        [DataType(DataType.Date)]
+        public DateTime? KM_CreateReportDate { get; set; }
+
+        [Display(Name = "ถ่ายทอดความรู้")]
+        public bool? KM_KnowledgeSharing { get; set; }
+
+        [Display(Name = "วันที่ดำเนินการ (ถ่ายทอดความรู้)")]
+        [DataType(DataType.Date)]
+        public DateTime? KM_KnowledgeSharingDate { get; set; }
+
+        // ===== HRD Budget & Membership Section =====
+        [Display(Name = "การวางแผนงบประมาณ")]
+        [StringLength(10)]
+        public string? HRD_BudgetPlan { get; set; } // "Plan" or "Unplan"
+
+        [Display(Name = "การใช้งบประมาณ")]
+        [StringLength(20)]
+        public string? HRD_BudgetUsage { get; set; } // "TYP" or "Department"
+
+        [Display(Name = "ยอดเงินคงเหลือต้นสังกัด")]
+        public decimal? HRD_DepartmentBudgetRemaining { get; set; }
+
+        [Display(Name = "การเป็นสมาชิก")]
+        [StringLength(20)]
+        public string? HRD_MembershipType { get; set; } // "Member" or "NonMember"
+
+        [Display(Name = "ค่าสมาชิก")]
+        public decimal? HRD_MembershipCost { get; set; }
+
         // Navigation property for participants
         public virtual ICollection<TrainingParticipant> Participants { get; set; } = new List<TrainingParticipant>();
     }

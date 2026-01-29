@@ -228,6 +228,41 @@ namespace TrainingRequestApp.Services
             // === Row 14: วัตถุประสงค์ ===
             currentY = DrawObjectivesSection(gfx, data, contentX, currentY, contentWidth, padding, textOffsetY);
 
+            // === Row 14.5: Knowledge Management (เฉพาะ Public) ===
+            if (data.TrainingType == "Public")
+            {
+                currentY += 3;
+                gfx.DrawLine(new XPen(XColors.Black, 0.5), contentX, currentY, contentX + contentWidth, currentY);
+                currentY += 2;
+
+                // หัวข้อ KM
+                gfx.DrawString("แนวทางการขยายผล/การจัดการความรู้ (Knowledge Management) ภายหลังเสร็จสิ้นการอบรม กรณีอบรมภายนอก",
+                    _fontBold, XBrushes.Black, new XPoint(labelX, currentY + textOffsetY));
+                currentY += rowHeight;
+
+                // Checkbox 1: นำส่งเอกสาร
+                DrawCheckbox(gfx, labelX, currentY + 4, data.KM_SubmitDocument == true);
+                gfx.DrawString("นำส่งเอกสาร และสื่อประกอบการอบรม (ถ้ามี) ให้กับแผนกฝึกอบรม เพื่อนำไปเผยแพร่ในห้องสมุดออนไลน์   (ภายใน 15 วัน หลังเสร็จสิ้นการอบรม)",
+                    _fontTiny, XBrushes.Black, new XPoint(labelX + 14, currentY + textOffsetY));
+                currentY += rowHeight;
+
+                // Checkbox 2: จัดทำรายงาน/PPT + วันที่
+                DrawCheckbox(gfx, labelX, currentY + 4, data.KM_CreateReport == true);
+                gfx.DrawString("จัดทำเป็นรายงานหรือ PPT ส่งผู้จัดการส่วน/ฝ่าย เพื่อพิจารณา หลังจากนั้นนำส่งให้แผนกฝึกอบรม   โปรดระบุวันที่ดำเนินการ",
+                    _fontTiny, XBrushes.Black, new XPoint(labelX + 14, currentY + textOffsetY));
+                string reportDate = data.KM_CreateReportDate?.ToString("dd/MM/yyyy") ?? "...../...../......";
+                DrawUnderlineText(gfx, labelX + 400, currentY + textOffsetY, 80, reportDate, 0);
+                currentY += rowHeight;
+
+                // Checkbox 3: ถ่ายทอดความรู้ + วันที่
+                DrawCheckbox(gfx, labelX, currentY + 4, data.KM_KnowledgeSharing == true);
+                gfx.DrawString("ถ่ายทอดความรู้ที่ได้รับจากการอบรม (Knowledge Sharing) โดยจัดบรรยายถ่ายทอดความรู้ภายในหน่วยงาน  โปรดระบุวันที่ดำเนินการ",
+                    _fontTiny, XBrushes.Black, new XPoint(labelX + 14, currentY + textOffsetY));
+                string sharingDate = data.KM_KnowledgeSharingDate?.ToString("dd/MM/yyyy") ?? "...../...../......";
+                DrawUnderlineText(gfx, labelX + 400, currentY + textOffsetY, 80, sharingDate, 0);
+                currentY += rowHeight;
+            }
+
             // === Row 15: ผลที่คาดว่าจะได้รับ ===
             gfx.DrawString("ผลที่คาดว่าจะได้รับ:", _fontBold, XBrushes.Black, new XPoint(labelX, currentY + textOffsetY));
             DrawUnderlineText(gfx, labelX + 110, currentY + textOffsetY, contentWidth - 120, data.ExpectedOutcome ?? "", 3);
@@ -269,35 +304,38 @@ namespace TrainingRequestApp.Services
 
             // === Row 1: การวางแผนงบประมาณ ===
             gfx.DrawString("การวางแผนงบประมาณ :", _fontBold, XBrushes.Black, new XPoint(labelX, currentY + textOffsetY));
-            DrawCheckbox(gfx, checkboxCol1, currentY + 4, false);
+            DrawCheckbox(gfx, checkboxCol1, currentY + 4, data.HRD_BudgetPlan == "Plan");
             gfx.DrawString("plan", _fontSmall, XBrushes.Black, new XPoint(checkboxCol1 + 14, currentY + textOffsetY));
-            DrawCheckbox(gfx, checkboxCol1 + 55, currentY + 4, false);
+            DrawCheckbox(gfx, checkboxCol1 + 55, currentY + 4, data.HRD_BudgetPlan == "Unplan");
             gfx.DrawString("Unplan", _fontSmall, XBrushes.Black, new XPoint(checkboxCol1 + 69, currentY + textOffsetY));
             currentY += rowHeight;
 
             // === Row 2: การใช้งบประมาณ ===
             gfx.DrawString("การใช้งบประมาณ:", _fontBold, XBrushes.Black, new XPoint(labelX, currentY + textOffsetY));
             double cbX = labelX + 100;
-            DrawCheckbox(gfx, cbX, currentY + 4, false);
+            DrawCheckbox(gfx, cbX, currentY + 4, data.HRD_BudgetUsage == "TYP");
             gfx.DrawString("ใช้งบประมาณตามแผน", _fontSmall, XBrushes.Black, new XPoint(cbX + 14, currentY + textOffsetY));
             cbX += 130;
-            DrawCheckbox(gfx, cbX, currentY + 4, false);
+            DrawCheckbox(gfx, cbX, currentY + 4, data.HRD_BudgetUsage == "Department");
             gfx.DrawString("ใช้งบต้นสังกัด คงเหลือ", _fontSmall, XBrushes.Black, new XPoint(cbX + 14, currentY + textOffsetY));
-            DrawUnderline(gfx, cbX + 125, currentY + textOffsetY + 3, 50);
+            string deptBudget = data.HRD_DepartmentBudgetRemaining?.ToString("N2") ?? "";
+            DrawUnderlineText(gfx, cbX + 125, currentY + textOffsetY, 50, deptBudget, 0);
             gfx.DrawString("บาท", _fontSmall, XBrushes.Black, new XPoint(cbX + 180, currentY + textOffsetY));
             currentY += rowHeight;
 
             // === Row 3: การเป็นสมาชิก/สิทธิพิเศษ ===
             gfx.DrawString("การเป็นสมาชิก/สิทธิพิเศษ:", _fontBold, XBrushes.Black, new XPoint(labelX, currentY + textOffsetY));
             cbX = labelX + 135;
-            DrawCheckbox(gfx, cbX, currentY + 4, false);
+            DrawCheckbox(gfx, cbX, currentY + 4, data.HRD_MembershipType == "Member");
             gfx.DrawString("เป็นสมาชิก", _fontSmall, XBrushes.Black, new XPoint(cbX + 14, currentY + textOffsetY));
-            DrawUnderline(gfx, cbX + 72, currentY + textOffsetY + 3, 40);
+            string memberCost = data.HRD_MembershipType == "Member" ? (data.HRD_MembershipCost?.ToString("N2") ?? "") : "";
+            DrawUnderlineText(gfx, cbX + 72, currentY + textOffsetY, 40, memberCost, 0);
             gfx.DrawString("บาท", _fontSmall, XBrushes.Black, new XPoint(cbX + 117, currentY + textOffsetY));
             cbX += 150;
-            DrawCheckbox(gfx, cbX, currentY + 4, false);
+            DrawCheckbox(gfx, cbX, currentY + 4, data.HRD_MembershipType == "NonMember");
             gfx.DrawString("ไม่เป็นสมาชิก", _fontSmall, XBrushes.Black, new XPoint(cbX + 14, currentY + textOffsetY));
-            DrawUnderline(gfx, cbX + 82, currentY + textOffsetY + 3, 40);
+            string nonMemberCost = data.HRD_MembershipType == "NonMember" ? (data.HRD_MembershipCost?.ToString("N2") ?? "") : "";
+            DrawUnderlineText(gfx, cbX + 82, currentY + textOffsetY, 40, nonMemberCost, 0);
             gfx.DrawString("บาท", _fontSmall, XBrushes.Black, new XPoint(cbX + 127, currentY + textOffsetY));
             currentY += rowHeight;
 
@@ -968,24 +1006,59 @@ namespace TrainingRequestApp.Services
 
             y += rowHeight;
 
-            // Data rows
-            for (int row = 1; row <= 3; row++)
+            // Data rows - แสดงข้อมูลจริงจาก TrainingHistories (ถ้ามี) หรือ empty rows (ขั้นต่ำ 3 แถว)
+            int totalRows = Math.Max(3, data.TrainingHistories?.Count ?? 0);
+            for (int row = 0; row < totalRows; row++)
             {
                 xCol = x;
+                var historyItem = (data.TrainingHistories != null && row < data.TrainingHistories.Count) ? data.TrainingHistories[row] : null;
+
                 for (int col = 0; col < colWidths.Length; col++)
                 {
                     gfx.DrawRectangle(_borderPen, xCol, y, colWidths[col], rowHeight);
 
                     if (col == 0)
                     {
-                        gfx.DrawString(row.ToString(), _fontTiny, XBrushes.Black,
+                        gfx.DrawString((row + 1).ToString(), _fontTiny, XBrushes.Black,
                             new XRect(xCol, y + 4, colWidths[col], rowHeight), XStringFormats.TopCenter);
                     }
-                    else if (col >= 3 && col <= 5)
+                    else if (col == 1 && historyItem != null)
+                    {
+                        gfx.DrawString(historyItem.EmployeeCode ?? "", _fontTiny, XBrushes.Black,
+                            new XRect(xCol + 2, y + 4, colWidths[col] - 4, rowHeight), XStringFormats.TopLeft);
+                    }
+                    else if (col == 2 && historyItem != null)
+                    {
+                        gfx.DrawString(historyItem.EmployeeName ?? "", _fontTiny, XBrushes.Black,
+                            new XRect(xCol + 2, y + 4, colWidths[col] - 4, rowHeight), XStringFormats.TopLeft);
+                    }
+                    else if (col == 3) // ไม่เคย
                     {
                         double cbXPos = xCol + (colWidths[col] / 2) - 4;
                         double cbY = y + 3;
-                        gfx.DrawRectangle(_thinPen, cbXPos, cbY, 8, 8);
+                        DrawCheckbox(gfx, cbXPos, cbY, historyItem?.HistoryType == "Never");
+                    }
+                    else if (col == 4) // เคย
+                    {
+                        double cbXPos = xCol + (colWidths[col] / 2) - 4;
+                        double cbY = y + 3;
+                        DrawCheckbox(gfx, cbXPos, cbY, historyItem?.HistoryType == "Ever");
+                    }
+                    else if (col == 5) // ใกล้เคียง
+                    {
+                        double cbXPos = xCol + (colWidths[col] / 2) - 4;
+                        double cbY = y + 3;
+                        DrawCheckbox(gfx, cbXPos, cbY, historyItem?.HistoryType == "Similar");
+                    }
+                    else if (col == 6 && historyItem?.TrainingDate != null)
+                    {
+                        gfx.DrawString(historyItem.TrainingDate?.ToString("dd/MM/yyyy") ?? "", _fontTiny, XBrushes.Black,
+                            new XRect(xCol + 2, y + 4, colWidths[col] - 4, rowHeight), XStringFormats.TopCenter);
+                    }
+                    else if (col == 7 && historyItem != null)
+                    {
+                        gfx.DrawString(historyItem.CourseName ?? "", _fontTiny, XBrushes.Black,
+                            new XRect(xCol + 2, y + 4, colWidths[col] - 4, rowHeight), XStringFormats.TopLeft);
                     }
 
                     xCol += colWidths[col];
@@ -1025,7 +1098,9 @@ namespace TrainingRequestApp.Services
                         tr.HRDConfirmationid AS HRDConfirmationId, tr.Status_HRDConfirmation, tr.ApproveInfo_HRDConfirmation,
                         tr.ManagingDirectorId, tr.Status_ManagingDirector, tr.ApproveInfo_ManagingDirector,
                         tr.DeputyManagingDirectorId, tr.Status_DeputyManagingDirector, tr.ApproveInfo_DeputyManagingDirector,
+                        tr.KM_SubmitDocument, tr.KM_CreateReport, tr.KM_CreateReportDate, tr.KM_KnowledgeSharing, tr.KM_KnowledgeSharingDate,
                         tr.HRD_ContactDate, tr.HRD_ContactPerson, tr.HRD_PaymentDate, tr.HRD_PaymentMethod, tr.HRD_RecorderSignature,
+                        tr.HRD_BudgetPlan, tr.HRD_BudgetUsage, tr.HRD_DepartmentBudgetRemaining, tr.HRD_MembershipType, tr.HRD_MembershipCost,
                         e_sm.Level AS SectionManagerLevel,
                         e_dm.Level AS DepartmentManagerLevel,
                         e_ha.Level AS HRDAdminLevel,
@@ -1102,12 +1177,24 @@ namespace TrainingRequestApp.Services
                             data.HRDConfirmationLevel = reader["HRDConfirmationLevel"]?.ToString();
                             data.ManagingDirectorLevel = reader["ManagingDirectorLevel"]?.ToString();
                             data.DeputyManagingDirectorLevel = reader["DeputyManagingDirectorLevel"]?.ToString();
+                            // Knowledge Management Fields
+                            data.KM_SubmitDocument = reader["KM_SubmitDocument"] != DBNull.Value ? (bool?)reader["KM_SubmitDocument"] : null;
+                            data.KM_CreateReport = reader["KM_CreateReport"] != DBNull.Value ? (bool?)reader["KM_CreateReport"] : null;
+                            data.KM_CreateReportDate = reader["KM_CreateReportDate"] != DBNull.Value ? (DateTime?)reader["KM_CreateReportDate"] : null;
+                            data.KM_KnowledgeSharing = reader["KM_KnowledgeSharing"] != DBNull.Value ? (bool?)reader["KM_KnowledgeSharing"] : null;
+                            data.KM_KnowledgeSharingDate = reader["KM_KnowledgeSharingDate"] != DBNull.Value ? (DateTime?)reader["KM_KnowledgeSharingDate"] : null;
                             // HRD Record Fields
                             data.HRD_ContactDate = reader["HRD_ContactDate"] != DBNull.Value ? (DateTime?)reader["HRD_ContactDate"] : null;
                             data.HRD_ContactPerson = reader["HRD_ContactPerson"]?.ToString();
                             data.HRD_PaymentDate = reader["HRD_PaymentDate"] != DBNull.Value ? (DateTime?)reader["HRD_PaymentDate"] : null;
                             data.HRD_PaymentMethod = reader["HRD_PaymentMethod"]?.ToString();
                             data.HRD_RecorderSignature = reader["HRD_RecorderSignature"]?.ToString();
+                            // HRD Budget & Membership Fields
+                            data.HRD_BudgetPlan = reader["HRD_BudgetPlan"]?.ToString();
+                            data.HRD_BudgetUsage = reader["HRD_BudgetUsage"]?.ToString();
+                            data.HRD_DepartmentBudgetRemaining = reader["HRD_DepartmentBudgetRemaining"] != DBNull.Value ? (decimal?)reader["HRD_DepartmentBudgetRemaining"] : null;
+                            data.HRD_MembershipType = reader["HRD_MembershipType"]?.ToString();
+                            data.HRD_MembershipCost = reader["HRD_MembershipCost"] != DBNull.Value ? (decimal?)reader["HRD_MembershipCost"] : null;
                         }
                     }
                 }
@@ -1131,6 +1218,33 @@ namespace TrainingRequestApp.Services
                                 EmployeeName = reader["EmployeeName"]?.ToString(),
                                 EmployeeCode = reader["EmployeeCode"]?.ToString(),
                                 Level = reader["Level"]?.ToString()
+                            });
+                        }
+                    }
+                }
+
+                // Fetch Training History
+                string historyQuery = @"
+                    SELECT EmployeeCode, EmployeeName, HistoryType, TrainingDate, CourseName
+                    FROM TrainingHistory
+                    WHERE TrainingRequestId = @Id
+                    ORDER BY Id";
+
+                using (SqlCommand cmd = new SqlCommand(historyQuery, conn))
+                {
+                    cmd.Parameters.AddWithValue("@Id", id);
+
+                    using (var reader = await cmd.ExecuteReaderAsync())
+                    {
+                        while (await reader.ReadAsync())
+                        {
+                            data.TrainingHistories.Add(new TrainingHistoryPdfData
+                            {
+                                EmployeeCode = reader["EmployeeCode"]?.ToString(),
+                                EmployeeName = reader["EmployeeName"]?.ToString(),
+                                HistoryType = reader["HistoryType"]?.ToString(),
+                                TrainingDate = reader["TrainingDate"] != DBNull.Value ? (DateTime?)reader["TrainingDate"] : null,
+                                CourseName = reader["CourseName"]?.ToString()
                             });
                         }
                     }
@@ -1207,6 +1321,13 @@ namespace TrainingRequestApp.Services
             public string ManagingDirectorLevel { get; set; }
             public string DeputyManagingDirectorLevel { get; set; }
 
+            // Knowledge Management Fields
+            public bool? KM_SubmitDocument { get; set; }
+            public bool? KM_CreateReport { get; set; }
+            public DateTime? KM_CreateReportDate { get; set; }
+            public bool? KM_KnowledgeSharing { get; set; }
+            public DateTime? KM_KnowledgeSharingDate { get; set; }
+
             // HRD Record Fields
             public DateTime? HRD_ContactDate { get; set; }
             public string HRD_ContactPerson { get; set; }
@@ -1214,7 +1335,15 @@ namespace TrainingRequestApp.Services
             public string HRD_PaymentMethod { get; set; }
             public string HRD_RecorderSignature { get; set; }
 
+            // HRD Budget & Membership Fields
+            public string HRD_BudgetPlan { get; set; }
+            public string HRD_BudgetUsage { get; set; }
+            public decimal? HRD_DepartmentBudgetRemaining { get; set; }
+            public string HRD_MembershipType { get; set; }
+            public decimal? HRD_MembershipCost { get; set; }
+
             public List<EmployeeData> Employees { get; set; } = new List<EmployeeData>();
+            public List<TrainingHistoryPdfData> TrainingHistories { get; set; } = new List<TrainingHistoryPdfData>();
         }
 
         private class EmployeeData
@@ -1222,6 +1351,15 @@ namespace TrainingRequestApp.Services
             public string EmployeeName { get; set; }
             public string EmployeeCode { get; set; }
             public string Level { get; set; }
+        }
+
+        private class TrainingHistoryPdfData
+        {
+            public string EmployeeCode { get; set; }
+            public string EmployeeName { get; set; }
+            public string HistoryType { get; set; }
+            public DateTime? TrainingDate { get; set; }
+            public string CourseName { get; set; }
         }
     }
 }

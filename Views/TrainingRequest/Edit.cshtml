@@ -790,6 +790,112 @@
                                     <textarea asp-for="ExpectedOutcome" name="ExpectedOutcome" id="ExpectedOutcome" class="form-control" rows="3" style="border-radius: 10px;">@Model.ExpectedOutcome</textarea>
                                 </div>
 
+                                <!-- Knowledge Management Section (เฉพาะ Public) -->
+                                <div class="form-group mt-4" id="kmSectionEdit" style="display: @(Model.TrainingType == "Public" ? "block" : "none");">
+                                    <div class="card border-0 shadow-sm" style="border-radius: 12px; border: 2px solid #0d6efd !important;">
+                                        <div class="card-header bg-primary text-white py-3" style="border-radius: 10px 10px 0 0;">
+                                            <h5 class="mb-0 fw-bold">
+                                                <i class="fa fa-book"></i>
+                                                แนวทางการขยายผล/การจัดการความรู้ (Knowledge Management) ภายหลังเสร็จสิ้นการอบรม กรณีอบรมภายนอก
+                                            </h5>
+                                        </div>
+                                        <div class="card-body p-4" style="background-color: #f0f4ff;">
+                                            <!-- Checkbox 1: นำส่งเอกสาร -->
+                                            <div class="form-check p-3 mb-3" style="background-color: white; border-radius: 10px; border: 1px solid #dee2e6;">
+                                                <input class="form-check-input km-checkbox" type="checkbox" name="KM_SubmitDocument" id="kmSubmitDocumentEdit" value="true"
+                                                       @(Model.KM_SubmitDocument == true ? "checked" : "")
+                                                       @(!canEdit ? "disabled" : "") style="transform: scale(1.3);">
+                                                <label class="form-check-label ms-2" for="kmSubmitDocumentEdit">
+                                                    นำส่งเอกสาร และสื่อประกอบการอบรม (ถ้ามี) ให้กับแผนกฝึกอบรม เพื่อนำไปเผยแพร่ในห้องสมุดออนไลน์
+                                                    <span class="text-muted">(ภายใน 15 วัน หลังเสร็จสิ้นการอบรม)</span>
+                                                </label>
+                                            </div>
+
+                                            <!-- Checkbox 2: จัดทำรายงาน/PPT + วันที่ -->
+                                            <div class="form-check p-3 mb-3" style="background-color: white; border-radius: 10px; border: 1px solid #dee2e6;">
+                                                <div class="d-flex align-items-start">
+                                                    <input class="form-check-input km-checkbox" type="checkbox" name="KM_CreateReport" id="kmCreateReportEdit" value="true"
+                                                           @(Model.KM_CreateReport == true ? "checked" : "")
+                                                           @(!canEdit ? "disabled" : "") style="transform: scale(1.3); margin-top: 4px;">
+                                                    <div class="ms-2 flex-grow-1">
+                                                        <label class="form-check-label" for="kmCreateReportEdit">
+                                                            จัดทำเป็นรายงานหรือ PPT ส่งผู้จัดการส่วน/ฝ่าย เพื่อพิจารณา หลังจากนั้นนำส่งให้แผนกฝึกอบรม
+                                                        </label>
+                                                        <div class="mt-2">
+                                                            <label class="form-label text-primary fw-semibold">โปรดระบุวันที่ดำเนินการ:</label>
+                                                            <input type="date" class="form-control" name="KM_CreateReportDate" id="kmCreateReportDateEdit"
+                                                                   value="@Model.KM_CreateReportDate?.ToString("yyyy-MM-dd")"
+                                                                   style="max-width: 250px; border-radius: 8px;"
+                                                                   @(Model.KM_CreateReport != true ? "disabled" : "")
+                                                                   @(!canEdit ? "disabled" : "")>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Checkbox 3: ถ่ายทอดความรู้ + วันที่ -->
+                                            <div class="form-check p-3" style="background-color: white; border-radius: 10px; border: 1px solid #dee2e6;">
+                                                <div class="d-flex align-items-start">
+                                                    <input class="form-check-input km-checkbox" type="checkbox" name="KM_KnowledgeSharing" id="kmKnowledgeSharingEdit" value="true"
+                                                           @(Model.KM_KnowledgeSharing == true ? "checked" : "")
+                                                           @(!canEdit ? "disabled" : "") style="transform: scale(1.3); margin-top: 4px;">
+                                                    <div class="ms-2 flex-grow-1">
+                                                        <label class="form-check-label" for="kmKnowledgeSharingEdit">
+                                                            ถ่ายทอดความรู้ที่ได้รับจากการอบรม (Knowledge Sharing) โดยจัดบรรยายถ่ายทอดความรู้ภายในหน่วยงาน
+                                                        </label>
+                                                        <div class="mt-2">
+                                                            <label class="form-label text-primary fw-semibold">โปรดระบุวันที่ดำเนินการ:</label>
+                                                            <input type="date" class="form-control" name="KM_KnowledgeSharingDate" id="kmKnowledgeSharingDateEdit"
+                                                                   value="@Model.KM_KnowledgeSharingDate?.ToString("yyyy-MM-dd")"
+                                                                   style="max-width: 250px; border-radius: 8px;"
+                                                                   @(Model.KM_KnowledgeSharing != true ? "disabled" : "")
+                                                                   @(!canEdit ? "disabled" : "")>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <script>
+                                    document.addEventListener('DOMContentLoaded', function () {
+                                        // Show/Hide KM Section based on TrainingType (Edit)
+                                        function toggleKMSectionEdit() {
+                                            var selectedType = document.querySelector('input[name="TrainingType"]:checked');
+                                            var kmSection = document.getElementById('kmSectionEdit');
+                                            if (selectedType && selectedType.value === 'Public') {
+                                                kmSection.style.display = 'block';
+                                            } else {
+                                                kmSection.style.display = 'none';
+                                            }
+                                        }
+
+                                        document.querySelectorAll('input[name="TrainingType"]').forEach(function (radio) {
+                                            radio.addEventListener('change', toggleKMSectionEdit);
+                                        });
+
+                                        // Enable/Disable date fields based on checkbox (Edit)
+                                        var kmCreateReportEdit = document.getElementById('kmCreateReportEdit');
+                                        if (kmCreateReportEdit) {
+                                            kmCreateReportEdit.addEventListener('change', function () {
+                                                var dateField = document.getElementById('kmCreateReportDateEdit');
+                                                dateField.disabled = !this.checked;
+                                                if (!this.checked) dateField.value = '';
+                                            });
+                                        }
+
+                                        var kmKnowledgeSharingEdit = document.getElementById('kmKnowledgeSharingEdit');
+                                        if (kmKnowledgeSharingEdit) {
+                                            kmKnowledgeSharingEdit.addEventListener('change', function () {
+                                                var dateField = document.getElementById('kmKnowledgeSharingDateEdit');
+                                                dateField.disabled = !this.checked;
+                                                if (!this.checked) dateField.value = '';
+                                            });
+                                        }
+                                    });
+                                </script>
+
                                 <!-- ตารางประวัติการอบรม -->
                                 <div class="mt-5" id="trainingHistorySection">
                                     <div class="card border-0 shadow-lg" style="border-radius: 15px;">
@@ -1143,8 +1249,391 @@
                                                            value="@Model.HRD_RecorderSignature" placeholder="ระบุชื่อผู้บันทึก" style="border-radius: 8px;" />
                                                 </div>
                                             </div>
+
+                                            <hr class="my-4">
+
+                                            <!-- ==================== การวางแผนงบประมาณ ==================== -->
+                                            <div class="row g-3">
+                                                <div class="col-md-12">
+                                                    <label class="form-label fw-bold">📊 การวางแผนงบประมาณ:</label>
+                                                    <div class="d-flex gap-4 mt-2">
+                                                        <div class="form-check">
+                                                            <input class="form-check-input" type="radio" name="HRD_BudgetPlan" value="Plan" id="budgetPlan"
+                                                                   @(Model.HRD_BudgetPlan == "Plan" ? "checked" : "") style="transform: scale(1.2);">
+                                                            <label class="form-check-label fw-medium" for="budgetPlan">Plan</label>
+                                                        </div>
+                                                        <div class="form-check">
+                                                            <input class="form-check-input" type="radio" name="HRD_BudgetPlan" value="Unplan" id="budgetUnplan"
+                                                                   @(Model.HRD_BudgetPlan == "Unplan" ? "checked" : "") style="transform: scale(1.2);">
+                                                            <label class="form-check-label fw-medium" for="budgetUnplan">Unplan</label>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <!-- ==================== การใช้งบประมาณ ==================== -->
+                                                <div class="col-md-12">
+                                                    <label class="form-label fw-bold">💰 การใช้งบประมาณ:</label>
+                                                    <div class="d-flex gap-4 align-items-center mt-2 flex-wrap">
+                                                        <div class="form-check">
+                                                            <input class="form-check-input" type="radio" name="HRD_BudgetUsage" value="TYP" id="budgetTYP"
+                                                                   @(Model.HRD_BudgetUsage == "TYP" ? "checked" : "") style="transform: scale(1.2);">
+                                                            <label class="form-check-label fw-medium" for="budgetTYP">ใช้งบประมาณตามแผน TYP</label>
+                                                        </div>
+                                                        <div class="form-check d-flex align-items-center gap-2">
+                                                            <input class="form-check-input" type="radio" name="HRD_BudgetUsage" value="Department" id="budgetDept"
+                                                                   @(Model.HRD_BudgetUsage == "Department" ? "checked" : "") style="transform: scale(1.2);">
+                                                            <label class="form-check-label fw-medium" for="budgetDept">ใช้งบต้นสังกัด คงเหลือ</label>
+                                                            <input type="text" class="form-control form-control-sm" id="hrdDeptBudgetRemaining" name="HRD_DepartmentBudgetRemaining"
+                                                                   value="@(Model.HRD_DepartmentBudgetRemaining?.ToString("N2") ?? "0")"
+                                                                   style="max-width: 150px; border-radius: 8px; text-align: right;" readonly>
+                                                            <span class="fw-medium">บาท</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <!-- ==================== การเป็นสมาชิก/สิทธิพิเศษ ==================== -->
+                                                <div class="col-md-12">
+                                                    <label class="form-label fw-bold">🏷️ การเป็นสมาชิก/สิทธิพิเศษ:</label>
+                                                    <div class="d-flex gap-4 align-items-center mt-2 flex-wrap">
+                                                        <div class="form-check d-flex align-items-center gap-2">
+                                                            <input class="form-check-input" type="radio" name="HRD_MembershipType" value="Member" id="memberYes"
+                                                                   @(Model.HRD_MembershipType == "Member" ? "checked" : "") style="transform: scale(1.2);">
+                                                            <label class="form-check-label fw-medium" for="memberYes">เป็นสมาชิก</label>
+                                                            <input type="number" step="0.01" class="form-control form-control-sm membership-cost-input" id="memberCost"
+                                                                   style="max-width: 150px; border-radius: 8px; text-align: right;"
+                                                                   @(Model.HRD_MembershipType == "Member" ? $"value={Model.HRD_MembershipCost?.ToString("F2") ?? ""}" : "disabled")>
+                                                            <span class="fw-medium">บาท</span>
+                                                        </div>
+                                                        <div class="form-check d-flex align-items-center gap-2">
+                                                            <input class="form-check-input" type="radio" name="HRD_MembershipType" value="NonMember" id="memberNo"
+                                                                   @(Model.HRD_MembershipType == "NonMember" ? "checked" : "") style="transform: scale(1.2);">
+                                                            <label class="form-check-label fw-medium" for="memberNo">ไม่เป็นสมาชิก</label>
+                                                            <input type="number" step="0.01" class="form-control form-control-sm membership-cost-input" id="nonMemberCost"
+                                                                   style="max-width: 150px; border-radius: 8px; text-align: right;"
+                                                                   @(Model.HRD_MembershipType == "NonMember" ? $"value={Model.HRD_MembershipCost?.ToString("F2") ?? ""}" : "disabled")>
+                                                            <span class="fw-medium">บาท</span>
+                                                        </div>
+                                                    </div>
+                                                    <input type="hidden" name="HRD_MembershipCost" id="hrdMembershipCostHidden" value="@(Model.HRD_MembershipCost?.ToString("F2") ?? "")">
+                                                </div>
+                                            </div>
+
+                                            <hr class="my-4">
+
+                                            <!-- ==================== ประวัติการอบรม (ตาราง) ==================== -->
+                                            <div>
+                                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                                    <label class="form-label fw-bold mb-0">📋 ประวัติการอบรม: <span class="text-muted">จากการตรวจสอบประวัติการฝึกอบรมของพนักงานพบว่า (กรณีมีจำนวนมากให้แนบเอกสารเพิ่มได้)</span></label>
+                                                    <button type="button" class="btn btn-sm btn-primary" id="btnAddTrainingHistory" data-bs-toggle="modal" data-bs-target="#trainingHistoryModal" style="border-radius: 20px;">
+                                                        <i class="fas fa-plus me-1"></i> เพิ่ม
+                                                    </button>
+                                                </div>
+                                                <div class="table-responsive">
+                                                    <table class="table table-bordered table-hover mb-0" id="trainingHistoryTable" style="font-size: 0.9rem;">
+                                                        <thead class="table-primary">
+                                                            <tr>
+                                                                <th class="text-center" style="width: 50px;">ที่</th>
+                                                                <th class="text-center" style="min-width: 100px;">รหัสพนักงาน</th>
+                                                                <th class="text-center" style="min-width: 150px;">ชื่อ - สกุล</th>
+                                                                <th class="text-center" style="width: 80px;">ไม่เคย</th>
+                                                                <th class="text-center" style="width: 80px;">เคย</th>
+                                                                <th class="text-center" style="width: 80px;">ใกล้เคียง</th>
+                                                                <th class="text-center" style="min-width: 120px;">เมื่อวันที่</th>
+                                                                <th class="text-center" style="min-width: 200px;">ชื่อหลักสูตร</th>
+                                                                <th class="text-center" style="width: 80px;">จัดการ</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody id="trainingHistoryTableBody">
+                                                            @if (Model.TrainingHistories != null && Model.TrainingHistories.Count > 0)
+                                                            {
+                                                                var rowIndex = 1;
+                                                                foreach (var history in Model.TrainingHistories)
+                                                                {
+                                                                    <tr data-id="@history.Id">
+                                                                        <td class="text-center align-middle">@rowIndex</td>
+                                                                        <td class="text-center align-middle">@history.EmployeeCode</td>
+                                                                        <td class="align-middle">@history.EmployeeName</td>
+                                                                        <td class="text-center align-middle">
+                                                                            <input type="checkbox" class="form-check-input" disabled @(history.HistoryType == "Never" ? "checked" : "")>
+                                                                        </td>
+                                                                        <td class="text-center align-middle">
+                                                                            <input type="checkbox" class="form-check-input" disabled @(history.HistoryType == "Ever" ? "checked" : "")>
+                                                                        </td>
+                                                                        <td class="text-center align-middle">
+                                                                            <input type="checkbox" class="form-check-input" disabled @(history.HistoryType == "Similar" ? "checked" : "")>
+                                                                        </td>
+                                                                        <td class="text-center align-middle">@history.TrainingDate?.ToString("dd/MM/yyyy")</td>
+                                                                        <td class="align-middle">@history.CourseName</td>
+                                                                        <td class="text-center align-middle">
+                                                                            <button type="button" class="btn btn-sm btn-outline-danger btn-remove-history" title="ลบ">
+                                                                                <i class="fas fa-trash"></i>
+                                                                            </button>
+                                                                        </td>
+                                                                    </tr>
+                                                                    rowIndex++;
+                                                                }
+                                                            }
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                                <input type="hidden" name="TrainingHistoryJson" id="trainingHistoryJson" value="">
+                                            </div>
                                         </div>
                                     </div>
+
+                                    <!-- ==================== Modal: เพิ่มประวัติการอบรม ==================== -->
+                                    <div class="modal fade" id="trainingHistoryModal" tabindex="-1" aria-labelledby="trainingHistoryModalLabel" aria-hidden="true">
+                                        <div class="modal-dialog modal-dialog-centered">
+                                            <div class="modal-content" style="border-radius: 15px;">
+                                                <div class="modal-header bg-primary text-white" style="border-radius: 15px 15px 0 0;">
+                                                    <h5 class="modal-title" id="trainingHistoryModalLabel">
+                                                        <i class="fas fa-plus-circle me-2"></i>เพิ่มประวัติการอบรม
+                                                    </h5>
+                                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                </div>
+                                                <div class="modal-body p-4">
+                                                    <div class="mb-3">
+                                                        <label class="form-label fw-bold">รหัสพนักงาน</label>
+                                                        <input type="text" class="form-control" id="historyEmpCode" placeholder="ระบุรหัสพนักงาน" style="border-radius: 8px;">
+                                                    </div>
+                                                    <div class="mb-3">
+                                                        <label class="form-label fw-bold">ชื่อ - สกุล</label>
+                                                        <input type="text" class="form-control" id="historyEmpName" placeholder="ระบุชื่อ - สกุล" style="border-radius: 8px;">
+                                                    </div>
+                                                    <div class="mb-3">
+                                                        <label class="form-label fw-bold">ประวัติการอบรม</label>
+                                                        <div class="d-flex gap-4 mt-2">
+                                                            <div class="form-check">
+                                                                <input class="form-check-input" type="radio" name="historyType" value="Never" id="historyNever" style="transform: scale(1.2);">
+                                                                <label class="form-check-label" for="historyNever">ไม่เคย</label>
+                                                            </div>
+                                                            <div class="form-check">
+                                                                <input class="form-check-input" type="radio" name="historyType" value="Ever" id="historyEver" style="transform: scale(1.2);">
+                                                                <label class="form-check-label" for="historyEver">เคย</label>
+                                                            </div>
+                                                            <div class="form-check">
+                                                                <input class="form-check-input" type="radio" name="historyType" value="Similar" id="historySimilar" style="transform: scale(1.2);">
+                                                                <label class="form-check-label" for="historySimilar">ใกล้เคียง</label>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="mb-3">
+                                                        <label class="form-label fw-bold">เมื่อวันที่</label>
+                                                        <input type="date" class="form-control" id="historyDate" style="border-radius: 8px;">
+                                                    </div>
+                                                    <div class="mb-3">
+                                                        <label class="form-label fw-bold">ชื่อหลักสูตร</label>
+                                                        <input type="text" class="form-control" id="historyCourseName" placeholder="ระบุชื่อหลักสูตร" style="border-radius: 8px;">
+                                                    </div>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" style="border-radius: 20px;">ยกเลิก</button>
+                                                    <button type="button" class="btn btn-primary" id="btnSaveTrainingHistory" style="border-radius: 20px;">
+                                                        <i class="fas fa-save me-1"></i> บันทึก
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <script>
+                                        document.addEventListener('DOMContentLoaded', function () {
+                                            // ===== Membership Radio Toggle =====
+                                            document.querySelectorAll('input[name="HRD_MembershipType"]').forEach(function (radio) {
+                                                radio.addEventListener('change', function () {
+                                                    var memberCost = document.getElementById('memberCost');
+                                                    var nonMemberCost = document.getElementById('nonMemberCost');
+
+                                                    if (this.value === 'Member') {
+                                                        memberCost.disabled = false;
+                                                        nonMemberCost.disabled = true;
+                                                        nonMemberCost.value = '';
+                                                    } else {
+                                                        memberCost.disabled = true;
+                                                        memberCost.value = '';
+                                                        nonMemberCost.disabled = false;
+                                                    }
+                                                });
+                                            });
+
+                                            // Sync membership cost to hidden field
+                                            function syncMembershipCost() {
+                                                var memberType = document.querySelector('input[name="HRD_MembershipType"]:checked');
+                                                var hiddenField = document.getElementById('hrdMembershipCostHidden');
+                                                if (memberType) {
+                                                    var costField = memberType.value === 'Member'
+                                                        ? document.getElementById('memberCost')
+                                                        : document.getElementById('nonMemberCost');
+                                                    hiddenField.value = costField.value || '';
+                                                }
+                                            }
+                                            document.getElementById('memberCost').addEventListener('input', syncMembershipCost);
+                                            document.getElementById('nonMemberCost').addEventListener('input', syncMembershipCost);
+
+                                            // ===== Auto-fill ยอดเงินคงเหลือจากตารางพนักงาน =====
+                                            function updateDeptBudgetRemaining() {
+                                                var rows = document.querySelectorAll('#employeeTableBody tr');
+                                                var lastRemainingCost = 0;
+                                                if (rows.length > 0) {
+                                                    var lastRow = rows[rows.length - 1];
+                                                    var remainingCostCell = lastRow.querySelector('.remaining-cost');
+                                                    if (remainingCostCell) {
+                                                        var val = remainingCostCell.textContent.replace(/,/g, '').trim();
+                                                        lastRemainingCost = parseFloat(val) || 0;
+                                                    }
+                                                }
+                                                var field = document.getElementById('hrdDeptBudgetRemaining');
+                                                if (field) {
+                                                    field.value = lastRemainingCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                                                }
+                                            }
+
+                                            // Observe changes to employee table
+                                            var empTableBody = document.getElementById('employeeTableBody');
+                                            if (empTableBody) {
+                                                var observer = new MutationObserver(updateDeptBudgetRemaining);
+                                                observer.observe(empTableBody, { childList: true, subtree: true, characterData: true });
+                                                updateDeptBudgetRemaining(); // Initial
+                                            }
+
+                                            // ===== Training History Table Management =====
+                                            var trainingHistories = [];
+
+                                            // Load existing histories from table
+                                            document.querySelectorAll('#trainingHistoryTableBody tr').forEach(function (row) {
+                                                var cells = row.querySelectorAll('td');
+                                                if (cells.length >= 8) {
+                                                    var historyType = 'Never';
+                                                    if (cells[4].querySelector('input:checked')) historyType = 'Ever';
+                                                    else if (cells[5].querySelector('input:checked')) historyType = 'Similar';
+                                                    else if (cells[3].querySelector('input:checked')) historyType = 'Never';
+
+                                                    trainingHistories.push({
+                                                        employeeCode: cells[1].textContent.trim(),
+                                                        employeeName: cells[2].textContent.trim(),
+                                                        historyType: historyType,
+                                                        trainingDate: cells[6].textContent.trim(),
+                                                        courseName: cells[7].textContent.trim()
+                                                    });
+                                                }
+                                            });
+
+                                            // Save Training History
+                                            document.getElementById('btnSaveTrainingHistory').addEventListener('click', function () {
+                                                var empCode = document.getElementById('historyEmpCode').value.trim();
+                                                var empName = document.getElementById('historyEmpName').value.trim();
+                                                var historyType = document.querySelector('input[name="historyType"]:checked');
+                                                var trainingDate = document.getElementById('historyDate').value;
+                                                var courseName = document.getElementById('historyCourseName').value.trim();
+
+                                                if (!empCode || !empName) {
+                                                    alert('กรุณาระบุรหัสพนักงานและชื่อ-สกุล');
+                                                    return;
+                                                }
+                                                if (!historyType) {
+                                                    alert('กรุณาเลือกประวัติการอบรม (ไม่เคย/เคย/ใกล้เคียง)');
+                                                    return;
+                                                }
+
+                                                var entry = {
+                                                    employeeCode: empCode,
+                                                    employeeName: empName,
+                                                    historyType: historyType.value,
+                                                    trainingDate: trainingDate,
+                                                    courseName: courseName
+                                                };
+
+                                                trainingHistories.push(entry);
+                                                renderTrainingHistoryTable();
+                                                updateTrainingHistoryJson();
+
+                                                // Clear modal
+                                                document.getElementById('historyEmpCode').value = '';
+                                                document.getElementById('historyEmpName').value = '';
+                                                document.querySelectorAll('input[name="historyType"]').forEach(r => r.checked = false);
+                                                document.getElementById('historyDate').value = '';
+                                                document.getElementById('historyCourseName').value = '';
+
+                                                // Close modal
+                                                var modal = bootstrap.Modal.getInstance(document.getElementById('trainingHistoryModal'));
+                                                modal.hide();
+                                            });
+
+                                            // Render Table
+                                            function renderTrainingHistoryTable() {
+                                                var tbody = document.getElementById('trainingHistoryTableBody');
+                                                tbody.innerHTML = '';
+
+                                                trainingHistories.forEach(function (item, index) {
+                                                    var dateDisplay = '';
+                                                    if (item.trainingDate) {
+                                                        var parts = item.trainingDate.split('-');
+                                                        if (parts.length === 3) {
+                                                            dateDisplay = parts[2] + '/' + parts[1] + '/' + parts[0];
+                                                        } else {
+                                                            dateDisplay = item.trainingDate;
+                                                        }
+                                                    }
+
+                                                    var row = document.createElement('tr');
+                                                    row.innerHTML = `
+                                                        <td class="text-center align-middle">${index + 1}</td>
+                                                        <td class="text-center align-middle">${item.employeeCode}</td>
+                                                        <td class="align-middle">${item.employeeName}</td>
+                                                        <td class="text-center align-middle"><input type="checkbox" class="form-check-input" disabled ${item.historyType === 'Never' ? 'checked' : ''}></td>
+                                                        <td class="text-center align-middle"><input type="checkbox" class="form-check-input" disabled ${item.historyType === 'Ever' ? 'checked' : ''}></td>
+                                                        <td class="text-center align-middle"><input type="checkbox" class="form-check-input" disabled ${item.historyType === 'Similar' ? 'checked' : ''}></td>
+                                                        <td class="text-center align-middle">${dateDisplay}</td>
+                                                        <td class="align-middle">${item.courseName || ''}</td>
+                                                        <td class="text-center align-middle">
+                                                            <button type="button" class="btn btn-sm btn-outline-danger btn-remove-history" data-index="${index}" title="ลบ">
+                                                                <i class="fas fa-trash"></i>
+                                                            </button>
+                                                        </td>
+                                                    `;
+                                                    tbody.appendChild(row);
+                                                });
+
+                                                // Bind delete buttons
+                                                tbody.querySelectorAll('.btn-remove-history').forEach(function (btn) {
+                                                    btn.addEventListener('click', function () {
+                                                        var idx = parseInt(this.getAttribute('data-index'));
+                                                        trainingHistories.splice(idx, 1);
+                                                        renderTrainingHistoryTable();
+                                                        updateTrainingHistoryJson();
+                                                    });
+                                                });
+                                            }
+
+                                            // Update hidden JSON field
+                                            function updateTrainingHistoryJson() {
+                                                document.getElementById('trainingHistoryJson').value = JSON.stringify(trainingHistories);
+                                            }
+
+                                            // Bind initial delete buttons
+                                            document.querySelectorAll('#trainingHistoryTableBody .btn-remove-history').forEach(function (btn) {
+                                                btn.addEventListener('click', function () {
+                                                    var row = this.closest('tr');
+                                                    var rowIndex = Array.from(row.parentNode.children).indexOf(row);
+                                                    trainingHistories.splice(rowIndex, 1);
+                                                    renderTrainingHistoryTable();
+                                                    updateTrainingHistoryJson();
+                                                });
+                                            });
+
+                                            // Initial JSON
+                                            updateTrainingHistoryJson();
+
+                                            // Sync before form submit
+                                            var form = document.querySelector('form');
+                                            if (form) {
+                                                form.addEventListener('submit', function () {
+                                                    updateTrainingHistoryJson();
+                                                    syncMembershipCost();
+                                                });
+                                            }
+                                        });
+                                    </script>
                                 }
 
                                 <!-- ✅ ปุ่มแบบ Multi-Mode -->
