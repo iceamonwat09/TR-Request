@@ -81,6 +81,10 @@ namespace TrainingRequestApp.Services
                 double pageWidth = page.Width - (2 * margin);
                 double vlabelWidth = 22;
 
+                // === Header 3 ช่อง ===
+                double headerHeight = DrawHeader(gfx, data, margin, yPos, pageWidth);
+                yPos += headerHeight;
+
                 // ส่วนที่ 1
                 double section1Height = DrawSection1(gfx, data, margin, yPos, pageWidth, vlabelWidth);
                 yPos += section1Height;
@@ -106,6 +110,41 @@ namespace TrainingRequestApp.Services
         }
 
         // ==========================================
+        // Header: 3 ช่อง (TIPAK | ชื่อฟอร์ม | DocNo)
+        // ==========================================
+        private double DrawHeader(XGraphics gfx, TrainingRequestData data, double x, double y, double width)
+        {
+            double headerHeight = 35;
+            double colWidth = width / 3;
+
+            // วาดกรอบ Header
+            gfx.DrawRectangle(_thickPen, x, y, width, headerHeight);
+
+            // เส้นแบ่งคอลัมน์
+            gfx.DrawLine(_borderPen, x + colWidth, y, x + colWidth, y + headerHeight);
+            gfx.DrawLine(_borderPen, x + (colWidth * 2), y, x + (colWidth * 2), y + headerHeight);
+
+            // ช่องซ้าย: TIPAK
+            var tipakFont = new XFont("Tahoma", 14, XFontStyle.Bold);
+            gfx.DrawString("TIPAK", tipakFont, XBrushes.Black,
+                new XRect(x, y, colWidth, headerHeight), XStringFormats.Center);
+
+            // ช่องกลาง: ชื่อฟอร์ม
+            gfx.DrawString("ใบขออบรมสัมมนาภายใน-ภายนอก", _fontBold,
+                XBrushes.Black, new XRect(x + colWidth, y + 8, colWidth, 14), XStringFormats.Center);
+            gfx.DrawString("(Inhouse/Public Training Request)", _fontSmall,
+                XBrushes.Black, new XRect(x + colWidth, y + 20, colWidth, 12), XStringFormats.Center);
+
+            // ช่องขวา: DocNo
+            gfx.DrawString("ลำดับที่ใบขอ (เฉพาะ HR)", _fontSmall,
+                XBrushes.Black, new XRect(x + (colWidth * 2), y + 8, colWidth, 14), XStringFormats.Center);
+            gfx.DrawString(data.DocNo ?? "", _fontBold,
+                XBrushes.Black, new XRect(x + (colWidth * 2), y + 20, colWidth, 12), XStringFormats.Center);
+
+            return headerHeight;
+        }
+
+        // ==========================================
         // ส่วนที่ 1: ผู้ขอฝึกอบรมกรอก
         // ==========================================
         private double DrawSection1(XGraphics gfx, TrainingRequestData data, double x, double y, double width, double vlabelWidth)
@@ -117,8 +156,8 @@ namespace TrainingRequestApp.Services
             double padding = 5;
             double textOffsetY = 12;
 
-            // [FIX v2.9] เพิ่ม sectionHeight จาก 455 → 480 เพื่อให้ครอบคลุมส่วนลายเซ็นทั้งหมด
-            double sectionHeight = 480;
+            // [FIX v4.0] ลดจาก 480 → 444 เพราะลบ 2 แถว (สิ่งที่แนบ + กลุ่มเป้าหมาย)
+            double sectionHeight = 444;
 
             DrawVerticalLabel(gfx, x, y, vlabelWidth, sectionHeight, "ส่วนที่ 1 ผู้ร้องขอกรอกข้อมูล");
             gfx.DrawRectangle(_thickPen, contentX, y, contentWidth, sectionHeight);
@@ -158,12 +197,7 @@ namespace TrainingRequestApp.Services
             DrawUnderline(gfx, rightColX + 68, currentY + textOffsetY + 3, halfWidth - 80);
             currentY += rowHeight;
 
-            // === Row 4: สิ่งที่แนบมาด้วย ===
-            gfx.DrawString("สิ่งที่แนบมาด้วย :", _fontBold, XBrushes.Black, new XPoint(labelX, currentY + textOffsetY));
-            DrawUnderline(gfx, labelX + 95, currentY + textOffsetY + 3, contentWidth - 105);
-            currentY += rowHeight;
-
-            // === Row 5: ด้วยแผนก / ฝ่าย / มีความประสงค์จะ ===
+            // === Row 4: ด้วยแผนก / ฝ่าย / มีความประสงค์จะ ===
             gfx.DrawString("ด้วยแผนก", _fontBold, XBrushes.Black, new XPoint(labelX, currentY + textOffsetY));
             DrawUnderlineText(gfx, labelX + 55, currentY + textOffsetY, 110, data.Position ?? "", 3);
 
@@ -195,17 +229,9 @@ namespace TrainingRequestApp.Services
             gfx.DrawString("ชั่วโมง", _fontSmall, XBrushes.Black, new XPoint(rightColX + 208, currentY + textOffsetY));
             currentY += rowHeight;
 
-            // === Row 8: สถานที่ & การเดินทาง ===
+            // === Row 7: สถานที่ ===
             gfx.DrawString("สถานที่ :", _fontBold, XBrushes.Black, new XPoint(labelX, currentY + textOffsetY));
-            DrawUnderlineText(gfx, labelX + 50, currentY + textOffsetY, halfWidth - 70, data.TrainingLocation ?? "", 3);
-
-            gfx.DrawString("การเดินทาง :", _fontBold, XBrushes.Black, new XPoint(rightColX, currentY + textOffsetY));
-            double travelCbX = rightColX + 75;
-            DrawCheckbox(gfx, travelCbX, currentY + 4, data.TravelMethod == "จัดรถรับส่ง");
-            gfx.DrawString("จัดรถรับส่ง", _fontSmall, XBrushes.Black, new XPoint(travelCbX + 14, currentY + textOffsetY));
-            travelCbX += 80;
-            DrawCheckbox(gfx, travelCbX, currentY + 4, data.TravelMethod == "เดินทางเอง");
-            gfx.DrawString("เดินทางเอง", _fontSmall, XBrushes.Black, new XPoint(travelCbX + 14, currentY + textOffsetY));
+            DrawUnderlineText(gfx, labelX + 50, currentY + textOffsetY, contentWidth - 60, data.TrainingLocation ?? "", 3);
             currentY += rowHeight;
 
             // === Row 9: โดยวิทยากร/สถาบัน ===
@@ -213,16 +239,7 @@ namespace TrainingRequestApp.Services
             DrawUnderlineText(gfx, labelX + 115, currentY + textOffsetY, contentWidth - 125, data.Instructor ?? "", 3);
             currentY += rowHeight;
 
-            // === Row 10: กลุ่มเป้าหมาย & จำนวนผู้เข้ารับการอบรม ===
-            gfx.DrawString("กลุ่มเป้าหมาย :", _fontBold, XBrushes.Black, new XPoint(labelX, currentY + textOffsetY));
-            DrawUnderlineText(gfx, labelX + 82, currentY + textOffsetY, halfWidth - 100, data.TargetGroup ?? "", 3);
-
-            gfx.DrawString("จำนวนผู้เข้ารับการอบรม :", _fontBold, XBrushes.Black, new XPoint(rightColX, currentY + textOffsetY));
-            DrawUnderlineText(gfx, rightColX + 130, currentY + textOffsetY, 30, data.TotalPeople.ToString(), 3);
-            gfx.DrawString("คน", _fontSmall, XBrushes.Black, new XPoint(rightColX + 165, currentY + textOffsetY));
-            currentY += rowHeight;
-
-            // === Row 11-13: รายชื่อผู้เข้าอบรม ===
+            // === Row 9: รายชื่อผู้เข้าอบรม ===
             currentY = DrawParticipantList(gfx, data, contentX, currentY, contentWidth, padding, textOffsetY);
 
             // === Row 14: วัตถุประสงค์ ===
@@ -766,9 +783,9 @@ namespace TrainingRequestApp.Services
 
             gfx.DrawString("งบประมาณ:", _fontBold, XBrushes.Black, new XPoint(labelX, currentY + textOffsetY));
 
-            // === แถว 1: ค่าลงทะเบียน + ค่าวิทยากร ===
+            // === แถว 1: ค่าลงทะเบียน/วิทยากร + ค่าวิทยากร ===
             DrawCheckbox(gfx, col1X, currentY + 4, data.RegistrationCost > 0);
-            gfx.DrawString("ค่าลงทะเบียน", _fontSmall, XBrushes.Black, new XPoint(col1TextX, currentY + textOffsetY));
+            gfx.DrawString("ค่าลงทะเบียน/วิทยากร", _fontSmall, XBrushes.Black, new XPoint(col1TextX, currentY + textOffsetY));
             DrawUnderlineText(gfx, col1ValueX, currentY + textOffsetY, underlineWidth, data.RegistrationCost.ToString("N0"), 3);
             gfx.DrawString("บาท", _fontSmall, XBrushes.Black, new XPoint(col1BahtX, currentY + textOffsetY));
 
