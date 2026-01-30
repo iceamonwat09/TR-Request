@@ -1478,7 +1478,8 @@
                                                     var lastRow = rows[rows.length - 1];
                                                     var remainingCostCell = lastRow.querySelector('.remaining-cost');
                                                     if (remainingCostCell) {
-                                                        var val = remainingCostCell.textContent.replace(/,/g, '').trim();
+                                                        // ใช้ data-value ก่อน ถ้าไม่มีค่อยใช้ textContent
+                                                        var val = remainingCostCell.dataset.value || remainingCostCell.textContent.replace(/,/g, '').trim();
                                                         lastRemainingCost = parseFloat(val) || 0;
                                                     }
                                                 }
@@ -1486,6 +1487,7 @@
                                                 if (field) {
                                                     field.value = lastRemainingCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
                                                 }
+                                                console.log('✅ Updated hrdDeptBudgetRemaining:', lastRemainingCost);
                                             }
 
                                             // Observe changes to employee table
@@ -2983,7 +2985,7 @@
                             ${remainingHours}
                         </span>
                     </td>
-                    <td class="text-center py-3 fw-bold border-2" style="background-color: ${costColorClass};">
+                    <td class="text-center py-3 fw-bold border-2 remaining-cost" style="background-color: ${costColorClass};" data-value="${remainingCost}">
                         <span class="badge ${costTextClass} text-white px-3 py-2" style="font-size: 1rem;">
                             ${remainingCost.toLocaleString()}
                         </span>
@@ -3551,6 +3553,11 @@
 
             // ✅ ดึงโควต้าฝ่ายจาก API (ใช้พนักงานคนแรก)
             await loadDepartmentQuota(employees[0]);
+
+            // ✅ อัปเดต HRD Budget Remaining หลังโหลดพนักงาน
+            if (typeof updateDeptBudgetRemaining === 'function') {
+                updateDeptBudgetRemaining();
+            }
         } else {
             console.log('ℹ️ No existing employees');
         }
