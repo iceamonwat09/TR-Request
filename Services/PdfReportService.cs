@@ -11,11 +11,15 @@ namespace TrainingRequestApp.Services
     /// <summary>
     /// PDF Report Service - แบบฟอร์มคำขอฝึกอบรม (Training Request Form)
     ///
-    /// Version: 3.5 (Section 3 Alignment)
+    /// Version: 4.1 (Option B + C: Fit Single A4 Page)
     /// - v3.4: Section 2 จัด alignment มาตรฐาน
-    /// - v3.5: Section 3 - ลงนาม/ApproveInfo จัดกึ่งกลาง, เส้นชิดหัวข้อมากขึ้น
-    ///         - ใช้ MeasureString คำนวณตำแหน่งเส้นอัตโนมัติ
-    ///         - labelToDataGap = 3px สำหรับทุก label
+    /// - v3.5: Section 3 - ลงนาม/ApproveInfo จัดกึ่งกลาง
+    /// - v4.0: Header 3 ช่อง, ลบแถว สิ่งที่แนบ/กลุ่มเป้าหมาย/การเดินทาง
+    /// - v4.1: Option B (เพิ่ม sectionHeight) + Option C (ลด font/row height)
+    ///         - Section 1: sectionHeight 444→462, rowHeight 18→16
+    ///         - Section 2: rowHeight 18→16, sectionHeight 190→182
+    ///         - Section 3: lineHeight 15→13, sectionHeight 130→120
+    ///         - Tables: rowHeight ลดลง 2px ทุกที่
     /// </summary>
     public class PdfReportService : IPdfReportService
     {
@@ -152,12 +156,12 @@ namespace TrainingRequestApp.Services
             double contentX = x + vlabelWidth;
             double contentWidth = width - vlabelWidth;
             double currentY = y;
-            double rowHeight = 18;
+            double rowHeight = 16;  // [FIX v4.1] ลดจาก 18 → 16
             double padding = 5;
-            double textOffsetY = 12;
+            double textOffsetY = 11; // [FIX v4.1] ลดจาก 12 → 11
 
-            // [FIX v4.0] ลดจาก 480 → 444 เพราะลบ 2 แถว (สิ่งที่แนบ + กลุ่มเป้าหมาย)
-            double sectionHeight = 444;
+            // [FIX v4.1] เพิ่มจาก 444 → 462 (Option B) + ลด rowHeight (Option C)
+            double sectionHeight = 462;
 
             DrawVerticalLabel(gfx, x, y, vlabelWidth, sectionHeight, "ส่วนที่ 1 ผู้ร้องขอกรอกข้อมูล");
             gfx.DrawRectangle(_thickPen, contentX, y, contentWidth, sectionHeight);
@@ -307,10 +311,10 @@ namespace TrainingRequestApp.Services
             double contentX = x + vlabelWidth;
             double contentWidth = width - vlabelWidth;
             double currentY = y;
-            double rowHeight = 18;
+            double rowHeight = 16;  // [FIX v4.1] ลดจาก 18 → 16
             double padding = 5;
-            double textOffsetY = 12;
-            double sectionHeight = 190; // [FIX v3.2] เพิ่มจาก 180 → 190 เพื่อให้ตำแหน่งไม่ติดเส้น
+            double textOffsetY = 11; // [FIX v4.1] ลดจาก 12 → 11
+            double sectionHeight = 182; // [FIX v4.1] ปรับจาก 190 → 182 เพื่อให้พอดีหน้า
 
             DrawVerticalLabel(gfx, x, y, vlabelWidth, sectionHeight, "ส่วนที่ 2 ฝ่ายทรัพยากรบุคคลตรวจสอบ");
             gfx.DrawRectangle(_thickPen, contentX, y, contentWidth, sectionHeight);
@@ -378,7 +382,7 @@ namespace TrainingRequestApp.Services
             double halfWidth = contentWidth / 2;
             double labelX = contentX + padding;
             double rightColX = contentX + halfWidth;  // เริ่มตรงกลางพอดี
-            double lineHeight = 18;
+            double lineHeight = 16;  // [FIX v4.1] ลดจาก 18 → 16
 
             // กำหนดระยะห่างมาตรฐาน
             double labelToDataGap = 5;  // ระยะห่างจาก label ถึงข้อมูล
@@ -453,8 +457,8 @@ namespace TrainingRequestApp.Services
             double contentWidth = width - vlabelWidth;
             double currentY = y;
             double padding = 5;
-            double textOffsetY = 11;
-            double sectionHeight = 130;
+            double textOffsetY = 10; // [FIX v4.1] ลดจาก 11 → 10
+            double sectionHeight = 120; // [FIX v4.1] ลดจาก 130 → 120
             double halfWidth = contentWidth / 2;
             double labelToDataGap = 3; // ระยะห่างจาก label ถึงข้อมูล
 
@@ -467,7 +471,7 @@ namespace TrainingRequestApp.Services
             // ===== LEFT: ผลการพิจารณา =====
             double leftX = contentX + padding;
             double leftY = y + padding + 2;
-            double lineHeight = 15;
+            double lineHeight = 13;  // [FIX v4.1] ลดจาก 15 → 13
 
             gfx.DrawString("ผลการพิจารณา :", _fontBold, XBrushes.Black, new XPoint(leftX, leftY + textOffsetY));
             leftY += lineHeight + 3;
@@ -672,7 +676,7 @@ namespace TrainingRequestApp.Services
 
         private double DrawParticipantList(XGraphics gfx, TrainingRequestData data, double contentX, double currentY, double contentWidth, double padding, double textOffsetY)
         {
-            double rowHeight = 17;
+            double rowHeight = 15;  // [FIX v4.1] ลดจาก 17 → 15
             double labelX = contentX + padding;
 
             gfx.DrawString("รายชื่อ", _fontBold, XBrushes.Black, new XPoint(labelX, currentY + textOffsetY));
@@ -713,7 +717,7 @@ namespace TrainingRequestApp.Services
 
         private double DrawObjectivesSection(XGraphics gfx, TrainingRequestData data, double contentX, double currentY, double contentWidth, double padding, double textOffsetY)
         {
-            double rowHeight = 17;
+            double rowHeight = 15;  // [FIX v4.1] ลดจาก 17 → 15
             double labelX = contentX + padding;
 
             string objective = data.TrainingObjective ?? "";
@@ -765,7 +769,7 @@ namespace TrainingRequestApp.Services
         // ==========================================
         private double DrawBudgetSection(XGraphics gfx, TrainingRequestData data, double contentX, double currentY, double contentWidth, double padding, double textOffsetY)
         {
-            double rowHeight = 17;
+            double rowHeight = 15;  // [FIX v4.1] ลดจาก 17 → 15
             double labelX = contentX + padding;
 
             // [FIX v2.6] กำหนดตำแหน่งคอลัมน์ที่ชัดเจนและสม่ำเสมอ
@@ -868,7 +872,7 @@ namespace TrainingRequestApp.Services
             double col1X = contentX + padding;           // Section Manager
             double col2X = contentX + colWidth + padding; // Department Manager
             double col3X = contentX + (colWidth * 2) + padding; // Managing Director
-            double lineHeight = 15;
+            double lineHeight = 13;  // [FIX v4.1] ลดจาก 15 → 13
 
             // === ROW 1: หัวข้อทั้ง 3 คอลัมน์ ===
             gfx.DrawString("จึงเรียนมาเพื่อโปรดพิจารณาอนุมัติ", _fontBold, XBrushes.Black, new XPoint(col1X, currentY + textOffsetY));
@@ -1008,7 +1012,7 @@ namespace TrainingRequestApp.Services
         {
             string[] headers = { "ที่", "รหัสพนักงาน", "ชื่อ - สกุล", "ไม่เคย", "เคย", "ใกล้เคียง", "เมื่อวันที่", "ชื่อหลักสูตร" };
             double[] colWidths = { 20, 65, 115, 35, 30, 45, 55, width - 365 };
-            double rowHeight = 15;
+            double rowHeight = 14;  // [FIX v4.1] ลดจาก 15 → 14
 
             // Header row
             double xCol = x;
