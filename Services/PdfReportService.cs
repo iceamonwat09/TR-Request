@@ -11,12 +11,14 @@ namespace TrainingRequestApp.Services
     /// <summary>
     /// PDF Report Service - แบบฟอร์มคำขอฝึกอบรม (Training Request Form)
     ///
-    /// Version: 4.2 (Fine-tune Layout)
-    /// - v3.4: Section 2 จัด alignment มาตรฐาน
-    /// - v3.5: Section 3 - ลงนาม/ApproveInfo จัดกึ่งกลาง
+    /// Version: 4.3 (Layout Alignment)
     /// - v4.0: Header 3 ช่อง, ลบแถว สิ่งที่แนบ/กลุ่มเป้าหมาย/การเดินทาง
     /// - v4.1: Option B + C (เพิ่ม sectionHeight, ลด rowHeight)
     /// - v4.2: ลบเส้นใต้สาขา + เพิ่มระยะห่าง ApproveInfo จากเส้นลงชื่อ
+    /// - v4.3: ปรับ alignment ให้เรียบร้อย
+    ///         - "ฝ่าย" ตรงกับ "สำเนาเรียน :"
+    ///         - "รวมสุทธิ" ตรงกับ "ค่าใช้จ่ายต่อคน"
+    ///         - เพิ่ม "ลงชื่อผู้ขออบรม" + แสดง CreatedBy
     /// </summary>
     public class PdfReportService : IPdfReportService
     {
@@ -199,14 +201,13 @@ namespace TrainingRequestApp.Services
 
             // === Row 4: ด้วยแผนก / ฝ่าย / มีความประสงค์จะ ===
             gfx.DrawString("ด้วยแผนก", _fontBold, XBrushes.Black, new XPoint(labelX, currentY + textOffsetY));
-            DrawUnderlineText(gfx, labelX + 55, currentY + textOffsetY, 110, data.Position ?? "", 3);
+            DrawUnderlineText(gfx, labelX + 55, currentY + textOffsetY, 160, data.Position ?? "", 3);
 
-            double xPos = labelX + 175;
-            gfx.DrawString("ฝ่าย", _fontBold, XBrushes.Black, new XPoint(xPos, currentY + textOffsetY));
-            DrawUnderlineText(gfx, xPos + 28, currentY + textOffsetY, 90, data.Department ?? "", 3);
+            // [FIX v4.3] ให้ "ฝ่าย" ตรงกับ "สำเนาเรียน :" ด้านบน
+            gfx.DrawString("ฝ่าย", _fontBold, XBrushes.Black, new XPoint(rightColX, currentY + textOffsetY));
+            DrawUnderlineText(gfx, rightColX + 28, currentY + textOffsetY, 120, data.Department ?? "", 3);
 
-            xPos += 130;
-            gfx.DrawString("มีความประสงค์จะ", _fontBold, XBrushes.Black, new XPoint(xPos, currentY + textOffsetY));
+            gfx.DrawString("มีความประสงค์จะ", _fontBold, XBrushes.Black, new XPoint(rightColX + 160, currentY + textOffsetY));
             currentY += rowHeight;
 
             // === Row 6: ขอฝึกอบรมหลักสูตร ===
@@ -827,10 +828,15 @@ namespace TrainingRequestApp.Services
             gfx.DrawString("บาท", _fontSmall, XBrushes.Black, new XPoint(col2ValueX + 105, currentY + textOffsetY));
             currentY += rowHeight;
 
-            // === แถว 4: รวมสุทธิ (จัดให้อยู่ตำแหน่งเดียวกับคอลัมน์ขวา) ===
-            gfx.DrawString("รวมสุทธิ:", _fontBold, XBrushes.Black, new XPoint(col2X, currentY + textOffsetY));
-            DrawUnderlineText(gfx, col2ValueX, currentY + textOffsetY, underlineWidth + 10, data.TotalCost.ToString("N0"), 3);
-            gfx.DrawString("บาท", _fontSmall, XBrushes.Black, new XPoint(col2ValueX + 65, currentY + textOffsetY));
+            // === แถว 4: รวมสุทธิ (ตรงกับ ค่าใช้จ่ายต่อคน) + ลงชื่อผู้ขออบรม ===
+            // [FIX v4.3] ขยับ รวมสุทธิ มาตรงกับ ค่าใช้จ่ายต่อคน (col1)
+            gfx.DrawString("รวมสุทธิ:", _fontBold, XBrushes.Black, new XPoint(col1X, currentY + textOffsetY));
+            DrawUnderlineText(gfx, col1ValueX, currentY + textOffsetY, underlineWidth, data.TotalCost.ToString("N0"), 3);
+            gfx.DrawString("บาท", _fontSmall, XBrushes.Black, new XPoint(col1BahtX, currentY + textOffsetY));
+
+            // [FIX v4.3] เพิ่ม ลงชื่อผู้ขออบรม + แสดง CreatedBy
+            gfx.DrawString("ลงชื่อผู้ขออบรม:", _fontBold, XBrushes.Black, new XPoint(col2X, currentY + textOffsetY));
+            DrawUnderlineText(gfx, col2ValueX, currentY + textOffsetY, 100, data.CreatedBy ?? "", 3);
             currentY += rowHeight;
 
             return currentY;
