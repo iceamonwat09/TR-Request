@@ -11,15 +11,12 @@ namespace TrainingRequestApp.Services
     /// <summary>
     /// PDF Report Service - แบบฟอร์มคำขอฝึกอบรม (Training Request Form)
     ///
-    /// Version: 4.1 (Option B + C: Fit Single A4 Page)
+    /// Version: 4.2 (Fine-tune Layout)
     /// - v3.4: Section 2 จัด alignment มาตรฐาน
     /// - v3.5: Section 3 - ลงนาม/ApproveInfo จัดกึ่งกลาง
     /// - v4.0: Header 3 ช่อง, ลบแถว สิ่งที่แนบ/กลุ่มเป้าหมาย/การเดินทาง
-    /// - v4.1: Option B (เพิ่ม sectionHeight) + Option C (ลด font/row height)
-    ///         - Section 1: sectionHeight 444→462, rowHeight 18→16
-    ///         - Section 2: rowHeight 18→16, sectionHeight 190→182
-    ///         - Section 3: lineHeight 15→13, sectionHeight 130→120
-    ///         - Tables: rowHeight ลดลง 2px ทุกที่
+    /// - v4.1: Option B + C (เพิ่ม sectionHeight, ลด rowHeight)
+    /// - v4.2: ลบเส้นใต้สาขา + เพิ่มระยะห่าง ApproveInfo จากเส้นลงชื่อ
     /// </summary>
     public class PdfReportService : IPdfReportService
     {
@@ -188,8 +185,7 @@ namespace TrainingRequestApp.Services
             gfx.DrawString("ปราจีนบุรี", _fontSmall, XBrushes.Black, new XPoint(checkboxCol2 + 14, currentY + textOffsetY));
             currentY += rowHeight;
 
-            gfx.DrawLine(_thinPen, contentX, currentY, contentX + contentWidth, currentY);
-            currentY += padding;
+            // [FIX v4.2] ลบเส้นใต้สาขาออกเพื่อเพิ่มพื้นที่
 
             // === Row 3: เรียน / สำเนาเรียน ===
             double halfWidth = contentWidth / 2;
@@ -948,13 +944,14 @@ namespace TrainingRequestApp.Services
             currentY += lineHeight;
 
             // === ROW 4: ApproveInfo (วงเล็บ) ===
+            // [FIX v4.2] เพิ่มระยะห่างจากเส้นลงชื่อ (ลบ -5 → -2)
             // Column 1
             if (isSectionApproved && !string.IsNullOrEmpty(data.ApproveInfo_SectionManager))
             {
                 string approveText = $"( {FormatApproveInfo(data.ApproveInfo_SectionManager)} )";
                 XSize textSize = gfx.MeasureString(approveText, _fontTiny);
                 double centerX = col1X + 35 + (underlineWidth / 2) - (textSize.Width / 2);
-                gfx.DrawString(approveText, _fontTiny, XBrushes.Black, new XPoint(centerX, currentY + textOffsetY - 5));
+                gfx.DrawString(approveText, _fontTiny, XBrushes.Black, new XPoint(centerX, currentY + textOffsetY - 2));
             }
 
             // Column 2
@@ -963,7 +960,7 @@ namespace TrainingRequestApp.Services
                 string approveText = $"( {FormatApproveInfo(data.ApproveInfo_DepartmentManager)} )";
                 XSize textSize = gfx.MeasureString(approveText, _fontTiny);
                 double centerX = col2X + 35 + (underlineWidth / 2) - (textSize.Width / 2);
-                gfx.DrawString(approveText, _fontTiny, XBrushes.Black, new XPoint(centerX, currentY + textOffsetY - 5));
+                gfx.DrawString(approveText, _fontTiny, XBrushes.Black, new XPoint(centerX, currentY + textOffsetY - 2));
             }
 
             // Column 3
@@ -972,7 +969,7 @@ namespace TrainingRequestApp.Services
                 string approveText = $"( {FormatApproveInfo(data.ApproveInfo_ManagingDirector)} )";
                 XSize textSize = gfx.MeasureString(approveText, _fontTiny);
                 double centerX = col3X + 35 + (underlineWidth / 2) - (textSize.Width / 2);
-                gfx.DrawString(approveText, _fontTiny, XBrushes.Black, new XPoint(centerX, currentY + textOffsetY - 5));
+                gfx.DrawString(approveText, _fontTiny, XBrushes.Black, new XPoint(centerX, currentY + textOffsetY - 2));
             }
             currentY += lineHeight - 3;
 
