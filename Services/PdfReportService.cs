@@ -11,12 +11,12 @@ namespace TrainingRequestApp.Services
     /// <summary>
     /// PDF Report Service - แบบฟอร์มคำขอฝึกอบรม (Training Request Form)
     ///
-    /// Version: 5.2 (Layout & Alignment Fix)
-    /// - v5.1: Section 3 และ 4 อยู่เคียงข้างกัน (ซ้าย-ขวา)
-    /// - v5.2: ปรับ layout และ alignment
-    ///         - ลดพื้นที่ Section 2 (182 → 170) เพิ่มพื้นที่ Section 3 & 4 (130 → 142)
-    ///         - เพิ่มเส้นใต้สำหรับ 3 checkbox ใหม่ (Training Record, KM, Course Cert)
-    ///         - ปรับ checkbox ให้ตรงกัน (aligned)
+    /// Version: 5.3 (Checkbox Alignment Fix)
+    /// - v5.2: ปรับ layout และ alignment Section 3 & 4
+    /// - v5.3: ปรับ Checkbox Alignment ทั้ง Section 2 และ Section 4
+    ///         - Section 4: ปรับ checkbox 3 รายการให้ตรงกับช่อง "เงินสด"
+    ///         - Section 2: ปรับ checkbox ทุกแถวให้ตรงกัน (checkboxCol1, checkboxCol2)
+    ///         - เปลี่ยนคำ "ใช้งบประมาณตามแผน" เป็น "ใช้งบประมาณตามแผน TYP"
     /// </summary>
     public class PdfReportService : IPdfReportService
     {
@@ -320,43 +320,42 @@ namespace TrainingRequestApp.Services
 
             currentY = y + padding + 2;
             double labelX = contentX + padding;
-            double checkboxCol1 = contentX + 130;
+
+            // [FIX v5.3] กำหนดตำแหน่ง checkbox ให้ตรงกันทุกแถว
+            double checkboxCol1 = contentX + 130;  // ตำแหน่ง checkbox แรก
+            double checkboxCol2 = contentX + 295;  // ตำแหน่ง checkbox ที่สอง
 
             // === Row 1: การวางแผนงบประมาณ ===
             gfx.DrawString("การวางแผนงบประมาณ :", _fontBold, XBrushes.Black, new XPoint(labelX, currentY + textOffsetY));
             DrawCheckbox(gfx, checkboxCol1, currentY + 4, data.HRD_BudgetPlan == "Plan");
             gfx.DrawString("plan", _fontSmall, XBrushes.Black, new XPoint(checkboxCol1 + 14, currentY + textOffsetY));
-            DrawCheckbox(gfx, checkboxCol1 + 55, currentY + 4, data.HRD_BudgetPlan == "Unplan");
-            gfx.DrawString("Unplan", _fontSmall, XBrushes.Black, new XPoint(checkboxCol1 + 69, currentY + textOffsetY));
+            DrawCheckbox(gfx, checkboxCol2, currentY + 4, data.HRD_BudgetPlan == "Unplan");
+            gfx.DrawString("Unplan", _fontSmall, XBrushes.Black, new XPoint(checkboxCol2 + 14, currentY + textOffsetY));
             currentY += rowHeight;
 
-            // === Row 2: การใช้งบประมาณ ===
+            // === Row 2: การใช้งบประมาณ === [FIX v5.3] เปลี่ยนคำเป็น TYP
             gfx.DrawString("การใช้งบประมาณ:", _fontBold, XBrushes.Black, new XPoint(labelX, currentY + textOffsetY));
-            double cbX = labelX + 100;
-            DrawCheckbox(gfx, cbX, currentY + 4, data.HRD_BudgetUsage == "TYP");
-            gfx.DrawString("ใช้งบประมาณตามแผน", _fontSmall, XBrushes.Black, new XPoint(cbX + 14, currentY + textOffsetY));
-            cbX += 130;
-            DrawCheckbox(gfx, cbX, currentY + 4, data.HRD_BudgetUsage == "Department");
-            gfx.DrawString("ใช้งบต้นสังกัด คงเหลือ", _fontSmall, XBrushes.Black, new XPoint(cbX + 14, currentY + textOffsetY));
+            DrawCheckbox(gfx, checkboxCol1, currentY + 4, data.HRD_BudgetUsage == "TYP");
+            gfx.DrawString("ใช้งบประมาณตามแผน TYP", _fontSmall, XBrushes.Black, new XPoint(checkboxCol1 + 14, currentY + textOffsetY));
+            DrawCheckbox(gfx, checkboxCol2, currentY + 4, data.HRD_BudgetUsage == "Department");
+            gfx.DrawString("ใช้งบต้นสังกัด (คงเหลือ)", _fontSmall, XBrushes.Black, new XPoint(checkboxCol2 + 14, currentY + textOffsetY));
             string deptBudget = data.HRD_DepartmentBudgetRemaining?.ToString("N2") ?? "";
-            DrawUnderlineText(gfx, cbX + 125, currentY + textOffsetY, 50, deptBudget, 0);
-            gfx.DrawString("บาท", _fontSmall, XBrushes.Black, new XPoint(cbX + 180, currentY + textOffsetY));
+            DrawUnderlineText(gfx, checkboxCol2 + 125, currentY + textOffsetY, 50, deptBudget, 0);
+            gfx.DrawString("บาท", _fontSmall, XBrushes.Black, new XPoint(checkboxCol2 + 180, currentY + textOffsetY));
             currentY += rowHeight;
 
             // === Row 3: การเป็นสมาชิก/สิทธิพิเศษ ===
             gfx.DrawString("การเป็นสมาชิก/สิทธิพิเศษ:", _fontBold, XBrushes.Black, new XPoint(labelX, currentY + textOffsetY));
-            cbX = labelX + 135;
-            DrawCheckbox(gfx, cbX, currentY + 4, data.HRD_MembershipType == "Member");
-            gfx.DrawString("เป็นสมาชิก", _fontSmall, XBrushes.Black, new XPoint(cbX + 14, currentY + textOffsetY));
+            DrawCheckbox(gfx, checkboxCol1, currentY + 4, data.HRD_MembershipType == "Member");
+            gfx.DrawString("เป็นสมาชิก", _fontSmall, XBrushes.Black, new XPoint(checkboxCol1 + 14, currentY + textOffsetY));
             string memberCost = data.HRD_MembershipType == "Member" ? (data.HRD_MembershipCost?.ToString("N2") ?? "") : "";
-            DrawUnderlineText(gfx, cbX + 72, currentY + textOffsetY, 40, memberCost, 0);
-            gfx.DrawString("บาท", _fontSmall, XBrushes.Black, new XPoint(cbX + 117, currentY + textOffsetY));
-            cbX += 150;
-            DrawCheckbox(gfx, cbX, currentY + 4, data.HRD_MembershipType == "NonMember");
-            gfx.DrawString("ไม่เป็นสมาชิก", _fontSmall, XBrushes.Black, new XPoint(cbX + 14, currentY + textOffsetY));
+            DrawUnderlineText(gfx, checkboxCol1 + 72, currentY + textOffsetY, 40, memberCost, 0);
+            gfx.DrawString("บาท", _fontSmall, XBrushes.Black, new XPoint(checkboxCol1 + 117, currentY + textOffsetY));
+            DrawCheckbox(gfx, checkboxCol2, currentY + 4, data.HRD_MembershipType == "NonMember");
+            gfx.DrawString("ไม่เป็นสมาชิก", _fontSmall, XBrushes.Black, new XPoint(checkboxCol2 + 14, currentY + textOffsetY));
             string nonMemberCost = data.HRD_MembershipType == "NonMember" ? (data.HRD_MembershipCost?.ToString("N2") ?? "") : "";
-            DrawUnderlineText(gfx, cbX + 82, currentY + textOffsetY, 40, nonMemberCost, 0);
-            gfx.DrawString("บาท", _fontSmall, XBrushes.Black, new XPoint(cbX + 127, currentY + textOffsetY));
+            DrawUnderlineText(gfx, checkboxCol2 + 82, currentY + textOffsetY, 40, nonMemberCost, 0);
+            gfx.DrawString("บาท", _fontSmall, XBrushes.Black, new XPoint(checkboxCol2 + 127, currentY + textOffsetY));
             currentY += rowHeight;
 
             // === Row 4: ประวัติการอบรม (คำอธิบาย) ===
@@ -586,8 +585,9 @@ namespace TrainingRequestApp.Services
             }
             rightY += lineHeight;
 
-            // [FIX v5.2] กำหนดตำแหน่ง checkbox ให้ตรงกัน
-            double cbAlignX = content4X + content4Width - 45; // ตำแหน่ง checkbox ตรงกันหมด (ชิดขวา)
+            // [FIX v5.3] กำหนดตำแหน่ง checkbox ให้ตรงกับช่อง "เงินสด"
+            // checkbox เงินสด อยู่ที่ rightX + 70 + 45 + 55 = rightX + 170
+            double cbAlignX = rightX + 170;
 
             // การชำระเงิน + 3 checkbox
             string payLabel = "- การชำระเงิน";
