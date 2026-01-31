@@ -11,11 +11,12 @@ namespace TrainingRequestApp.Services
     /// <summary>
     /// PDF Report Service - แบบฟอร์มคำขอฝึกอบรม (Training Request Form)
     ///
-    /// Version: 5.1 (Section 3 & 4 Side-by-Side)
-    /// - v5.0: ปรับโครงสร้าง Section 3 & 4 + เพิ่ม HRD fields
-    /// - v5.1: แก้ไข Section 3 และ 4 ให้อยู่เคียงข้างกัน (ซ้าย-ขวา)
-    ///         - Section 3 (ซ้าย): ผลการพิจารณา + เหตุผล multi-line + ลงนาม + ตำแหน่ง
-    ///         - Section 4 (ขวา): HRD บันทึกข้อมูล + 3 checkboxes ใหม่ + การชำระเงิน 3 ช่อง
+    /// Version: 5.2 (Layout & Alignment Fix)
+    /// - v5.1: Section 3 และ 4 อยู่เคียงข้างกัน (ซ้าย-ขวา)
+    /// - v5.2: ปรับ layout และ alignment
+    ///         - ลดพื้นที่ Section 2 (182 → 170) เพิ่มพื้นที่ Section 3 & 4 (130 → 142)
+    ///         - เพิ่มเส้นใต้สำหรับ 3 checkbox ใหม่ (Training Record, KM, Course Cert)
+    ///         - ปรับ checkbox ให้ตรงกัน (aligned)
     /// </summary>
     public class PdfReportService : IPdfReportService
     {
@@ -312,7 +313,7 @@ namespace TrainingRequestApp.Services
             double rowHeight = 16;  // [FIX v4.1] ลดจาก 18 → 16
             double padding = 5;
             double textOffsetY = 11; // [FIX v4.1] ลดจาก 12 → 11
-            double sectionHeight = 182; // [FIX v4.1] ปรับจาก 190 → 182 เพื่อให้พอดีหน้า
+            double sectionHeight = 170; // [FIX v5.2] ลดจาก 182 → 170 เพื่อเพิ่มพื้นที่ให้ Section 3 & 4
 
             DrawVerticalLabel(gfx, x, y, vlabelWidth, sectionHeight, "ส่วนที่ 2 ฝ่ายทรัพยากรบุคคลตรวจสอบ");
             gfx.DrawRectangle(_thickPen, contentX, y, contentWidth, sectionHeight);
@@ -455,7 +456,7 @@ namespace TrainingRequestApp.Services
             double textOffsetY = 10;
             double lineHeight = 13;
             double labelToDataGap = 3;
-            double sectionHeight = 130;
+            double sectionHeight = 142; // [FIX v5.2] เพิ่มจาก 130 → 142 เพื่อให้มีพื้นที่มากขึ้น
 
             // คำนวณความกว้างของแต่ละส่วน
             double totalContentWidth = width - (vlabelWidth * 2); // หักพื้นที่ vertical label ทั้ง 2 ส่วน
@@ -585,16 +586,19 @@ namespace TrainingRequestApp.Services
             }
             rightY += lineHeight;
 
+            // [FIX v5.2] กำหนดตำแหน่ง checkbox ให้ตรงกัน
+            double cbAlignX = content4X + content4Width - 45; // ตำแหน่ง checkbox ตรงกันหมด (ชิดขวา)
+
             // การชำระเงิน + 3 checkbox
             string payLabel = "- การชำระเงิน";
             gfx.DrawString(payLabel, _fontSmall, XBrushes.Black, new XPoint(rightX, rightY + textOffsetY));
-            XSize payLabelSize = gfx.MeasureString(payLabel, _fontSmall);
-            double cbPayX = rightX + payLabelSize.Width + 10;
 
             bool isCheck = data.HRD_PaymentMethod == "Check";
             bool isTransfer = data.HRD_PaymentMethod == "Transfer";
             bool isCash = data.HRD_PaymentMethod == "Cash";
 
+            // 3 checkbox ในแนวนอน (เช็ค, โอนเงิน, เงินสด)
+            double cbPayX = rightX + 70;
             DrawCheckbox(gfx, cbPayX, rightY + 2, isCheck);
             gfx.DrawString("เช็ค", _fontSmall, XBrushes.Black, new XPoint(cbPayX + 14, rightY + textOffsetY));
             cbPayX += 45;
@@ -617,23 +621,29 @@ namespace TrainingRequestApp.Services
             }
             rightY += lineHeight;
 
-            // 3 checkbox ใหม่
+            // [FIX v5.2] 3 checkbox ใหม่ - เพิ่มเส้นใต้ + checkbox ตรงกัน
             string trainingRecordLabel = "- บันทึกประวัติฝึกอบรม Training Record :";
             gfx.DrawString(trainingRecordLabel, _fontSmall, XBrushes.Black, new XPoint(rightX, rightY + textOffsetY));
-            double cbTrX = rightX + gfx.MeasureString(trainingRecordLabel, _fontSmall).Width + 5;
-            DrawCheckbox(gfx, cbTrX, rightY + 2, data.HRD_TrainingRecord == true);
+            DrawCheckbox(gfx, cbAlignX, rightY + 2, data.HRD_TrainingRecord == true);
+            // เส้นใต้จาก label ถึง checkbox
+            double trLabelWidth = gfx.MeasureString(trainingRecordLabel, _fontSmall).Width;
+            DrawUnderline(gfx, rightX + trLabelWidth + 3, rightY + textOffsetY + 3, cbAlignX - rightX - trLabelWidth - 8);
             rightY += lineHeight;
 
             string kmLabel = "- การจัดการความรู้ (KM) :";
             gfx.DrawString(kmLabel, _fontSmall, XBrushes.Black, new XPoint(rightX, rightY + textOffsetY));
-            double cbKmX = rightX + gfx.MeasureString(kmLabel, _fontSmall).Width + 5;
-            DrawCheckbox(gfx, cbKmX, rightY + 2, data.HRD_KnowledgeManagementDone == true);
+            DrawCheckbox(gfx, cbAlignX, rightY + 2, data.HRD_KnowledgeManagementDone == true);
+            // เส้นใต้จาก label ถึง checkbox
+            double kmLabelWidth = gfx.MeasureString(kmLabel, _fontSmall).Width;
+            DrawUnderline(gfx, rightX + kmLabelWidth + 3, rightY + textOffsetY + 3, cbAlignX - rightX - kmLabelWidth - 8);
             rightY += lineHeight;
 
             string certLabel = "- การยื่นขอรับรองหลักสูตร :";
             gfx.DrawString(certLabel, _fontSmall, XBrushes.Black, new XPoint(rightX, rightY + textOffsetY));
-            double cbCertX = rightX + gfx.MeasureString(certLabel, _fontSmall).Width + 5;
-            DrawCheckbox(gfx, cbCertX, rightY + 2, data.HRD_CourseCertification == true);
+            DrawCheckbox(gfx, cbAlignX, rightY + 2, data.HRD_CourseCertification == true);
+            // เส้นใต้จาก label ถึง checkbox
+            double certLabelWidth = gfx.MeasureString(certLabel, _fontSmall).Width;
+            DrawUnderline(gfx, rightX + certLabelWidth + 3, rightY + textOffsetY + 3, cbAlignX - rightX - certLabelWidth - 8);
             rightY += lineHeight + 2;
 
             // ลงชื่อ + ผู้บันทึก
