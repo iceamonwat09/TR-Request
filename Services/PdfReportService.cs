@@ -11,15 +11,14 @@ namespace TrainingRequestApp.Services
     /// <summary>
     /// PDF Report Service - แบบฟอร์มคำขอฝึกอบรม (Training Request Form)
     ///
-    /// Version: 4.4 (Layout Fine-tuning)
-    /// - v4.1: Option B + C (เพิ่ม sectionHeight, ลด rowHeight)
+    /// Version: 4.5 (Checkbox & Header Fix)
     /// - v4.2: ลบเส้นใต้สาขา + เพิ่มระยะห่าง ApproveInfo
     /// - v4.3: ปรับ alignment (ฝ่าย, รวมสุทธิ, ลงชื่อผู้ขออบรม)
-    /// - v4.4: ปรับรายละเอียดเพิ่มเติม
-    ///         - ขอฝึกอบรมหลักสูตร: เสมอกับ วัน/เวลาที่จัดอบรม
-    ///         - เปลี่ยนหัวคอลัมน์ลายเซ็น (ผู้จัดการส่วน/ฝ่าย/ผู้อำนวยการฝ่าย)
-    ///         - อื่นๆ (ระบุ) ตรงกับ ช่วยแก้ไข / ป้องกันปัญหา
-    ///         - ลบ ...../...../...... ใน KM Section
+    /// - v4.4: ปรับรายละเอียด Layout (หัวคอลัมน์ลายเซ็น, อื่นๆ ตรงกัน)
+    /// - v4.5: แก้ไข Checkbox และ Header
+    ///         - ปรับ checkbox offset จาก +4 → +2 (ไม่ให้ด้านล่างถูกตัด)
+    ///         - ลบ "ลำดับที่ใบขอ (เฉพาะ HR)" ออก
+    ///         - จัด DocNo กึ่งกลางช่องขวา
     /// </summary>
     public class PdfReportService : IPdfReportService
     {
@@ -139,11 +138,10 @@ namespace TrainingRequestApp.Services
             gfx.DrawString("(Inhouse/Public Training Request)", _fontSmall,
                 XBrushes.Black, new XRect(x + colWidth, y + 20, colWidth, 12), XStringFormats.Center);
 
-            // ช่องขวา: DocNo
-            gfx.DrawString("ลำดับที่ใบขอ (เฉพาะ HR)", _fontSmall,
-                XBrushes.Black, new XRect(x + (colWidth * 2), y + 8, colWidth, 14), XStringFormats.Center);
+            // ช่องขวา: DocNo (กึ่งกลางทั้งช่อง)
+            // [FIX v4.5] ลบ "ลำดับที่ใบขอ (เฉพาะ HR)" และจัด DocNo กึ่งกลาง
             gfx.DrawString(data.DocNo ?? "", _fontBold,
-                XBrushes.Black, new XRect(x + (colWidth * 2), y + 20, colWidth, 12), XStringFormats.Center);
+                XBrushes.Black, new XRect(x + (colWidth * 2), y, colWidth, headerHeight), XStringFormats.Center);
 
             return headerHeight;
         }
@@ -174,17 +172,19 @@ namespace TrainingRequestApp.Services
             double checkboxCol2 = contentX + 290;
 
             gfx.DrawString("ประเภทการอบรม :", _fontBold, XBrushes.Black, new XPoint(labelX, currentY + textOffsetY));
-            DrawCheckbox(gfx, checkboxCol1, currentY + 4, data.TrainingType == "In-House");
+            // [FIX v4.5] ปรับ checkbox offset จาก +4 → +2 เพื่อไม่ให้ด้านล่างถูกตัด
+            DrawCheckbox(gfx, checkboxCol1, currentY + 2, data.TrainingType == "In-House");
             gfx.DrawString("อบรมภายใน (In-House Training)", _fontSmall, XBrushes.Black, new XPoint(checkboxCol1 + 14, currentY + textOffsetY));
-            DrawCheckbox(gfx, checkboxCol2, currentY + 4, data.TrainingType == "Public");
+            DrawCheckbox(gfx, checkboxCol2, currentY + 2, data.TrainingType == "Public");
             gfx.DrawString("อบรมภายนอก (Public Training)", _fontSmall, XBrushes.Black, new XPoint(checkboxCol2 + 14, currentY + textOffsetY));
             currentY += rowHeight;
 
             // === Row 2: สาขา (ใช้ Company แทน Factory) ===
             gfx.DrawString("สาขา :", _fontBold, XBrushes.Black, new XPoint(labelX, currentY + textOffsetY));
-            DrawCheckbox(gfx, checkboxCol1, currentY + 4, data.Company?.Contains("สมุทรสาคร") == true);
+            // [FIX v4.5] ปรับ checkbox offset จาก +4 → +2 เพื่อไม่ให้ด้านล่างถูกตัด
+            DrawCheckbox(gfx, checkboxCol1, currentY + 2, data.Company?.Contains("สมุทรสาคร") == true);
             gfx.DrawString("สมุทรสาคร", _fontSmall, XBrushes.Black, new XPoint(checkboxCol1 + 14, currentY + textOffsetY));
-            DrawCheckbox(gfx, checkboxCol2, currentY + 4, data.Company?.Contains("ปราจีนบุรี") == true);
+            DrawCheckbox(gfx, checkboxCol2, currentY + 2, data.Company?.Contains("ปราจีนบุรี") == true);
             gfx.DrawString("ปราจีนบุรี", _fontSmall, XBrushes.Black, new XPoint(checkboxCol2 + 14, currentY + textOffsetY));
             currentY += rowHeight;
 
