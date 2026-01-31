@@ -4,11 +4,17 @@
 -- =====================================================
 -- Purpose:
 --   1. เพิ่ม 10 columns ใน TrainingRequests (KM + HRD Budget)
---   2. สร้างตาราง TrainingHistory (ประวัติการอบรม)
---   3. สร้าง Indexes
+--   2. เพิ่ม 3 columns สำหรับ HRD Section 4 (Training Record, KM Done, Course Cert)
+--   3. สร้างตาราง TrainingHistory (ประวัติการอบรม)
+--   4. สร้าง Indexes
 --
--- Date: 2026-01-29
--- Version: 1.1 (Fixed RETURN statement issue)
+-- Date: 2026-01-31
+-- Version: 2.0 (Added HRD Section 4 Fields)
+--
+-- Columns Added (Total: 13 columns):
+--   - Part 1: Knowledge Management (5 columns)
+--   - Part 2: HRD Budget & Membership (5 columns)
+--   - Part 3: HRD Section 4 - การดำเนินงานหลังอนุมัติ (3 columns)
 --
 -- Note: Script นี้สามารถรันซ้ำได้โดยไม่เกิดปัญหา (Idempotent)
 -- =====================================================
@@ -20,9 +26,9 @@ SET NOCOUNT ON;
 
 PRINT ''
 PRINT '========================================================================'
-PRINT '     MIGRATION: Knowledge Management & HRD Admin Section'
+PRINT '     MIGRATION: Knowledge Management & HRD Admin Section (v2.0)'
 PRINT '========================================================================'
-PRINT '  1. TrainingRequests: +10 columns (KM + HRD Budget)'
+PRINT '  1. TrainingRequests: +13 columns (KM + HRD Budget + HRD Section 4)'
 PRINT '  2. TrainingHistory: New table'
 PRINT '========================================================================'
 PRINT ''
@@ -45,7 +51,7 @@ BEGIN
     -- PART 1: Knowledge Management Fields (5 columns)
     -- =====================================================
     PRINT '------------------------------------------------------------------------'
-    PRINT ' PART 1: Knowledge Management Fields'
+    PRINT ' PART 1: Knowledge Management Fields (5 columns)'
     PRINT '------------------------------------------------------------------------'
 
     -- 1.1 KM_SubmitDocument
@@ -99,7 +105,7 @@ BEGIN
     -- PART 2: HRD Budget & Membership Fields (5 columns)
     -- =====================================================
     PRINT '------------------------------------------------------------------------'
-    PRINT ' PART 2: HRD Budget & Membership Fields'
+    PRINT ' PART 2: HRD Budget & Membership Fields (5 columns)'
     PRINT '------------------------------------------------------------------------'
 
     -- 2.1 HRD_BudgetPlan
@@ -150,10 +156,46 @@ BEGIN
     PRINT ''
 
     -- =====================================================
-    -- PART 3: Create TrainingHistory Table
+    -- PART 3: HRD Section 4 - การดำเนินงานหลังอนุมัติ (3 columns)
     -- =====================================================
     PRINT '------------------------------------------------------------------------'
-    PRINT ' PART 3: Create TrainingHistory Table'
+    PRINT ' PART 3: HRD Section 4 - การดำเนินงานหลังอนุมัติ (3 columns)'
+    PRINT '------------------------------------------------------------------------'
+
+    -- 3.1 HRD_TrainingRecord (Checkbox: บันทึกประวัติฝึกอบรม Training Record)
+    IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('dbo.TrainingRequests') AND name = 'HRD_TrainingRecord')
+    BEGIN
+        ALTER TABLE [dbo].[TrainingRequests] ADD [HRD_TrainingRecord] BIT NULL DEFAULT 0;
+        PRINT '  [OK] Added: HRD_TrainingRecord (BIT) - บันทึกประวัติฝึกอบรม'
+    END
+    ELSE
+        PRINT '  [SKIP] HRD_TrainingRecord already exists'
+
+    -- 3.2 HRD_KnowledgeManagementDone (Checkbox: การจัดการความรู้ KM)
+    IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('dbo.TrainingRequests') AND name = 'HRD_KnowledgeManagementDone')
+    BEGIN
+        ALTER TABLE [dbo].[TrainingRequests] ADD [HRD_KnowledgeManagementDone] BIT NULL DEFAULT 0;
+        PRINT '  [OK] Added: HRD_KnowledgeManagementDone (BIT) - การจัดการความรู้'
+    END
+    ELSE
+        PRINT '  [SKIP] HRD_KnowledgeManagementDone already exists'
+
+    -- 3.3 HRD_CourseCertification (Checkbox: การยื่นขอรับรองหลักสูตร)
+    IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('dbo.TrainingRequests') AND name = 'HRD_CourseCertification')
+    BEGIN
+        ALTER TABLE [dbo].[TrainingRequests] ADD [HRD_CourseCertification] BIT NULL DEFAULT 0;
+        PRINT '  [OK] Added: HRD_CourseCertification (BIT) - การยื่นขอรับรองหลักสูตร'
+    END
+    ELSE
+        PRINT '  [SKIP] HRD_CourseCertification already exists'
+
+    PRINT ''
+
+    -- =====================================================
+    -- PART 4: Create TrainingHistory Table
+    -- =====================================================
+    PRINT '------------------------------------------------------------------------'
+    PRINT ' PART 4: Create TrainingHistory Table'
     PRINT '------------------------------------------------------------------------'
 
     IF OBJECT_ID('dbo.TrainingHistory', 'U') IS NULL
@@ -180,10 +222,10 @@ BEGIN
     PRINT ''
 
     -- =====================================================
-    -- PART 4: Create Indexes
+    -- PART 5: Create Indexes
     -- =====================================================
     PRINT '------------------------------------------------------------------------'
-    PRINT ' PART 4: Create Indexes'
+    PRINT ' PART 5: Create Indexes'
     PRINT '------------------------------------------------------------------------'
 
     IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_TrainingHistory_TrainingRequestId' AND object_id = OBJECT_ID('dbo.TrainingHistory'))
@@ -209,17 +251,26 @@ BEGIN
     PRINT '                      MIGRATION COMPLETED'
     PRINT '========================================================================'
     PRINT ''
-    PRINT ' TrainingRequests Table (+10 columns):'
+    PRINT ' TrainingRequests Table (+13 columns):'
+    PRINT ''
+    PRINT '   --- Part 1: Knowledge Management ---'
     PRINT '   - KM_SubmitDocument (BIT)'
     PRINT '   - KM_CreateReport (BIT)'
     PRINT '   - KM_CreateReportDate (DATE)'
     PRINT '   - KM_KnowledgeSharing (BIT)'
     PRINT '   - KM_KnowledgeSharingDate (DATE)'
+    PRINT ''
+    PRINT '   --- Part 2: HRD Budget & Membership ---'
     PRINT '   - HRD_BudgetPlan (NVARCHAR(10))'
     PRINT '   - HRD_BudgetUsage (NVARCHAR(20))'
     PRINT '   - HRD_DepartmentBudgetRemaining (DECIMAL(12,2))'
     PRINT '   - HRD_MembershipType (NVARCHAR(20))'
     PRINT '   - HRD_MembershipCost (DECIMAL(12,2))'
+    PRINT ''
+    PRINT '   --- Part 3: HRD Section 4 (การดำเนินงานหลังอนุมัติ) ---'
+    PRINT '   - HRD_TrainingRecord (BIT) - บันทึกประวัติฝึกอบรม Training Record'
+    PRINT '   - HRD_KnowledgeManagementDone (BIT) - การจัดการความรู้ (KM)'
+    PRINT '   - HRD_CourseCertification (BIT) - การยื่นขอรับรองหลักสูตร'
     PRINT ''
     PRINT ' TrainingHistory Table (NEW):'
     PRINT '   - Id (PK, IDENTITY)'
@@ -228,6 +279,8 @@ BEGIN
     PRINT '   - HistoryType (Never/Ever/Similar)'
     PRINT '   - TrainingDate, CourseName'
     PRINT '   - CreatedDate'
+    PRINT ''
+    PRINT ' Note: HRD_PaymentMethod supports "Check", "Transfer", "Cash"'
     PRINT ''
     PRINT '========================================================================'
 
