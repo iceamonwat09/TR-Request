@@ -11,14 +11,15 @@ namespace TrainingRequestApp.Services
     /// <summary>
     /// PDF Report Service - แบบฟอร์มคำขอฝึกอบรม (Training Request Form)
     ///
-    /// Version: 4.3 (Layout Alignment)
-    /// - v4.0: Header 3 ช่อง, ลบแถว สิ่งที่แนบ/กลุ่มเป้าหมาย/การเดินทาง
+    /// Version: 4.4 (Layout Fine-tuning)
     /// - v4.1: Option B + C (เพิ่ม sectionHeight, ลด rowHeight)
-    /// - v4.2: ลบเส้นใต้สาขา + เพิ่มระยะห่าง ApproveInfo จากเส้นลงชื่อ
-    /// - v4.3: ปรับ alignment ให้เรียบร้อย
-    ///         - "ฝ่าย" ตรงกับ "สำเนาเรียน :"
-    ///         - "รวมสุทธิ" ตรงกับ "ค่าใช้จ่ายต่อคน"
-    ///         - เพิ่ม "ลงชื่อผู้ขออบรม" + แสดง CreatedBy
+    /// - v4.2: ลบเส้นใต้สาขา + เพิ่มระยะห่าง ApproveInfo
+    /// - v4.3: ปรับ alignment (ฝ่าย, รวมสุทธิ, ลงชื่อผู้ขออบรม)
+    /// - v4.4: ปรับรายละเอียดเพิ่มเติม
+    ///         - ขอฝึกอบรมหลักสูตร: เสมอกับ วัน/เวลาที่จัดอบรม
+    ///         - เปลี่ยนหัวคอลัมน์ลายเซ็น (ผู้จัดการส่วน/ฝ่าย/ผู้อำนวยการฝ่าย)
+    ///         - อื่นๆ (ระบุ) ตรงกับ ช่วยแก้ไข / ป้องกันปัญหา
+    ///         - ลบ ...../...../...... ใน KM Section
     /// </summary>
     public class PdfReportService : IPdfReportService
     {
@@ -211,8 +212,9 @@ namespace TrainingRequestApp.Services
             currentY += rowHeight;
 
             // === Row 6: ขอฝึกอบรมหลักสูตร ===
+            // [FIX v4.4] ปรับ underline เริ่มที่ labelX + 105 ให้เสมอกับ วัน/เวลาที่จัดอบรม
             gfx.DrawString("ขอฝึกอบรมหลักสูตร:", _fontBold, XBrushes.Black, new XPoint(labelX, currentY + textOffsetY));
-            DrawUnderlineText(gfx, labelX + 115, currentY + textOffsetY, contentWidth - 125, data.SeminarTitle ?? "", 3);
+            DrawUnderlineText(gfx, labelX + 105, currentY + textOffsetY, contentWidth - 115, data.SeminarTitle ?? "", 3);
             currentY += rowHeight;
 
             // === Row 7: วัน/เวลา & ระยะเวลา ===
@@ -268,7 +270,8 @@ namespace TrainingRequestApp.Services
                 DrawCheckbox(gfx, labelX, currentY + 4, data.KM_CreateReport == true);
                 gfx.DrawString("จัดทำเป็นรายงานหรือ PPT ส่งผู้จัดการส่วน/ฝ่าย เพื่อพิจารณา หลังจากนั้นนำส่งให้แผนกฝึกอบรม   โปรดระบุวันที่ดำเนินการ",
                     _fontTiny, XBrushes.Black, new XPoint(labelX + 14, currentY + textOffsetY));
-                string reportDate = data.KM_CreateReportDate?.ToString("dd/MM/yyyy") ?? "...../...../......";
+                // [FIX v4.4] ลบ ...../...../...... ออก - แสดงเฉพาะวันที่จริงหรือเว้นว่าง
+                string reportDate = data.KM_CreateReportDate?.ToString("dd/MM/yyyy") ?? "";
                 DrawUnderlineText(gfx, labelX + 400, currentY + textOffsetY, 80, reportDate, 0);
                 currentY += rowHeight;
 
@@ -276,7 +279,8 @@ namespace TrainingRequestApp.Services
                 DrawCheckbox(gfx, labelX, currentY + 4, data.KM_KnowledgeSharing == true);
                 gfx.DrawString("ถ่ายทอดความรู้ที่ได้รับจากการอบรม (Knowledge Sharing) โดยจัดบรรยายถ่ายทอดความรู้ภายในหน่วยงาน  โปรดระบุวันที่ดำเนินการ",
                     _fontTiny, XBrushes.Black, new XPoint(labelX + 14, currentY + textOffsetY));
-                string sharingDate = data.KM_KnowledgeSharingDate?.ToString("dd/MM/yyyy") ?? "...../...../......";
+                // [FIX v4.4] ลบ ...../...../...... ออก - แสดงเฉพาะวันที่จริงหรือเว้นว่าง
+                string sharingDate = data.KM_KnowledgeSharingDate?.ToString("dd/MM/yyyy") ?? "";
                 DrawUnderlineText(gfx, labelX + 400, currentY + textOffsetY, 80, sharingDate, 0);
                 currentY += rowHeight;
             }
@@ -752,7 +756,8 @@ namespace TrainingRequestApp.Services
             DrawCheckbox(gfx, cbX, currentY + 4, isObj5);
             gfx.DrawString("ถ่ายทอดความรู้/ขยายผลสู่ผู้อื่น", _fontSmall, XBrushes.Black, new XPoint(cbX + 14, currentY + textOffsetY));
 
-            cbX += 175;
+            // [FIX v4.4] ปรับ อื่นๆ (ระบุ) ให้ตรงกับ ช่วยแก้ไข / ป้องกันปัญหา (เปลี่ยน +175 → +135)
+            cbX += 135;
             DrawCheckbox(gfx, cbX, currentY + 4, isObj6);
             gfx.DrawString("อื่นๆ (ระบุ)", _fontSmall, XBrushes.Black, new XPoint(cbX + 14, currentY + textOffsetY));
             DrawUnderline(gfx, cbX + 72, currentY + textOffsetY + 3, contentWidth - cbX - 77 + contentX);
@@ -877,9 +882,10 @@ namespace TrainingRequestApp.Services
             double lineHeight = 13;  // [FIX v4.1] ลดจาก 15 → 13
 
             // === ROW 1: หัวข้อทั้ง 3 คอลัมน์ ===
-            gfx.DrawString("จึงเรียนมาเพื่อโปรดพิจารณาอนุมัติ", _fontBold, XBrushes.Black, new XPoint(col1X, currentY + textOffsetY));
-            gfx.DrawString("ต้นสังกัดทบทวน :", _fontBold, XBrushes.Black, new XPoint(col2X, currentY + textOffsetY));
-            gfx.DrawString("กรรมการผู้จัดการ :", _fontBold, XBrushes.Black, new XPoint(col3X, currentY + textOffsetY));
+            // [FIX v4.4] เปลี่ยนหัวคอลัมน์ตามโครงสร้างองค์กร
+            gfx.DrawString("ต้นสังกัดพิจารณา (ผู้จัดการส่วน)", _fontBold, XBrushes.Black, new XPoint(col1X, currentY + textOffsetY));
+            gfx.DrawString("ต้นสังกัดพิจารณา (ผู้จัดการฝ่าย)", _fontBold, XBrushes.Black, new XPoint(col2X, currentY + textOffsetY));
+            gfx.DrawString("ต้นสังกัดทบทวน (ผู้อำนวยการฝ่าย)", _fontBold, XBrushes.Black, new XPoint(col3X, currentY + textOffsetY));
             currentY += lineHeight + 2;
 
             // === ROW 2: Checkbox อนุมัติ/ไม่อนุมัติ ===
