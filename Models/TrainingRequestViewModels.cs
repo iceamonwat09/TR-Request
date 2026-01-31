@@ -81,8 +81,13 @@ namespace TrainingRequestApp.Models
         public DateTime? HRD_ContactDate { get; set; }
         public string? HRD_ContactPerson { get; set; }
         public DateTime? HRD_PaymentDate { get; set; }
-        public string? HRD_PaymentMethod { get; set; }
+        public string? HRD_PaymentMethod { get; set; } // "Check", "Transfer", or "Cash"
         public string? HRD_RecorderSignature { get; set; }
+
+        // HRD Section 4: การดำเนินงานหลังอนุมัติ
+        public bool? HRD_TrainingRecord { get; set; }
+        public bool? HRD_KnowledgeManagementDone { get; set; }
+        public bool? HRD_CourseCertification { get; set; }
 
         // HRD Budget & Membership Fields
         public string? HRD_BudgetPlan { get; set; }

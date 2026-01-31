@@ -11,14 +11,12 @@ namespace TrainingRequestApp.Services
     /// <summary>
     /// PDF Report Service - แบบฟอร์มคำขอฝึกอบรม (Training Request Form)
     ///
-    /// Version: 4.5 (Checkbox & Header Fix)
-    /// - v4.2: ลบเส้นใต้สาขา + เพิ่มระยะห่าง ApproveInfo
-    /// - v4.3: ปรับ alignment (ฝ่าย, รวมสุทธิ, ลงชื่อผู้ขออบรม)
-    /// - v4.4: ปรับรายละเอียด Layout (หัวคอลัมน์ลายเซ็น, อื่นๆ ตรงกัน)
+    /// Version: 5.0 (Section 3 & 4 Restructure)
     /// - v4.5: แก้ไข Checkbox และ Header
-    ///         - ปรับ checkbox offset จาก +4 → +2 (ไม่ให้ด้านล่างถูกตัด)
-    ///         - ลบ "ลำดับที่ใบขอ (เฉพาะ HR)" ออก
-    ///         - จัด DocNo กึ่งกลางช่องขวา
+    /// - v5.0: ปรับโครงสร้าง Section 3 & 4
+    ///         - Section 3: เปลี่ยนเป็น single column + multi-line เหตุผล (Comment_DeputyManagingDirector)
+    ///         - Section 4: สร้างใหม่ "การดำเนินงานหลังอนุมัติ" รวม HRD data + 3 checkboxes ใหม่
+    ///         - เปลี่ยน Payment จาก 2 ช่อง เป็น 3 ช่อง (เช็ค, โอนเงิน, เงินสด)
     /// </summary>
     public class PdfReportService : IPdfReportService
     {
@@ -98,6 +96,10 @@ namespace TrainingRequestApp.Services
 
                 // ส่วนที่ 3
                 double section3Height = DrawSection3(gfx, data, margin, yPos, pageWidth, vlabelWidth);
+                yPos += section3Height;
+
+                // ส่วนที่ 4: การดำเนินงานหลังอนุมัติ
+                double section4Height = DrawSection4(gfx, data, margin, yPos, pageWidth, vlabelWidth);
 
                 using (var stream = new System.IO.MemoryStream())
                 {
@@ -450,7 +452,7 @@ namespace TrainingRequestApp.Services
         }
 
         // ==========================================
-        // [FIX v3.5] ส่วนที่ 3: การพิจารณาอนุมัติ - จัดกึ่งกลางและเส้นชิดหัวข้อ
+        // [FIX v5.0] ส่วนที่ 3: การพิจารณาอนุมัติ - Single Column + Multi-line เหตุผล
         // ==========================================
         private double DrawSection3(XGraphics gfx, TrainingRequestData data, double x, double y, double width, double vlabelWidth)
         {
@@ -458,21 +460,17 @@ namespace TrainingRequestApp.Services
             double contentWidth = width - vlabelWidth;
             double currentY = y;
             double padding = 5;
-            double textOffsetY = 10; // [FIX v4.1] ลดจาก 11 → 10
-            double sectionHeight = 120; // [FIX v4.1] ลดจาก 130 → 120
-            double halfWidth = contentWidth / 2;
-            double labelToDataGap = 3; // ระยะห่างจาก label ถึงข้อมูล
+            double textOffsetY = 10;
+            double sectionHeight = 95; // ลดลงเพราะเป็น single column
+            double lineHeight = 13;
+            double labelToDataGap = 3;
 
             DrawVerticalLabel(gfx, x, y, vlabelWidth, sectionHeight, "ส่วนที่ 3 การพิจารณาอนุมัติ");
             gfx.DrawRectangle(_thickPen, contentX, y, contentWidth, sectionHeight);
 
-            // เส้นแบ่งกลาง (แนวตั้ง)
-            gfx.DrawLine(_borderPen, contentX + halfWidth, y, contentX + halfWidth, y + sectionHeight);
-
-            // ===== LEFT: ผลการพิจารณา =====
+            // ===== FULL WIDTH: ผลการพิจารณา =====
             double leftX = contentX + padding;
             double leftY = y + padding + 2;
-            double lineHeight = 13;  // [FIX v4.1] ลดจาก 15 → 13
 
             gfx.DrawString("ผลการพิจารณา :", _fontBold, XBrushes.Black, new XPoint(leftX, leftY + textOffsetY));
             leftY += lineHeight + 3;
@@ -480,132 +478,228 @@ namespace TrainingRequestApp.Services
             bool isDeputyManagingApproved = data.Status_DeputyManagingDirector?.ToUpper() == "APPROVED";
             bool isDeputyManagingRejected = data.Status_DeputyManagingDirector?.ToUpper() == "REJECTED";
 
+            // Checkbox row: อนุมัติ / ไม่อนุมัติ ในบรรทัดเดียวกัน
             DrawCheckbox(gfx, leftX + 5, leftY + 2, isDeputyManagingApproved);
             gfx.DrawString("อนุมัติให้ฝึกอบรมสัมมนา", _fontSmall, XBrushes.Black, new XPoint(leftX + 20, leftY + textOffsetY));
-            leftY += lineHeight;
 
-            DrawCheckbox(gfx, leftX + 5, leftY + 2, isDeputyManagingRejected);
-            gfx.DrawString("ไม่อนุมัติ/ส่งกลับให้ต้นสังกัดทบทวนใหม่", _fontSmall, XBrushes.Black, new XPoint(leftX + 20, leftY + textOffsetY));
+            double cbX2 = leftX + 160;
+            DrawCheckbox(gfx, cbX2, leftY + 2, isDeputyManagingRejected);
+            gfx.DrawString("ไม่อนุมัติ/ส่งกลับให้ต้นสังกัดทบทวนใหม่", _fontSmall, XBrushes.Black, new XPoint(cbX2 + 14, leftY + textOffsetY));
             leftY += lineHeight + 2;
 
-            // เหตุผล - เส้นชิดหัวข้อ
+            // เหตุผล - Multi-line text (2-3 บรรทัด)
             string reasonLabel = "เหตุผล :";
             gfx.DrawString(reasonLabel, _fontSmall, XBrushes.Black, new XPoint(leftX, leftY + textOffsetY));
             XSize reasonLabelSize = gfx.MeasureString(reasonLabel, _fontSmall);
             double reasonDataX = leftX + reasonLabelSize.Width + labelToDataGap;
-            DrawUnderline(gfx, reasonDataX, leftY + textOffsetY + 3, halfWidth - reasonLabelSize.Width - labelToDataGap - padding - 5);
-            leftY += lineHeight + 2;
+            double reasonMaxWidth = contentWidth - reasonLabelSize.Width - labelToDataGap - padding * 2 - 10;
 
-            // ลงนาม - เส้นชิดหัวข้อ + ข้อมูลกึ่งกลาง
+            // แสดง Comment_DeputyManagingDirector พร้อม text wrapping
+            string reasonText = data.Comment_DeputyManagingDirector ?? "";
+            if (!string.IsNullOrEmpty(reasonText))
+            {
+                // วาด text แบบ multi-line (wrap ได้ 2-3 บรรทัด)
+                DrawMultilineText(gfx, reasonDataX, leftY + textOffsetY, reasonMaxWidth, reasonText, _fontSmall, 3);
+            }
+            // วาดเส้นใต้ 3 บรรทัด
+            DrawUnderline(gfx, reasonDataX, leftY + textOffsetY + 3, reasonMaxWidth);
+            leftY += lineHeight;
+            DrawUnderline(gfx, reasonDataX, leftY + textOffsetY + 3, reasonMaxWidth);
+            leftY += lineHeight;
+            DrawUnderline(gfx, reasonDataX, leftY + textOffsetY + 3, reasonMaxWidth);
+            leftY += lineHeight + 3;
+
+            // ลงนาม และ ตำแหน่ง (แบ่ง 2 คอลัมน์)
+            double colWidth = (contentWidth - padding * 2) / 2;
+
+            // คอลัมน์ซ้าย: ลงนาม
             string signLabel = "ลงนาม:";
             gfx.DrawString(signLabel, _fontSmall, XBrushes.Black, new XPoint(leftX, leftY + textOffsetY));
             XSize signLabelSize = gfx.MeasureString(signLabel, _fontSmall);
             double signDataX = leftX + signLabelSize.Width + labelToDataGap;
-            double signUnderlineWidth = halfWidth - signLabelSize.Width - labelToDataGap - padding - 5;
+            double signUnderlineWidth = colWidth - signLabelSize.Width - labelToDataGap - 20;
             DrawUnderline(gfx, signDataX, leftY + textOffsetY + 3, signUnderlineWidth);
 
-            if (isDeputyManagingApproved && !string.IsNullOrEmpty(data.DeputyManagingDirectorId))
+            if ((isDeputyManagingApproved || isDeputyManagingRejected) && !string.IsNullOrEmpty(data.DeputyManagingDirectorId))
             {
-                // จัดกึ่งกลางในพื้นที่ underline
                 XSize dataSize = gfx.MeasureString(data.DeputyManagingDirectorId, _fontSmall);
                 double centerX = signDataX + (signUnderlineWidth / 2) - (dataSize.Width / 2);
                 gfx.DrawString(data.DeputyManagingDirectorId, _fontSmall, XBrushes.Black, new XPoint(centerX, leftY + textOffsetY));
             }
-            leftY += lineHeight;
 
-            // ApproveInfo (วงเล็บ) - จัดกึ่งกลางในพื้นที่ underline
-            if (isDeputyManagingApproved && !string.IsNullOrEmpty(data.ApproveInfo_DeputyManagingDirector))
-            {
-                string approveText = $"( {FormatApproveInfo(data.ApproveInfo_DeputyManagingDirector)} )";
-                XSize textSize = gfx.MeasureString(approveText, _fontTiny);
-                double centerX = signDataX + (signUnderlineWidth / 2) - (textSize.Width / 2);
-                gfx.DrawString(approveText, _fontTiny, XBrushes.Black, new XPoint(centerX, leftY + textOffsetY - 3));
-            }
-            leftY += lineHeight - 4;
-
-            // ตำแหน่ง - เส้นชิดหัวข้อ + ข้อมูลชิดซ้าย (ตามที่เคยบอก)
+            // คอลัมน์ขวา: ตำแหน่ง
+            double rightColX = contentX + padding + colWidth;
             string posLabel = "ตำแหน่ง :";
-            gfx.DrawString(posLabel, _fontSmall, XBrushes.Black, new XPoint(leftX, leftY + textOffsetY));
+            gfx.DrawString(posLabel, _fontSmall, XBrushes.Black, new XPoint(rightColX, leftY + textOffsetY));
             XSize posLabelSize = gfx.MeasureString(posLabel, _fontSmall);
-            double posDataX = leftX + posLabelSize.Width + labelToDataGap;
-            double posUnderlineWidth = halfWidth - posLabelSize.Width - labelToDataGap - padding - 5;
+            double posDataX = rightColX + posLabelSize.Width + labelToDataGap;
+            double posUnderlineWidth = colWidth - posLabelSize.Width - labelToDataGap - 10;
             DrawUnderline(gfx, posDataX, leftY + textOffsetY + 3, posUnderlineWidth);
 
-            if (isDeputyManagingApproved && !string.IsNullOrEmpty(data.DeputyManagingDirectorLevel))
+            if ((isDeputyManagingApproved || isDeputyManagingRejected) && !string.IsNullOrEmpty(data.DeputyManagingDirectorLevel))
             {
                 gfx.DrawString(data.DeputyManagingDirectorLevel, _fontSmall, XBrushes.Black, new XPoint(posDataX, leftY + textOffsetY));
             }
 
-            // ===== RIGHT: ข้อมูลส่วน HRD บันทึกข้อมูล =====
-            double rightX = contentX + halfWidth + padding;
-            double rightY = y + padding + 2;
+            return sectionHeight;
+        }
 
-            gfx.DrawString("ข้อมูลส่วน HRD บันทึกข้อมูล", _fontBold, XBrushes.Black, new XPoint(rightX, rightY + textOffsetY));
-            rightY += lineHeight + 3;
+        // ==========================================
+        // [NEW v5.0] ส่วนที่ 4: การดำเนินงานหลังอนุมัติ (HRD Section)
+        // ==========================================
+        private double DrawSection4(XGraphics gfx, TrainingRequestData data, double x, double y, double width, double vlabelWidth)
+        {
+            double contentX = x + vlabelWidth;
+            double contentWidth = width - vlabelWidth;
+            double currentY = y;
+            double padding = 5;
+            double textOffsetY = 10;
+            double sectionHeight = 85;
+            double lineHeight = 13;
+            double labelToDataGap = 3;
 
-            // ติดต่อสถาบัน - เส้นชิดหัวข้อ
+            DrawVerticalLabel(gfx, x, y, vlabelWidth, sectionHeight, "ส่วนที่ 4 การดำเนินงานหลังอนุมัติ");
+            gfx.DrawRectangle(_thickPen, contentX, y, contentWidth, sectionHeight);
+
+            double leftX = contentX + padding;
+            double leftY = y + padding + 2;
+
+            // === Row 1: ติดต่อสถาบัน/ผู้สอน ===
             string contactLabel = "- ติดต่อสถาบัน/ผู้สอน : วันที่";
-            gfx.DrawString(contactLabel, _fontSmall, XBrushes.Black, new XPoint(rightX, rightY + textOffsetY));
+            gfx.DrawString(contactLabel, _fontSmall, XBrushes.Black, new XPoint(leftX, leftY + textOffsetY));
             XSize contactLabelSize = gfx.MeasureString(contactLabel, _fontSmall);
-            DrawUnderline(gfx, rightX + contactLabelSize.Width + labelToDataGap, rightY + textOffsetY + 3, halfWidth - contactLabelSize.Width - labelToDataGap - padding - 5);
-            // แสดงวันที่ติดต่อ
+            double contactDataX = leftX + contactLabelSize.Width + labelToDataGap;
+            DrawUnderline(gfx, contactDataX, leftY + textOffsetY + 3, 80);
             if (data.HRD_ContactDate.HasValue)
             {
-                string contactDate = data.HRD_ContactDate.Value.ToString("dd/MM/yyyy");
-                gfx.DrawString(contactDate, _fontSmall, XBrushes.Black, new XPoint(rightX + contactLabelSize.Width + labelToDataGap, rightY + textOffsetY));
+                gfx.DrawString(data.HRD_ContactDate.Value.ToString("dd/MM/yyyy"), _fontSmall, XBrushes.Black, new XPoint(contactDataX, leftY + textOffsetY));
             }
-            rightY += lineHeight;
 
-            // ชื่อผู้ที่ติดต่อด้วย - เส้นชิดหัวข้อ
-            string nameLabel = "  ชื่อผู้ที่ติดต่อด้วย";
-            gfx.DrawString(nameLabel, _fontSmall, XBrushes.Black, new XPoint(rightX, rightY + textOffsetY));
+            // ชื่อผู้ที่ติดต่อด้วย (ต่อบรรทัดเดียวกัน)
+            double nameX = contactDataX + 90;
+            string nameLabel = "ชื่อผู้ที่ติดต่อด้วย";
+            gfx.DrawString(nameLabel, _fontSmall, XBrushes.Black, new XPoint(nameX, leftY + textOffsetY));
             XSize nameLabelSize = gfx.MeasureString(nameLabel, _fontSmall);
-            DrawUnderline(gfx, rightX + nameLabelSize.Width + labelToDataGap, rightY + textOffsetY + 3, halfWidth - nameLabelSize.Width - labelToDataGap - padding - 5);
-            // แสดงชื่อผู้ติดต่อ
+            double nameDataX = nameX + nameLabelSize.Width + labelToDataGap;
+            DrawUnderline(gfx, nameDataX, leftY + textOffsetY + 3, contentWidth - (nameDataX - contentX) - padding - 5);
             if (!string.IsNullOrEmpty(data.HRD_ContactPerson))
             {
-                gfx.DrawString(data.HRD_ContactPerson, _fontSmall, XBrushes.Black, new XPoint(rightX + nameLabelSize.Width + labelToDataGap, rightY + textOffsetY));
+                gfx.DrawString(data.HRD_ContactPerson, _fontSmall, XBrushes.Black, new XPoint(nameDataX, leftY + textOffsetY));
             }
-            rightY += lineHeight;
+            leftY += lineHeight;
 
-            // การชำระเงิน - เส้นชิดหัวข้อ
+            // === Row 2: การชำระเงิน ===
             string payLabel = "- การชำระเงิน : ชำระเงินภายในวันที่";
-            gfx.DrawString(payLabel, _fontSmall, XBrushes.Black, new XPoint(rightX, rightY + textOffsetY));
+            gfx.DrawString(payLabel, _fontSmall, XBrushes.Black, new XPoint(leftX, leftY + textOffsetY));
             XSize payLabelSize = gfx.MeasureString(payLabel, _fontSmall);
-            DrawUnderline(gfx, rightX + payLabelSize.Width + labelToDataGap, rightY + textOffsetY + 3, halfWidth - payLabelSize.Width - labelToDataGap - padding - 5);
-            // แสดงวันที่ชำระเงิน
+            double payDataX = leftX + payLabelSize.Width + labelToDataGap;
+            DrawUnderline(gfx, payDataX, leftY + textOffsetY + 3, 80);
             if (data.HRD_PaymentDate.HasValue)
             {
-                string payDate = data.HRD_PaymentDate.Value.ToString("dd/MM/yyyy");
-                gfx.DrawString(payDate, _fontSmall, XBrushes.Black, new XPoint(rightX + payLabelSize.Width + labelToDataGap, rightY + textOffsetY));
+                gfx.DrawString(data.HRD_PaymentDate.Value.ToString("dd/MM/yyyy"), _fontSmall, XBrushes.Black, new XPoint(payDataX, leftY + textOffsetY));
             }
-            rightY += lineHeight + 2;
 
-            double cbX = rightX + 10;
+            // 3 checkbox: เช็ค, โอนเงิน, เงินสด (ต่อบรรทัดเดียวกัน)
+            double cbStartX = payDataX + 90;
             bool isCheck = data.HRD_PaymentMethod == "Check";
+            bool isTransfer = data.HRD_PaymentMethod == "Transfer";
             bool isCash = data.HRD_PaymentMethod == "Cash";
-            DrawCheckbox(gfx, cbX, rightY + 2, isCheck);
-            gfx.DrawString("เช็ค/โอนเงินผ่านบัญชี", _fontSmall, XBrushes.Black, new XPoint(cbX + 14, rightY + textOffsetY));
-            rightY += lineHeight;
 
-            DrawCheckbox(gfx, cbX, rightY + 2, isCash);
-            gfx.DrawString("ชำระเป็นเงินสด", _fontSmall, XBrushes.Black, new XPoint(cbX + 14, rightY + textOffsetY));
-            rightY += lineHeight + 3;
+            DrawCheckbox(gfx, cbStartX, leftY + 2, isCheck);
+            gfx.DrawString("เช็ค", _fontSmall, XBrushes.Black, new XPoint(cbStartX + 14, leftY + textOffsetY));
 
-            // ลงชื่อ - เส้นชิดหัวข้อ
-            string signLabel2 = "ลงชื่อ :";
-            gfx.DrawString(signLabel2, _fontSmall, XBrushes.Black, new XPoint(rightX, rightY + textOffsetY));
-            XSize signLabel2Size = gfx.MeasureString(signLabel2, _fontSmall);
-            DrawUnderline(gfx, rightX + signLabel2Size.Width + labelToDataGap, rightY + textOffsetY + 3, halfWidth - signLabel2Size.Width - labelToDataGap - padding - 60);
+            cbStartX += 50;
+            DrawCheckbox(gfx, cbStartX, leftY + 2, isTransfer);
+            gfx.DrawString("โอนเงิน", _fontSmall, XBrushes.Black, new XPoint(cbStartX + 14, leftY + textOffsetY));
 
-            // แสดงชื่อผู้บันทึก
+            cbStartX += 60;
+            DrawCheckbox(gfx, cbStartX, leftY + 2, isCash);
+            gfx.DrawString("เงินสด", _fontSmall, XBrushes.Black, new XPoint(cbStartX + 14, leftY + textOffsetY));
+            leftY += lineHeight + 2;
+
+            // === Row 3: 3 checkbox ใหม่ (Training Record, KM, Course Certification) ===
+            double cbX = leftX + 5;
+            DrawCheckbox(gfx, cbX, leftY + 2, data.HRD_TrainingRecord == true);
+            gfx.DrawString("บันทึกประวัติฝึกอบรม Training Record", _fontSmall, XBrushes.Black, new XPoint(cbX + 14, leftY + textOffsetY));
+
+            cbX += 185;
+            DrawCheckbox(gfx, cbX, leftY + 2, data.HRD_KnowledgeManagementDone == true);
+            gfx.DrawString("การจัดการความรู้ (KM)", _fontSmall, XBrushes.Black, new XPoint(cbX + 14, leftY + textOffsetY));
+
+            cbX += 125;
+            DrawCheckbox(gfx, cbX, leftY + 2, data.HRD_CourseCertification == true);
+            gfx.DrawString("การยื่นขอรับรองหลักสูตร", _fontSmall, XBrushes.Black, new XPoint(cbX + 14, leftY + textOffsetY));
+            leftY += lineHeight + 3;
+
+            // === Row 4: ลงชื่อ + ผู้บันทึก ===
+            string signLabel = "ลงชื่อ :";
+            gfx.DrawString(signLabel, _fontSmall, XBrushes.Black, new XPoint(leftX, leftY + textOffsetY));
+            XSize signLabelSize = gfx.MeasureString(signLabel, _fontSmall);
+            double signDataX = leftX + signLabelSize.Width + labelToDataGap;
+            double signUnderlineWidth = 150;
+            DrawUnderline(gfx, signDataX, leftY + textOffsetY + 3, signUnderlineWidth);
+
             if (!string.IsNullOrEmpty(data.HRD_RecorderSignature))
             {
-                gfx.DrawString(data.HRD_RecorderSignature, _fontSmall, XBrushes.Black, new XPoint(rightX + signLabel2Size.Width + labelToDataGap, rightY + textOffsetY));
+                gfx.DrawString(data.HRD_RecorderSignature, _fontSmall, XBrushes.Black, new XPoint(signDataX, leftY + textOffsetY));
             }
-            gfx.DrawString("ผู้บันทึก", _fontSmall, XBrushes.Black, new XPoint(rightX + halfWidth - 55, rightY + textOffsetY));
+            gfx.DrawString("ผู้บันทึก", _fontSmall, XBrushes.Black, new XPoint(signDataX + signUnderlineWidth + 10, leftY + textOffsetY));
 
             return sectionHeight;
+        }
+
+        // ==========================================
+        // [NEW v5.0] Helper: Draw Multi-line Text with wrapping
+        // ==========================================
+        private void DrawMultilineText(XGraphics gfx, double x, double y, double maxWidth, string text, XFont font, int maxLines)
+        {
+            if (string.IsNullOrEmpty(text)) return;
+
+            double lineHeight = 13;
+            List<string> lines = WrapText(gfx, text, font, maxWidth);
+
+            for (int i = 0; i < Math.Min(lines.Count, maxLines); i++)
+            {
+                gfx.DrawString(lines[i], font, XBrushes.Black, new XPoint(x, y + (i * lineHeight)));
+            }
+        }
+
+        // ==========================================
+        // [NEW v5.0] Helper: Wrap text to fit width
+        // ==========================================
+        private List<string> WrapText(XGraphics gfx, string text, XFont font, double maxWidth)
+        {
+            var lines = new List<string>();
+            if (string.IsNullOrEmpty(text)) return lines;
+
+            string[] words = text.Split(' ');
+            string currentLine = "";
+
+            foreach (string word in words)
+            {
+                string testLine = string.IsNullOrEmpty(currentLine) ? word : currentLine + " " + word;
+                XSize size = gfx.MeasureString(testLine, font);
+
+                if (size.Width <= maxWidth)
+                {
+                    currentLine = testLine;
+                }
+                else
+                {
+                    if (!string.IsNullOrEmpty(currentLine))
+                    {
+                        lines.Add(currentLine);
+                    }
+                    currentLine = word;
+                }
+            }
+
+            if (!string.IsNullOrEmpty(currentLine))
+            {
+                lines.Add(currentLine);
+            }
+
+            return lines;
         }
 
         // ==========================================
@@ -1131,6 +1225,8 @@ namespace TrainingRequestApp.Services
                         tr.KM_SubmitDocument, tr.KM_CreateReport, tr.KM_CreateReportDate, tr.KM_KnowledgeSharing, tr.KM_KnowledgeSharingDate,
                         tr.HRD_ContactDate, tr.HRD_ContactPerson, tr.HRD_PaymentDate, tr.HRD_PaymentMethod, tr.HRD_RecorderSignature,
                         tr.HRD_BudgetPlan, tr.HRD_BudgetUsage, tr.HRD_DepartmentBudgetRemaining, tr.HRD_MembershipType, tr.HRD_MembershipCost,
+                        tr.HRD_TrainingRecord, tr.HRD_KnowledgeManagementDone, tr.HRD_CourseCertification,
+                        tr.Comment_DeputyManagingDirector,
                         e_sm.Level AS SectionManagerLevel,
                         e_dm.Level AS DepartmentManagerLevel,
                         e_ha.Level AS HRDAdminLevel,
@@ -1225,6 +1321,12 @@ namespace TrainingRequestApp.Services
                             data.HRD_DepartmentBudgetRemaining = reader["HRD_DepartmentBudgetRemaining"] != DBNull.Value ? (decimal?)reader["HRD_DepartmentBudgetRemaining"] : null;
                             data.HRD_MembershipType = reader["HRD_MembershipType"]?.ToString();
                             data.HRD_MembershipCost = reader["HRD_MembershipCost"] != DBNull.Value ? (decimal?)reader["HRD_MembershipCost"] : null;
+                            // HRD Section 4 Fields
+                            data.HRD_TrainingRecord = reader["HRD_TrainingRecord"] != DBNull.Value ? (bool?)reader["HRD_TrainingRecord"] : null;
+                            data.HRD_KnowledgeManagementDone = reader["HRD_KnowledgeManagementDone"] != DBNull.Value ? (bool?)reader["HRD_KnowledgeManagementDone"] : null;
+                            data.HRD_CourseCertification = reader["HRD_CourseCertification"] != DBNull.Value ? (bool?)reader["HRD_CourseCertification"] : null;
+                            // Comment Fields
+                            data.Comment_DeputyManagingDirector = reader["Comment_DeputyManagingDirector"]?.ToString();
                         }
                     }
                 }
@@ -1371,6 +1473,14 @@ namespace TrainingRequestApp.Services
             public decimal? HRD_DepartmentBudgetRemaining { get; set; }
             public string HRD_MembershipType { get; set; }
             public decimal? HRD_MembershipCost { get; set; }
+
+            // HRD Section 4: การดำเนินงานหลังอนุมัติ
+            public bool? HRD_TrainingRecord { get; set; }
+            public bool? HRD_KnowledgeManagementDone { get; set; }
+            public bool? HRD_CourseCertification { get; set; }
+
+            // Comment Fields
+            public string Comment_DeputyManagingDirector { get; set; }
 
             public List<EmployeeData> Employees { get; set; } = new List<EmployeeData>();
             public List<TrainingHistoryPdfData> TrainingHistories { get; set; } = new List<TrainingHistoryPdfData>();

@@ -190,6 +190,7 @@ namespace TrainingRequestApp.Controllers
                             DeputyManagingDirectorId, Status_DeputyManagingDirector, Comment_DeputyManagingDirector, ApproveInfo_DeputyManagingDirector,
                             KM_SubmitDocument, KM_CreateReport, KM_CreateReportDate, KM_KnowledgeSharing, KM_KnowledgeSharingDate,
                             HRD_ContactDate, HRD_ContactPerson, HRD_PaymentDate, HRD_PaymentMethod, HRD_RecorderSignature,
+                            HRD_TrainingRecord, HRD_KnowledgeManagementDone, HRD_CourseCertification,
                             HRD_BudgetPlan, HRD_BudgetUsage, HRD_DepartmentBudgetRemaining, HRD_MembershipType, HRD_MembershipCost,
                             Status, CreatedDate, CreatedBy
                         FROM [HRDSYSTEM].[dbo].[TrainingRequests]
@@ -271,6 +272,10 @@ namespace TrainingRequestApp.Controllers
                                     HRD_PaymentDate = reader["HRD_PaymentDate"] != DBNull.Value ? (DateTime?)reader.GetDateTime(reader.GetOrdinal("HRD_PaymentDate")) : null,
                                     HRD_PaymentMethod = reader["HRD_PaymentMethod"]?.ToString(),
                                     HRD_RecorderSignature = reader["HRD_RecorderSignature"]?.ToString(),
+                                    // HRD Section 4: การดำเนินงานหลังอนุมัติ
+                                    HRD_TrainingRecord = reader["HRD_TrainingRecord"] != DBNull.Value ? (bool?)reader.GetBoolean(reader.GetOrdinal("HRD_TrainingRecord")) : null,
+                                    HRD_KnowledgeManagementDone = reader["HRD_KnowledgeManagementDone"] != DBNull.Value ? (bool?)reader.GetBoolean(reader.GetOrdinal("HRD_KnowledgeManagementDone")) : null,
+                                    HRD_CourseCertification = reader["HRD_CourseCertification"] != DBNull.Value ? (bool?)reader.GetBoolean(reader.GetOrdinal("HRD_CourseCertification")) : null,
                                     // HRD Budget & Membership Fields
                                     HRD_BudgetPlan = reader["HRD_BudgetPlan"]?.ToString(),
                                     HRD_BudgetUsage = reader["HRD_BudgetUsage"]?.ToString(),
@@ -1186,7 +1191,8 @@ namespace TrainingRequestApp.Controllers
                     [ManagingDirectorId], [Status_ManagingDirector],
                     [DeputyManagingDirectorId], [Status_DeputyManagingDirector],
                     [KM_SubmitDocument], [KM_CreateReport], [KM_CreateReportDate], [KM_KnowledgeSharing], [KM_KnowledgeSharingDate],
-                    [HRD_ContactDate], [HRD_ContactPerson], [HRD_PaymentDate], [HRD_PaymentMethod], [HRD_RecorderSignature]
+                    [HRD_ContactDate], [HRD_ContactPerson], [HRD_PaymentDate], [HRD_PaymentMethod], [HRD_RecorderSignature],
+                    [HRD_TrainingRecord], [HRD_KnowledgeManagementDone], [HRD_CourseCertification]
                 )
                 VALUES (
                     @DocNo, @Company, @TrainingType, @Factory, @CCEmail, @Department,@Position,
@@ -1203,7 +1209,8 @@ namespace TrainingRequestApp.Controllers
                     @ManagingDirectorId, 'Pending',
                     @DeputyManagingDirectorId, 'Pending',
                     @KM_SubmitDocument, @KM_CreateReport, @KM_CreateReportDate, @KM_KnowledgeSharing, @KM_KnowledgeSharingDate,
-                    NULL, NULL, NULL, NULL, NULL
+                    NULL, NULL, NULL, NULL, NULL,
+                    NULL, NULL, NULL
                 );
                 SELECT CAST(SCOPE_IDENTITY() AS INT);";
 
@@ -1551,6 +1558,9 @@ namespace TrainingRequestApp.Controllers
                     [HRD_PaymentDate] = @HRD_PaymentDate,
                     [HRD_PaymentMethod] = @HRD_PaymentMethod,
                     [HRD_RecorderSignature] = @HRD_RecorderSignature,
+                    [HRD_TrainingRecord] = @HRD_TrainingRecord,
+                    [HRD_KnowledgeManagementDone] = @HRD_KnowledgeManagementDone,
+                    [HRD_CourseCertification] = @HRD_CourseCertification,
                     [HRD_BudgetPlan] = @HRD_BudgetPlan,
                     [HRD_BudgetUsage] = @HRD_BudgetUsage,
                     [HRD_DepartmentBudgetRemaining] = @HRD_DepartmentBudgetRemaining,
@@ -1636,6 +1646,11 @@ namespace TrainingRequestApp.Controllers
                 cmd.Parameters.AddWithValue("@HRD_PaymentDate", formData.HRD_PaymentDate ?? (object)DBNull.Value);
                 cmd.Parameters.AddWithValue("@HRD_PaymentMethod", formData.HRD_PaymentMethod ?? (object)DBNull.Value);
                 cmd.Parameters.AddWithValue("@HRD_RecorderSignature", formData.HRD_RecorderSignature ?? (object)DBNull.Value);
+
+                // HRD Section 4: การดำเนินงานหลังอนุมัติ
+                cmd.Parameters.AddWithValue("@HRD_TrainingRecord", formData.HRD_TrainingRecord ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@HRD_KnowledgeManagementDone", formData.HRD_KnowledgeManagementDone ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@HRD_CourseCertification", formData.HRD_CourseCertification ?? (object)DBNull.Value);
 
                 // HRD Budget & Membership Fields
                 cmd.Parameters.AddWithValue("@HRD_BudgetPlan", formData.HRD_BudgetPlan ?? (object)DBNull.Value);
@@ -2355,8 +2370,13 @@ namespace TrainingRequestApp.Controllers
         public DateTime? HRD_ContactDate { get; set; }
         public string? HRD_ContactPerson { get; set; }
         public DateTime? HRD_PaymentDate { get; set; }
-        public string? HRD_PaymentMethod { get; set; }
+        public string? HRD_PaymentMethod { get; set; } // "Check", "Transfer", or "Cash"
         public string? HRD_RecorderSignature { get; set; }
+
+        // HRD Section 4: การดำเนินงานหลังอนุมัติ
+        public bool? HRD_TrainingRecord { get; set; }
+        public bool? HRD_KnowledgeManagementDone { get; set; }
+        public bool? HRD_CourseCertification { get; set; }
 
         // HRD Budget & Membership Fields
         public string? HRD_BudgetPlan { get; set; }
