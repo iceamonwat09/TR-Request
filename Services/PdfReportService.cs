@@ -11,13 +11,12 @@ namespace TrainingRequestApp.Services
     /// <summary>
     /// PDF Report Service - แบบฟอร์มคำขอฝึกอบรม (Training Request Form)
     ///
-    /// Version: 5.5 (Checkbox on Underline Alignment)
-    /// - v5.3: ปรับ Checkbox Alignment ทั้ง Section 2 และ Section 4
+    /// Version: 5.6 (Underline End at Checkbox)
     /// - v5.4: ปรับเส้นใต้และเพิ่ม : หลังหัวข้อ
-    /// - v5.5: ปรับ Checkbox บนเส้นใต้และตรงกับ เงินสด
-    ///         - Section 4: เพิ่มเส้นใต้ให้ "การชำระเงิน"
-    ///         - Section 4: Checkbox 3 รายการอยู่บนเส้นใต้ ตรงกับตำแหน่ง "เงินสด"
-    ///         - เส้นใต้ยาวเต็มทุกบรรทัด
+    /// - v5.5: เพิ่มเส้นใต้ให้ "การชำระเงิน", Checkbox ตรงกับ "เงินสด"
+    /// - v5.6: แก้ไขเส้นใต้ 3 checkbox ให้สิ้นสุดที่ตำแหน่ง checkbox
+    ///         - คำนวณ underlineEndX = cashCheckboxX + 15 (สิ้นสุดหลัง checkbox)
+    ///         - เส้นใต้แต่ละบรรทัดยาวจาก label ไปถึง checkbox
     /// </summary>
     public class PdfReportService : IPdfReportService
     {
@@ -629,28 +628,32 @@ namespace TrainingRequestApp.Services
             }
             rightY += lineHeight;
 
-            // [FIX v5.5] 3 checkbox ใหม่ - checkbox อยู่บนเส้นใต้ ตรงกับ เงินสด
+            // [FIX v5.6] 3 checkbox ใหม่ - เส้นใต้สิ้นสุดที่ checkbox, checkbox ตรงกับ เงินสด
             // cashCheckboxX คือตำแหน่ง checkbox ของ "เงินสด" ด้านบน
+            // เส้นใต้ต้องยาวจาก label ไปถึง checkbox (รวม checkbox ด้วย)
+            double underlineEndX = cashCheckboxX + 15; // สิ้นสุดหลัง checkbox
 
             string trainingRecordLabel = "- บันทึกประวัติฝึกอบรม Training Record :";
             gfx.DrawString(trainingRecordLabel, _fontSmall, XBrushes.Black, new XPoint(rightX, rightY + textOffsetY));
             double trLabelWidth = gfx.MeasureString(trainingRecordLabel, _fontSmall).Width;
-            // วาดเส้นใต้ยาวเต็ม แล้ววาง checkbox บนเส้น (ตรงกับ เงินสด)
-            DrawUnderline(gfx, rightX + trLabelWidth + 3, rightY + textOffsetY + 3, fullUnderlineWidth - trLabelWidth - 3);
+            double trUnderlineStart = rightX + trLabelWidth + 3;
+            DrawUnderline(gfx, trUnderlineStart, rightY + textOffsetY + 3, underlineEndX - trUnderlineStart);
             DrawCheckbox(gfx, cashCheckboxX, rightY + 2, data.HRD_TrainingRecord == true);
             rightY += lineHeight;
 
             string kmLabel = "- การจัดการความรู้ (KM) :";
             gfx.DrawString(kmLabel, _fontSmall, XBrushes.Black, new XPoint(rightX, rightY + textOffsetY));
             double kmLabelWidth = gfx.MeasureString(kmLabel, _fontSmall).Width;
-            DrawUnderline(gfx, rightX + kmLabelWidth + 3, rightY + textOffsetY + 3, fullUnderlineWidth - kmLabelWidth - 3);
+            double kmUnderlineStart = rightX + kmLabelWidth + 3;
+            DrawUnderline(gfx, kmUnderlineStart, rightY + textOffsetY + 3, underlineEndX - kmUnderlineStart);
             DrawCheckbox(gfx, cashCheckboxX, rightY + 2, data.HRD_KnowledgeManagementDone == true);
             rightY += lineHeight;
 
             string certLabel = "- การยื่นขอรับรองหลักสูตร :";
             gfx.DrawString(certLabel, _fontSmall, XBrushes.Black, new XPoint(rightX, rightY + textOffsetY));
             double certLabelWidth = gfx.MeasureString(certLabel, _fontSmall).Width;
-            DrawUnderline(gfx, rightX + certLabelWidth + 3, rightY + textOffsetY + 3, fullUnderlineWidth - certLabelWidth - 3);
+            double certUnderlineStart = rightX + certLabelWidth + 3;
+            DrawUnderline(gfx, certUnderlineStart, rightY + textOffsetY + 3, underlineEndX - certUnderlineStart);
             DrawCheckbox(gfx, cashCheckboxX, rightY + 2, data.HRD_CourseCertification == true);
             rightY += lineHeight + 2;
 
