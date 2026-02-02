@@ -11,12 +11,13 @@ namespace TrainingRequestApp.Services
     /// <summary>
     /// PDF Report Service - แบบฟอร์มคำขอฝึกอบรม (Training Request Form)
     ///
-    /// Version: 5.3 (Checkbox Alignment Fix)
+    /// Version: 5.4 (Underline & Colon Consistency)
     /// - v5.2: ปรับ layout และ alignment Section 3 & 4
     /// - v5.3: ปรับ Checkbox Alignment ทั้ง Section 2 และ Section 4
-    ///         - Section 4: ปรับ checkbox 3 รายการให้ตรงกับช่อง "เงินสด"
-    ///         - Section 2: ปรับ checkbox ทุกแถวให้ตรงกัน (checkboxCol1, checkboxCol2)
-    ///         - เปลี่ยนคำ "ใช้งบประมาณตามแผน" เป็น "ใช้งบประมาณตามแผน TYP"
+    /// - v5.4: ปรับเส้นใต้และเพิ่ม : หลังหัวข้อ
+    ///         - Section 1: เพิ่ม : หลัง ด้วยแผนก, ฝ่าย, ขอฝึกอบรมหลักสูตร, รวมระยะเวลาการอบรม, โดยวิทยากร/สถาบัน
+    ///         - Section 1: ปรับเส้นใต้ให้เหมาะสม (เรียน : ___ สำเนาเรียน)
+    ///         - Section 4: เส้นใต้ทุกบรรทัดยาวเต็มเท่ากัน (เหมือน ติดต่อสถาบัน/ผู้สอน :)
     /// </summary>
     public class PdfReportService : IPdfReportService
     {
@@ -191,7 +192,8 @@ namespace TrainingRequestApp.Services
             // === Row 3: เรียน / สำเนาเรียน ===
             double halfWidth = contentWidth / 2;
             gfx.DrawString("เรียน :", _fontBold, XBrushes.Black, new XPoint(labelX, currentY + textOffsetY));
-            DrawUnderlineText(gfx, labelX + 40, currentY + textOffsetY, 160, "ผู้จัดการฝ่ายทรัพยากรบุคคล", 3);
+            // [FIX v5.4] ปรับเส้นให้ยาวถึง สำเนาเรียน โดยมีระยะห่างเหมาะสม
+            DrawUnderlineText(gfx, labelX + 40, currentY + textOffsetY, halfWidth - 55, "ผู้จัดการฝ่ายทรัพยากรบุคคล", 3);
 
             double rightColX = contentX + halfWidth + padding;
             gfx.DrawString("สำเนาเรียน :", _fontBold, XBrushes.Black, new XPoint(rightColX, currentY + textOffsetY));
@@ -199,20 +201,21 @@ namespace TrainingRequestApp.Services
             currentY += rowHeight;
 
             // === Row 4: ด้วยแผนก / ฝ่าย / มีความประสงค์จะ ===
-            gfx.DrawString("ด้วยแผนก", _fontBold, XBrushes.Black, new XPoint(labelX, currentY + textOffsetY));
-            DrawUnderlineText(gfx, labelX + 55, currentY + textOffsetY, 160, data.Position ?? "", 3);
+            // [FIX v5.4] เพิ่ม : หลังหัวข้อ
+            gfx.DrawString("ด้วยแผนก :", _fontBold, XBrushes.Black, new XPoint(labelX, currentY + textOffsetY));
+            DrawUnderlineText(gfx, labelX + 62, currentY + textOffsetY, halfWidth - 75, data.Position ?? "", 3);
 
             // [FIX v4.3] ให้ "ฝ่าย" ตรงกับ "สำเนาเรียน :" ด้านบน
-            gfx.DrawString("ฝ่าย", _fontBold, XBrushes.Black, new XPoint(rightColX, currentY + textOffsetY));
-            DrawUnderlineText(gfx, rightColX + 28, currentY + textOffsetY, 120, data.Department ?? "", 3);
+            gfx.DrawString("ฝ่าย :", _fontBold, XBrushes.Black, new XPoint(rightColX, currentY + textOffsetY));
+            DrawUnderlineText(gfx, rightColX + 32, currentY + textOffsetY, 115, data.Department ?? "", 3);
 
             gfx.DrawString("มีความประสงค์จะ", _fontBold, XBrushes.Black, new XPoint(rightColX + 160, currentY + textOffsetY));
             currentY += rowHeight;
 
             // === Row 6: ขอฝึกอบรมหลักสูตร ===
-            // [FIX v4.4] ปรับ underline เริ่มที่ labelX + 105 ให้เสมอกับ วัน/เวลาที่จัดอบรม
-            gfx.DrawString("ขอฝึกอบรมหลักสูตร:", _fontBold, XBrushes.Black, new XPoint(labelX, currentY + textOffsetY));
-            DrawUnderlineText(gfx, labelX + 105, currentY + textOffsetY, contentWidth - 115, data.SeminarTitle ?? "", 3);
+            // [FIX v5.4] เพิ่ม space ก่อน : และปรับเส้นให้ยาวเต็ม
+            gfx.DrawString("ขอฝึกอบรมหลักสูตร :", _fontBold, XBrushes.Black, new XPoint(labelX, currentY + textOffsetY));
+            DrawUnderlineText(gfx, labelX + 110, currentY + textOffsetY, contentWidth - 120, data.SeminarTitle ?? "", 3);
             currentY += rowHeight;
 
             // === Row 7: วัน/เวลา & ระยะเวลา ===
@@ -220,14 +223,15 @@ namespace TrainingRequestApp.Services
             string dateRange = "";
             if (data.StartDate.HasValue && data.EndDate.HasValue)
                 dateRange = $"{data.StartDate.Value:dd/MM/yyyy} - {data.EndDate.Value:dd/MM/yyyy}";
-            DrawUnderlineText(gfx, labelX + 105, currentY + textOffsetY, 130, dateRange, 3);
+            DrawUnderlineText(gfx, labelX + 105, currentY + textOffsetY, halfWidth - 120, dateRange, 3);
 
-            gfx.DrawString("รวมระยะเวลาการอบรม:", _fontBold, XBrushes.Black, new XPoint(rightColX, currentY + textOffsetY));
+            // [FIX v5.4] เพิ่ม space ก่อน :
+            gfx.DrawString("รวมระยะเวลาการอบรม :", _fontBold, XBrushes.Black, new XPoint(rightColX, currentY + textOffsetY));
             int workingDays = CalculateWorkingDays(data.StartDate, data.EndDate);
-            DrawUnderlineText(gfx, rightColX + 125, currentY + textOffsetY, 25, workingDays.ToString(), 3);
-            gfx.DrawString("วัน /", _fontSmall, XBrushes.Black, new XPoint(rightColX + 153, currentY + textOffsetY));
-            DrawUnderlineText(gfx, rightColX + 180, currentY + textOffsetY, 25, data.PerPersonTrainingHours.ToString(), 3);
-            gfx.DrawString("ชั่วโมง", _fontSmall, XBrushes.Black, new XPoint(rightColX + 208, currentY + textOffsetY));
+            DrawUnderlineText(gfx, rightColX + 130, currentY + textOffsetY, 25, workingDays.ToString(), 3);
+            gfx.DrawString("วัน /", _fontSmall, XBrushes.Black, new XPoint(rightColX + 158, currentY + textOffsetY));
+            DrawUnderlineText(gfx, rightColX + 185, currentY + textOffsetY, 25, data.PerPersonTrainingHours.ToString(), 3);
+            gfx.DrawString("ชั่วโมง", _fontSmall, XBrushes.Black, new XPoint(rightColX + 213, currentY + textOffsetY));
             currentY += rowHeight;
 
             // === Row 7: สถานที่ ===
@@ -236,7 +240,8 @@ namespace TrainingRequestApp.Services
             currentY += rowHeight;
 
             // === Row 9: โดยวิทยากร/สถาบัน ===
-            gfx.DrawString("โดยวิทยากร/สถาบัน:", _fontBold, XBrushes.Black, new XPoint(labelX, currentY + textOffsetY));
+            // [FIX v5.4] เพิ่ม space ก่อน :
+            gfx.DrawString("โดยวิทยากร/สถาบัน :", _fontBold, XBrushes.Black, new XPoint(labelX, currentY + textOffsetY));
             DrawUnderlineText(gfx, labelX + 115, currentY + textOffsetY, contentWidth - 125, data.Instructor ?? "", 3);
             currentY += rowHeight;
 
@@ -561,33 +566,32 @@ namespace TrainingRequestApp.Services
             gfx.DrawString("ข้อมูลส่วน HRD บันทึกข้อมูล", _fontBold, XBrushes.Black, new XPoint(rightX, rightY + textOffsetY));
             rightY += lineHeight + 2;
 
+            // [FIX v5.4] คำนวณความยาวเส้นใต้มาตรฐาน (ยาวเต็มถึงขอบ)
+            double fullUnderlineWidth = content4Width - padding * 2 - 5;
+
             // ติดต่อสถาบัน/ผู้สอน : วันที่
             string contactLabel = "- ติดต่อสถาบัน/ผู้สอน : วันที่";
             gfx.DrawString(contactLabel, _fontSmall, XBrushes.Black, new XPoint(rightX, rightY + textOffsetY));
             XSize contactLabelSize = gfx.MeasureString(contactLabel, _fontSmall);
             double contactDataX = rightX + contactLabelSize.Width + labelToDataGap;
-            DrawUnderline(gfx, contactDataX, rightY + textOffsetY + 3, content4Width - contactLabelSize.Width - labelToDataGap - padding * 2);
+            DrawUnderline(gfx, contactDataX, rightY + textOffsetY + 3, fullUnderlineWidth - contactLabelSize.Width - labelToDataGap);
             if (data.HRD_ContactDate.HasValue)
             {
                 gfx.DrawString(data.HRD_ContactDate.Value.ToString("dd/MM/yyyy"), _fontSmall, XBrushes.Black, new XPoint(contactDataX, rightY + textOffsetY));
             }
             rightY += lineHeight;
 
-            // ชื่อผู้ที่ติดต่อด้วย
+            // ชื่อผู้ที่ติดต่อด้วย - [FIX v5.4] เส้นยาวเต็มเหมือน ติดต่อสถาบัน/ผู้สอน
             string nameLabel = "  ชื่อผู้ที่ติดต่อด้วย";
             gfx.DrawString(nameLabel, _fontSmall, XBrushes.Black, new XPoint(rightX, rightY + textOffsetY));
             XSize nameLabelSize = gfx.MeasureString(nameLabel, _fontSmall);
             double nameDataX = rightX + nameLabelSize.Width + labelToDataGap;
-            DrawUnderline(gfx, nameDataX, rightY + textOffsetY + 3, content4Width - nameLabelSize.Width - labelToDataGap - padding * 2);
+            DrawUnderline(gfx, nameDataX, rightY + textOffsetY + 3, fullUnderlineWidth - nameLabelSize.Width - labelToDataGap);
             if (!string.IsNullOrEmpty(data.HRD_ContactPerson))
             {
                 gfx.DrawString(data.HRD_ContactPerson, _fontSmall, XBrushes.Black, new XPoint(nameDataX, rightY + textOffsetY));
             }
             rightY += lineHeight;
-
-            // [FIX v5.3] กำหนดตำแหน่ง checkbox ให้ตรงกับช่อง "เงินสด"
-            // checkbox เงินสด อยู่ที่ rightX + 70 + 45 + 55 = rightX + 170
-            double cbAlignX = rightX + 170;
 
             // การชำระเงิน + 3 checkbox
             string payLabel = "- การชำระเงิน";
@@ -609,41 +613,40 @@ namespace TrainingRequestApp.Services
             gfx.DrawString("เงินสด", _fontSmall, XBrushes.Black, new XPoint(cbPayX + 14, rightY + textOffsetY));
             rightY += lineHeight;
 
-            // ภายในวันที่
+            // ภายในวันที่ - [FIX v5.4] เส้นยาวเต็ม
             string payDateLabel = "  ภายในวันที่";
             gfx.DrawString(payDateLabel, _fontSmall, XBrushes.Black, new XPoint(rightX, rightY + textOffsetY));
             XSize payDateLabelSize = gfx.MeasureString(payDateLabel, _fontSmall);
             double payDateDataX = rightX + payDateLabelSize.Width + labelToDataGap;
-            DrawUnderline(gfx, payDateDataX, rightY + textOffsetY + 3, content4Width - payDateLabelSize.Width - labelToDataGap - padding * 2);
+            DrawUnderline(gfx, payDateDataX, rightY + textOffsetY + 3, fullUnderlineWidth - payDateLabelSize.Width - labelToDataGap);
             if (data.HRD_PaymentDate.HasValue)
             {
                 gfx.DrawString(data.HRD_PaymentDate.Value.ToString("dd/MM/yyyy"), _fontSmall, XBrushes.Black, new XPoint(payDateDataX, rightY + textOffsetY));
             }
             rightY += lineHeight;
 
-            // [FIX v5.2] 3 checkbox ใหม่ - เพิ่มเส้นใต้ + checkbox ตรงกัน
+            // [FIX v5.4] 3 checkbox ใหม่ - เส้นยาวเต็มเหมือน ติดต่อสถาบัน/ผู้สอน + checkbox ท้ายเส้น
+            double cbAlignX = rightX + fullUnderlineWidth - 5; // checkbox อยู่ท้ายเส้น
+
             string trainingRecordLabel = "- บันทึกประวัติฝึกอบรม Training Record :";
             gfx.DrawString(trainingRecordLabel, _fontSmall, XBrushes.Black, new XPoint(rightX, rightY + textOffsetY));
-            DrawCheckbox(gfx, cbAlignX, rightY + 2, data.HRD_TrainingRecord == true);
-            // เส้นใต้จาก label ถึง checkbox
             double trLabelWidth = gfx.MeasureString(trainingRecordLabel, _fontSmall).Width;
             DrawUnderline(gfx, rightX + trLabelWidth + 3, rightY + textOffsetY + 3, cbAlignX - rightX - trLabelWidth - 8);
+            DrawCheckbox(gfx, cbAlignX, rightY + 2, data.HRD_TrainingRecord == true);
             rightY += lineHeight;
 
             string kmLabel = "- การจัดการความรู้ (KM) :";
             gfx.DrawString(kmLabel, _fontSmall, XBrushes.Black, new XPoint(rightX, rightY + textOffsetY));
-            DrawCheckbox(gfx, cbAlignX, rightY + 2, data.HRD_KnowledgeManagementDone == true);
-            // เส้นใต้จาก label ถึง checkbox
             double kmLabelWidth = gfx.MeasureString(kmLabel, _fontSmall).Width;
             DrawUnderline(gfx, rightX + kmLabelWidth + 3, rightY + textOffsetY + 3, cbAlignX - rightX - kmLabelWidth - 8);
+            DrawCheckbox(gfx, cbAlignX, rightY + 2, data.HRD_KnowledgeManagementDone == true);
             rightY += lineHeight;
 
             string certLabel = "- การยื่นขอรับรองหลักสูตร :";
             gfx.DrawString(certLabel, _fontSmall, XBrushes.Black, new XPoint(rightX, rightY + textOffsetY));
-            DrawCheckbox(gfx, cbAlignX, rightY + 2, data.HRD_CourseCertification == true);
-            // เส้นใต้จาก label ถึง checkbox
             double certLabelWidth = gfx.MeasureString(certLabel, _fontSmall).Width;
             DrawUnderline(gfx, rightX + certLabelWidth + 3, rightY + textOffsetY + 3, cbAlignX - rightX - certLabelWidth - 8);
+            DrawCheckbox(gfx, cbAlignX, rightY + 2, data.HRD_CourseCertification == true);
             rightY += lineHeight + 2;
 
             // ลงชื่อ + ผู้บันทึก
