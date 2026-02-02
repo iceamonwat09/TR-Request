@@ -11,12 +11,10 @@ namespace TrainingRequestApp.Services
     /// <summary>
     /// PDF Report Service - แบบฟอร์มคำขอฝึกอบรม (Training Request Form)
     ///
-    /// Version: 5.6 (Underline End at Checkbox)
-    /// - v5.4: ปรับเส้นใต้และเพิ่ม : หลังหัวข้อ
+    /// Version: 5.7 (Sign Underline Full Width)
     /// - v5.5: เพิ่มเส้นใต้ให้ "การชำระเงิน", Checkbox ตรงกับ "เงินสด"
     /// - v5.6: แก้ไขเส้นใต้ 3 checkbox ให้สิ้นสุดที่ตำแหน่ง checkbox
-    ///         - คำนวณ underlineEndX = cashCheckboxX + 15 (สิ้นสุดหลัง checkbox)
-    ///         - เส้นใต้แต่ละบรรทัดยาวจาก label ไปถึง checkbox
+    /// - v5.7: ปรับเส้นใต้ "ลงชื่อผู้ขออบรม:" ให้ยาวถึงขอบ
     /// </summary>
     public class PdfReportService : IPdfReportService
     {
@@ -958,9 +956,10 @@ namespace TrainingRequestApp.Services
             DrawUnderlineText(gfx, col1ValueX, currentY + textOffsetY, underlineWidth, data.TotalCost.ToString("N0"), 3);
             gfx.DrawString("บาท", _fontSmall, XBrushes.Black, new XPoint(col1BahtX, currentY + textOffsetY));
 
-            // [FIX v4.3] เพิ่ม ลงชื่อผู้ขออบรม + แสดง CreatedBy
+            // [FIX v5.7] เพิ่ม ลงชื่อผู้ขออบรม + แสดง CreatedBy - เส้นใต้ยาวถึงขอบ
             gfx.DrawString("ลงชื่อผู้ขออบรม:", _fontBold, XBrushes.Black, new XPoint(col2X, currentY + textOffsetY));
-            DrawUnderlineText(gfx, col2ValueX, currentY + textOffsetY, 100, data.CreatedBy ?? "", 3);
+            double signUnderlineWidth = contentWidth - (col2ValueX - contentX) - padding;
+            DrawUnderlineText(gfx, col2ValueX, currentY + textOffsetY, signUnderlineWidth, data.CreatedBy ?? "", 3);
             currentY += rowHeight;
 
             return currentY;
