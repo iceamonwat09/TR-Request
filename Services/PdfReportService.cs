@@ -11,13 +11,13 @@ namespace TrainingRequestApp.Services
     /// <summary>
     /// PDF Report Service - แบบฟอร์มคำขอฝึกอบรม (Training Request Form)
     ///
-    /// Version: 5.4 (Underline & Colon Consistency)
-    /// - v5.2: ปรับ layout และ alignment Section 3 & 4
+    /// Version: 5.5 (Checkbox on Underline Alignment)
     /// - v5.3: ปรับ Checkbox Alignment ทั้ง Section 2 และ Section 4
     /// - v5.4: ปรับเส้นใต้และเพิ่ม : หลังหัวข้อ
-    ///         - Section 1: เพิ่ม : หลัง ด้วยแผนก, ฝ่าย, ขอฝึกอบรมหลักสูตร, รวมระยะเวลาการอบรม, โดยวิทยากร/สถาบัน
-    ///         - Section 1: ปรับเส้นใต้ให้เหมาะสม (เรียน : ___ สำเนาเรียน)
-    ///         - Section 4: เส้นใต้ทุกบรรทัดยาวเต็มเท่ากัน (เหมือน ติดต่อสถาบัน/ผู้สอน :)
+    /// - v5.5: ปรับ Checkbox บนเส้นใต้และตรงกับ เงินสด
+    ///         - Section 4: เพิ่มเส้นใต้ให้ "การชำระเงิน"
+    ///         - Section 4: Checkbox 3 รายการอยู่บนเส้นใต้ ตรงกับตำแหน่ง "เงินสด"
+    ///         - เส้นใต้ยาวเต็มทุกบรรทัด
     /// </summary>
     public class PdfReportService : IPdfReportService
     {
@@ -593,15 +593,18 @@ namespace TrainingRequestApp.Services
             }
             rightY += lineHeight;
 
-            // การชำระเงิน + 3 checkbox
+            // [FIX v5.5] การชำระเงิน + 3 checkbox + เส้นใต้
             string payLabel = "- การชำระเงิน";
             gfx.DrawString(payLabel, _fontSmall, XBrushes.Black, new XPoint(rightX, rightY + textOffsetY));
+            XSize payLabelSize = gfx.MeasureString(payLabel, _fontSmall);
+            // วาดเส้นใต้จากหลัง label ไปถึงท้ายสุด
+            DrawUnderline(gfx, rightX + payLabelSize.Width + 3, rightY + textOffsetY + 3, fullUnderlineWidth - payLabelSize.Width - 3);
 
             bool isCheck = data.HRD_PaymentMethod == "Check";
             bool isTransfer = data.HRD_PaymentMethod == "Transfer";
             bool isCash = data.HRD_PaymentMethod == "Cash";
 
-            // 3 checkbox ในแนวนอน (เช็ค, โอนเงิน, เงินสด)
+            // 3 checkbox ในแนวนอน (เช็ค, โอนเงิน, เงินสด) - วาดบนเส้นใต้
             double cbPayX = rightX + 70;
             DrawCheckbox(gfx, cbPayX, rightY + 2, isCheck);
             gfx.DrawString("เช็ค", _fontSmall, XBrushes.Black, new XPoint(cbPayX + 14, rightY + textOffsetY));
@@ -609,6 +612,7 @@ namespace TrainingRequestApp.Services
             DrawCheckbox(gfx, cbPayX, rightY + 2, isTransfer);
             gfx.DrawString("โอนเงิน", _fontSmall, XBrushes.Black, new XPoint(cbPayX + 14, rightY + textOffsetY));
             cbPayX += 55;
+            double cashCheckboxX = cbPayX; // [FIX v5.5] จำตำแหน่ง เงินสด ไว้ใช้อ้างอิง
             DrawCheckbox(gfx, cbPayX, rightY + 2, isCash);
             gfx.DrawString("เงินสด", _fontSmall, XBrushes.Black, new XPoint(cbPayX + 14, rightY + textOffsetY));
             rightY += lineHeight;
@@ -625,28 +629,29 @@ namespace TrainingRequestApp.Services
             }
             rightY += lineHeight;
 
-            // [FIX v5.4] 3 checkbox ใหม่ - เส้นยาวเต็มเหมือน ติดต่อสถาบัน/ผู้สอน + checkbox ท้ายเส้น
-            double cbAlignX = rightX + fullUnderlineWidth - 5; // checkbox อยู่ท้ายเส้น
+            // [FIX v5.5] 3 checkbox ใหม่ - checkbox อยู่บนเส้นใต้ ตรงกับ เงินสด
+            // cashCheckboxX คือตำแหน่ง checkbox ของ "เงินสด" ด้านบน
 
             string trainingRecordLabel = "- บันทึกประวัติฝึกอบรม Training Record :";
             gfx.DrawString(trainingRecordLabel, _fontSmall, XBrushes.Black, new XPoint(rightX, rightY + textOffsetY));
             double trLabelWidth = gfx.MeasureString(trainingRecordLabel, _fontSmall).Width;
-            DrawUnderline(gfx, rightX + trLabelWidth + 3, rightY + textOffsetY + 3, cbAlignX - rightX - trLabelWidth - 8);
-            DrawCheckbox(gfx, cbAlignX, rightY + 2, data.HRD_TrainingRecord == true);
+            // วาดเส้นใต้ยาวเต็ม แล้ววาง checkbox บนเส้น (ตรงกับ เงินสด)
+            DrawUnderline(gfx, rightX + trLabelWidth + 3, rightY + textOffsetY + 3, fullUnderlineWidth - trLabelWidth - 3);
+            DrawCheckbox(gfx, cashCheckboxX, rightY + 2, data.HRD_TrainingRecord == true);
             rightY += lineHeight;
 
             string kmLabel = "- การจัดการความรู้ (KM) :";
             gfx.DrawString(kmLabel, _fontSmall, XBrushes.Black, new XPoint(rightX, rightY + textOffsetY));
             double kmLabelWidth = gfx.MeasureString(kmLabel, _fontSmall).Width;
-            DrawUnderline(gfx, rightX + kmLabelWidth + 3, rightY + textOffsetY + 3, cbAlignX - rightX - kmLabelWidth - 8);
-            DrawCheckbox(gfx, cbAlignX, rightY + 2, data.HRD_KnowledgeManagementDone == true);
+            DrawUnderline(gfx, rightX + kmLabelWidth + 3, rightY + textOffsetY + 3, fullUnderlineWidth - kmLabelWidth - 3);
+            DrawCheckbox(gfx, cashCheckboxX, rightY + 2, data.HRD_KnowledgeManagementDone == true);
             rightY += lineHeight;
 
             string certLabel = "- การยื่นขอรับรองหลักสูตร :";
             gfx.DrawString(certLabel, _fontSmall, XBrushes.Black, new XPoint(rightX, rightY + textOffsetY));
             double certLabelWidth = gfx.MeasureString(certLabel, _fontSmall).Width;
-            DrawUnderline(gfx, rightX + certLabelWidth + 3, rightY + textOffsetY + 3, cbAlignX - rightX - certLabelWidth - 8);
-            DrawCheckbox(gfx, cbAlignX, rightY + 2, data.HRD_CourseCertification == true);
+            DrawUnderline(gfx, rightX + certLabelWidth + 3, rightY + textOffsetY + 3, fullUnderlineWidth - certLabelWidth - 3);
+            DrawCheckbox(gfx, cashCheckboxX, rightY + 2, data.HRD_CourseCertification == true);
             rightY += lineHeight + 2;
 
             // ลงชื่อ + ผู้บันทึก
