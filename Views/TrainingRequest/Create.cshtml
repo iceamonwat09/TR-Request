@@ -679,6 +679,93 @@
                                     <textarea asp-for="ExpectedOutcome" name="ExpectedOutcome" id="ExpectedOutcome" class="form-control" rows="3" style="border-radius: 10px;"></textarea>
                                 </div>
 
+                                <!-- Knowledge Management Section (เฉพาะ Public) -->
+                                <div class="form-group mt-4" id="kmSection" style="display: none;">
+                                    <div class="card border-0 shadow-sm" style="border-radius: 12px; border: 2px solid #0d6efd !important;">
+                                        <div class="card-header bg-primary text-white py-3" style="border-radius: 10px 10px 0 0;">
+                                            <h5 class="mb-0 fw-bold">
+                                                <i class="fa fa-book"></i>
+                                                แนวทางการขยายผล/การจัดการความรู้ (Knowledge Management) ภายหลังเสร็จสิ้นการอบรม กรณีอบรมภายนอก
+                                            </h5>
+                                        </div>
+                                        <div class="card-body p-4" style="background-color: #f0f4ff;">
+                                            <!-- Checkbox 1: นำส่งเอกสาร -->
+                                            <div class="form-check p-3 mb-3" style="background-color: white; border-radius: 10px; border: 1px solid #dee2e6;">
+                                                <input class="form-check-input km-checkbox" type="checkbox" name="KM_SubmitDocument" id="kmSubmitDocument" value="true" style="transform: scale(1.3);">
+                                                <label class="form-check-label ms-2" for="kmSubmitDocument">
+                                                    นำส่งเอกสาร และสื่อประกอบการอบรม (ถ้ามี) ให้กับแผนกฝึกอบรม เพื่อนำไปเผยแพร่ในห้องสมุดออนไลน์
+                                                    <span class="text-muted">(ภายใน 15 วัน หลังเสร็จสิ้นการอบรม)</span>
+                                                </label>
+                                            </div>
+
+                                            <!-- Checkbox 2: จัดทำรายงาน/PPT + วันที่ -->
+                                            <div class="form-check p-3 mb-3" style="background-color: white; border-radius: 10px; border: 1px solid #dee2e6;">
+                                                <div class="d-flex align-items-start">
+                                                    <input class="form-check-input km-checkbox" type="checkbox" name="KM_CreateReport" id="kmCreateReport" value="true" style="transform: scale(1.3); margin-top: 4px;">
+                                                    <div class="ms-2 flex-grow-1">
+                                                        <label class="form-check-label" for="kmCreateReport">
+                                                            จัดทำเป็นรายงานหรือ PPT ส่งผู้จัดการส่วน/ฝ่าย เพื่อพิจารณา หลังจากนั้นนำส่งให้แผนกฝึกอบรม
+                                                        </label>
+                                                        <div class="mt-2">
+                                                            <label class="form-label text-primary fw-semibold">โปรดระบุวันที่ดำเนินการ:</label>
+                                                            <input type="date" class="form-control" name="KM_CreateReportDate" id="kmCreateReportDate" style="max-width: 250px; border-radius: 8px;" disabled>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Checkbox 3: ถ่ายทอดความรู้ + วันที่ -->
+                                            <div class="form-check p-3" style="background-color: white; border-radius: 10px; border: 1px solid #dee2e6;">
+                                                <div class="d-flex align-items-start">
+                                                    <input class="form-check-input km-checkbox" type="checkbox" name="KM_KnowledgeSharing" id="kmKnowledgeSharing" value="true" style="transform: scale(1.3); margin-top: 4px;">
+                                                    <div class="ms-2 flex-grow-1">
+                                                        <label class="form-check-label" for="kmKnowledgeSharing">
+                                                            ถ่ายทอดความรู้ที่ได้รับจากการอบรม (Knowledge Sharing) โดยจัดบรรยายถ่ายทอดความรู้ภายในหน่วยงาน
+                                                        </label>
+                                                        <div class="mt-2">
+                                                            <label class="form-label text-primary fw-semibold">โปรดระบุวันที่ดำเนินการ:</label>
+                                                            <input type="date" class="form-control" name="KM_KnowledgeSharingDate" id="kmKnowledgeSharingDate" style="max-width: 250px; border-radius: 8px;" disabled>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <script>
+                                    // Show/Hide KM Section based on TrainingType
+                                    document.addEventListener('DOMContentLoaded', function () {
+                                        function toggleKMSection() {
+                                            var selectedType = document.querySelector('input[name="TrainingType"]:checked');
+                                            var kmSection = document.getElementById('kmSection');
+                                            if (selectedType && selectedType.value === 'Public') {
+                                                kmSection.style.display = 'block';
+                                            } else {
+                                                kmSection.style.display = 'none';
+                                            }
+                                        }
+
+                                        document.querySelectorAll('input[name="TrainingType"]').forEach(function (radio) {
+                                            radio.addEventListener('change', toggleKMSection);
+                                        });
+
+                                        // Enable/Disable date fields based on checkbox
+                                        document.getElementById('kmCreateReport').addEventListener('change', function () {
+                                            document.getElementById('kmCreateReportDate').disabled = !this.checked;
+                                            if (!this.checked) document.getElementById('kmCreateReportDate').value = '';
+                                        });
+
+                                        document.getElementById('kmKnowledgeSharing').addEventListener('change', function () {
+                                            document.getElementById('kmKnowledgeSharingDate').disabled = !this.checked;
+                                            if (!this.checked) document.getElementById('kmKnowledgeSharingDate').value = '';
+                                        });
+
+                                        // Initial check
+                                        toggleKMSection();
+                                    });
+                                </script>
+
                                 <!-- ตารางประวัติการอบรม -->
                                 <div class="mt-5" id="trainingHistorySection">
                                     <div class="card border-0 shadow-lg" style="border-radius: 15px;">
