@@ -202,8 +202,8 @@
                                         </select>
                                     </div>
 
-                                    <!-- ✅ เพิ่มช่อง การเดินทาง -->
-                                    <div class="form-group">
+                                    <!-- ✅ เพิ่มช่อง การเดินทาง (ซ่อนไว้ - ไม่ได้ใช้งานแล้ว) -->
+                                    <div class="form-group" style="display: none;">
                                         <label class="form-label fw-bold">🚗 การเดินทาง</label>
                                         <div class="d-flex gap-4 mt-2">
                                             <div class="form-check">
@@ -1185,6 +1185,137 @@
                                                 console.log('   RecorderSignature: @Model.HRD_RecorderSignature');
                                             </script>
 
+                                            <!-- ==================== การวางแผนงบประมาณ ==================== -->
+                                            <div class="row g-3">
+                                                <div class="col-md-12">
+                                                    <label class="form-label fw-bold">📊 การวางแผนงบประมาณ:</label>
+                                                    <div class="d-flex gap-4 mt-2">
+                                                        <div class="form-check">
+                                                            <input class="form-check-input" type="radio" name="HRD_BudgetPlan" value="Plan" id="budgetPlan"
+                                                                   @(Model.HRD_BudgetPlan == "Plan" ? "checked" : "") style="transform: scale(1.2);">
+                                                            <label class="form-check-label fw-medium" for="budgetPlan">Plan</label>
+                                                        </div>
+                                                        <div class="form-check">
+                                                            <input class="form-check-input" type="radio" name="HRD_BudgetPlan" value="Unplan" id="budgetUnplan"
+                                                                   @(Model.HRD_BudgetPlan == "Unplan" ? "checked" : "") style="transform: scale(1.2);">
+                                                            <label class="form-check-label fw-medium" for="budgetUnplan">Unplan</label>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <!-- ==================== การใช้งบประมาณ ==================== -->
+                                                <div class="col-md-12">
+                                                    <label class="form-label fw-bold">💰 การใช้งบประมาณ:</label>
+                                                    <div class="d-flex gap-4 align-items-center mt-2 flex-wrap">
+                                                        <div class="form-check">
+                                                            <input class="form-check-input" type="radio" name="HRD_BudgetUsage" value="TYP" id="budgetTYP"
+                                                                   @(Model.HRD_BudgetUsage == "TYP" ? "checked" : "") style="transform: scale(1.2);">
+                                                            <label class="form-check-label fw-medium" for="budgetTYP">ใช้งบประมาณตามแผน TYP</label>
+                                                        </div>
+                                                        <div class="form-check d-flex align-items-center gap-2">
+                                                            <input class="form-check-input" type="radio" name="HRD_BudgetUsage" value="Department" id="budgetDept"
+                                                                   @(Model.HRD_BudgetUsage == "Department" ? "checked" : "") style="transform: scale(1.2);">
+                                                            <label class="form-check-label fw-medium" for="budgetDept">ใช้งบต้นสังกัด คงเหลือ</label>
+                                                            <input type="text" class="form-control form-control-sm" id="hrdDeptBudgetRemaining" name="HRD_DepartmentBudgetRemaining"
+                                                                   value="@(Model.HRD_DepartmentBudgetRemaining?.ToString("N2") ?? "0")"
+                                                                   style="max-width: 150px; border-radius: 8px; text-align: right;"
+                                                                   @(Model.HRD_BudgetUsage == "TYP" ? "" : "readonly")>
+                                                            <span class="fw-medium">บาท</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <!-- ==================== การเป็นสมาชิก/สิทธิพิเศษ ==================== -->
+                                                <div class="col-md-12">
+                                                    <label class="form-label fw-bold">🏷️ การเป็นสมาชิก/สิทธิพิเศษ:</label>
+                                                    <div class="d-flex gap-4 align-items-center mt-2 flex-wrap">
+                                                        <div class="form-check d-flex align-items-center gap-2">
+                                                            <input class="form-check-input" type="radio" name="HRD_MembershipType" value="Member" id="memberYes"
+                                                                   @(Model.HRD_MembershipType == "Member" ? "checked" : "") style="transform: scale(1.2);">
+                                                            <label class="form-check-label fw-medium" for="memberYes">เป็นสมาชิก</label>
+                                                            <input type="number" step="0.01" class="form-control form-control-sm membership-cost-input" id="memberCost"
+                                                                   style="max-width: 150px; border-radius: 8px; text-align: right;"
+                                                                   @(Model.HRD_MembershipType == "Member" ? $"value={Model.HRD_MembershipCost?.ToString("F2") ?? ""}" : "disabled")>
+                                                            <span class="fw-medium">บาท</span>
+                                                        </div>
+                                                        <div class="form-check d-flex align-items-center gap-2">
+                                                            <input class="form-check-input" type="radio" name="HRD_MembershipType" value="NonMember" id="memberNo"
+                                                                   @(Model.HRD_MembershipType == "NonMember" ? "checked" : "") style="transform: scale(1.2);">
+                                                            <label class="form-check-label fw-medium" for="memberNo">ไม่เป็นสมาชิก</label>
+                                                            <input type="number" step="0.01" class="form-control form-control-sm membership-cost-input" id="nonMemberCost"
+                                                                   style="max-width: 150px; border-radius: 8px; text-align: right;"
+                                                                   @(Model.HRD_MembershipType == "NonMember" ? $"value={Model.HRD_MembershipCost?.ToString("F2") ?? ""}" : "disabled")>
+                                                            <span class="fw-medium">บาท</span>
+                                                        </div>
+                                                    </div>
+                                                    <input type="hidden" name="HRD_MembershipCost" id="hrdMembershipCostHidden" value="@(Model.HRD_MembershipCost?.ToString("F2") ?? "")">
+                                                </div>
+                                            </div>
+
+                                            <hr class="my-4">
+
+                                            <!-- ==================== ประวัติการอบรม (ตาราง) ==================== -->
+                                            <div>
+                                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                                    <label class="form-label fw-bold mb-0">📋 ประวัติการอบรม: <span class="text-muted">จากการตรวจสอบประวัติการฝึกอบรมของพนักงานพบว่า (กรณีมีจำนวนมากให้แนบเอกสารเพิ่มได้)</span></label>
+                                                    <button type="button" class="btn btn-sm btn-primary" id="btnAddTrainingHistory" data-bs-toggle="modal" data-bs-target="#trainingHistoryModal" style="border-radius: 20px;">
+                                                        <i class="fas fa-plus me-1"></i> เพิ่ม
+                                                    </button>
+                                                </div>
+                                                <div class="table-responsive">
+                                                    <table class="table table-bordered table-hover mb-0" id="trainingHistoryTable" style="font-size: 0.9rem;">
+                                                        <thead class="table-primary">
+                                                            <tr>
+                                                                <th class="text-center" style="width: 50px;">ที่</th>
+                                                                <th class="text-center" style="min-width: 100px;">รหัสพนักงาน</th>
+                                                                <th class="text-center" style="min-width: 150px;">ชื่อ - สกุล</th>
+                                                                <th class="text-center" style="width: 80px;">ไม่เคย</th>
+                                                                <th class="text-center" style="width: 80px;">เคย</th>
+                                                                <th class="text-center" style="width: 80px;">ใกล้เคียง</th>
+                                                                <th class="text-center" style="min-width: 120px;">เมื่อวันที่</th>
+                                                                <th class="text-center" style="min-width: 200px;">ชื่อหลักสูตร</th>
+                                                                <th class="text-center" style="width: 80px;">จัดการ</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody id="trainingHistoryTableBody">
+                                                            @if (Model.TrainingHistories != null && Model.TrainingHistories.Count > 0)
+                                                            {
+                                                                var rowIndex = 1;
+                                                                foreach (var history in Model.TrainingHistories)
+                                                                {
+                                                                    <tr data-id="@history.Id">
+                                                                        <td class="text-center align-middle">@rowIndex</td>
+                                                                        <td class="text-center align-middle">@history.EmployeeCode</td>
+                                                                        <td class="align-middle">@history.EmployeeName</td>
+                                                                        <td class="text-center align-middle">
+                                                                            <input type="checkbox" class="form-check-input" disabled @(history.HistoryType == "Never" ? "checked" : "")>
+                                                                        </td>
+                                                                        <td class="text-center align-middle">
+                                                                            <input type="checkbox" class="form-check-input" disabled @(history.HistoryType == "Ever" ? "checked" : "")>
+                                                                        </td>
+                                                                        <td class="text-center align-middle">
+                                                                            <input type="checkbox" class="form-check-input" disabled @(history.HistoryType == "Similar" ? "checked" : "")>
+                                                                        </td>
+                                                                        <td class="text-center align-middle">@history.TrainingDate?.ToString("dd/MM/yyyy")</td>
+                                                                        <td class="align-middle">@history.CourseName</td>
+                                                                        <td class="text-center align-middle">
+                                                                            <button type="button" class="btn btn-sm btn-outline-danger btn-remove-history" title="ลบ">
+                                                                                <i class="fas fa-trash"></i>
+                                                                            </button>
+                                                                        </td>
+                                                                    </tr>
+                                                                    rowIndex++;
+                                                                }
+                                                            }
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                                <input type="hidden" name="TrainingHistoryJson" id="trainingHistoryJson" value="">
+                                            </div>
+
+                                            <hr class="my-4">
+
+                                            <!-- ==================== HRD Section: ติดต่อสถาบัน/การชำระเงิน/การดำเนินงาน (ย้ายมาจากด้านบน) ==================== -->
                                             <div class="row g-3">
                                                 <!-- ติดต่อสถาบัน -->
                                                 <div class="col-md-6">
@@ -1307,135 +1438,6 @@
                                                     </div>
                                                 </div>
                                             </div>
-
-                                            <hr class="my-4">
-
-                                            <!-- ==================== การวางแผนงบประมาณ ==================== -->
-                                            <div class="row g-3">
-                                                <div class="col-md-12">
-                                                    <label class="form-label fw-bold">📊 การวางแผนงบประมาณ:</label>
-                                                    <div class="d-flex gap-4 mt-2">
-                                                        <div class="form-check">
-                                                            <input class="form-check-input" type="radio" name="HRD_BudgetPlan" value="Plan" id="budgetPlan"
-                                                                   @(Model.HRD_BudgetPlan == "Plan" ? "checked" : "") style="transform: scale(1.2);">
-                                                            <label class="form-check-label fw-medium" for="budgetPlan">Plan</label>
-                                                        </div>
-                                                        <div class="form-check">
-                                                            <input class="form-check-input" type="radio" name="HRD_BudgetPlan" value="Unplan" id="budgetUnplan"
-                                                                   @(Model.HRD_BudgetPlan == "Unplan" ? "checked" : "") style="transform: scale(1.2);">
-                                                            <label class="form-check-label fw-medium" for="budgetUnplan">Unplan</label>
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                <!-- ==================== การใช้งบประมาณ ==================== -->
-                                                <div class="col-md-12">
-                                                    <label class="form-label fw-bold">💰 การใช้งบประมาณ:</label>
-                                                    <div class="d-flex gap-4 align-items-center mt-2 flex-wrap">
-                                                        <div class="form-check">
-                                                            <input class="form-check-input" type="radio" name="HRD_BudgetUsage" value="TYP" id="budgetTYP"
-                                                                   @(Model.HRD_BudgetUsage == "TYP" ? "checked" : "") style="transform: scale(1.2);">
-                                                            <label class="form-check-label fw-medium" for="budgetTYP">ใช้งบประมาณตามแผน TYP</label>
-                                                        </div>
-                                                        <div class="form-check d-flex align-items-center gap-2">
-                                                            <input class="form-check-input" type="radio" name="HRD_BudgetUsage" value="Department" id="budgetDept"
-                                                                   @(Model.HRD_BudgetUsage == "Department" ? "checked" : "") style="transform: scale(1.2);">
-                                                            <label class="form-check-label fw-medium" for="budgetDept">ใช้งบต้นสังกัด คงเหลือ</label>
-                                                            <input type="text" class="form-control form-control-sm" id="hrdDeptBudgetRemaining" name="HRD_DepartmentBudgetRemaining"
-                                                                   value="@(Model.HRD_DepartmentBudgetRemaining?.ToString("N2") ?? "0")"
-                                                                   style="max-width: 150px; border-radius: 8px; text-align: right;" readonly>
-                                                            <span class="fw-medium">บาท</span>
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                <!-- ==================== การเป็นสมาชิก/สิทธิพิเศษ ==================== -->
-                                                <div class="col-md-12">
-                                                    <label class="form-label fw-bold">🏷️ การเป็นสมาชิก/สิทธิพิเศษ:</label>
-                                                    <div class="d-flex gap-4 align-items-center mt-2 flex-wrap">
-                                                        <div class="form-check d-flex align-items-center gap-2">
-                                                            <input class="form-check-input" type="radio" name="HRD_MembershipType" value="Member" id="memberYes"
-                                                                   @(Model.HRD_MembershipType == "Member" ? "checked" : "") style="transform: scale(1.2);">
-                                                            <label class="form-check-label fw-medium" for="memberYes">เป็นสมาชิก</label>
-                                                            <input type="number" step="0.01" class="form-control form-control-sm membership-cost-input" id="memberCost"
-                                                                   style="max-width: 150px; border-radius: 8px; text-align: right;"
-                                                                   @(Model.HRD_MembershipType == "Member" ? $"value={Model.HRD_MembershipCost?.ToString("F2") ?? ""}" : "disabled")>
-                                                            <span class="fw-medium">บาท</span>
-                                                        </div>
-                                                        <div class="form-check d-flex align-items-center gap-2">
-                                                            <input class="form-check-input" type="radio" name="HRD_MembershipType" value="NonMember" id="memberNo"
-                                                                   @(Model.HRD_MembershipType == "NonMember" ? "checked" : "") style="transform: scale(1.2);">
-                                                            <label class="form-check-label fw-medium" for="memberNo">ไม่เป็นสมาชิก</label>
-                                                            <input type="number" step="0.01" class="form-control form-control-sm membership-cost-input" id="nonMemberCost"
-                                                                   style="max-width: 150px; border-radius: 8px; text-align: right;"
-                                                                   @(Model.HRD_MembershipType == "NonMember" ? $"value={Model.HRD_MembershipCost?.ToString("F2") ?? ""}" : "disabled")>
-                                                            <span class="fw-medium">บาท</span>
-                                                        </div>
-                                                    </div>
-                                                    <input type="hidden" name="HRD_MembershipCost" id="hrdMembershipCostHidden" value="@(Model.HRD_MembershipCost?.ToString("F2") ?? "")">
-                                                </div>
-                                            </div>
-
-                                            <hr class="my-4">
-
-                                            <!-- ==================== ประวัติการอบรม (ตาราง) ==================== -->
-                                            <div>
-                                                <div class="d-flex justify-content-between align-items-center mb-3">
-                                                    <label class="form-label fw-bold mb-0">📋 ประวัติการอบรม: <span class="text-muted">จากการตรวจสอบประวัติการฝึกอบรมของพนักงานพบว่า (กรณีมีจำนวนมากให้แนบเอกสารเพิ่มได้)</span></label>
-                                                    <button type="button" class="btn btn-sm btn-primary" id="btnAddTrainingHistory" data-bs-toggle="modal" data-bs-target="#trainingHistoryModal" style="border-radius: 20px;">
-                                                        <i class="fas fa-plus me-1"></i> เพิ่ม
-                                                    </button>
-                                                </div>
-                                                <div class="table-responsive">
-                                                    <table class="table table-bordered table-hover mb-0" id="trainingHistoryTable" style="font-size: 0.9rem;">
-                                                        <thead class="table-primary">
-                                                            <tr>
-                                                                <th class="text-center" style="width: 50px;">ที่</th>
-                                                                <th class="text-center" style="min-width: 100px;">รหัสพนักงาน</th>
-                                                                <th class="text-center" style="min-width: 150px;">ชื่อ - สกุล</th>
-                                                                <th class="text-center" style="width: 80px;">ไม่เคย</th>
-                                                                <th class="text-center" style="width: 80px;">เคย</th>
-                                                                <th class="text-center" style="width: 80px;">ใกล้เคียง</th>
-                                                                <th class="text-center" style="min-width: 120px;">เมื่อวันที่</th>
-                                                                <th class="text-center" style="min-width: 200px;">ชื่อหลักสูตร</th>
-                                                                <th class="text-center" style="width: 80px;">จัดการ</th>
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody id="trainingHistoryTableBody">
-                                                            @if (Model.TrainingHistories != null && Model.TrainingHistories.Count > 0)
-                                                            {
-                                                                var rowIndex = 1;
-                                                                foreach (var history in Model.TrainingHistories)
-                                                                {
-                                                                    <tr data-id="@history.Id">
-                                                                        <td class="text-center align-middle">@rowIndex</td>
-                                                                        <td class="text-center align-middle">@history.EmployeeCode</td>
-                                                                        <td class="align-middle">@history.EmployeeName</td>
-                                                                        <td class="text-center align-middle">
-                                                                            <input type="checkbox" class="form-check-input" disabled @(history.HistoryType == "Never" ? "checked" : "")>
-                                                                        </td>
-                                                                        <td class="text-center align-middle">
-                                                                            <input type="checkbox" class="form-check-input" disabled @(history.HistoryType == "Ever" ? "checked" : "")>
-                                                                        </td>
-                                                                        <td class="text-center align-middle">
-                                                                            <input type="checkbox" class="form-check-input" disabled @(history.HistoryType == "Similar" ? "checked" : "")>
-                                                                        </td>
-                                                                        <td class="text-center align-middle">@history.TrainingDate?.ToString("dd/MM/yyyy")</td>
-                                                                        <td class="align-middle">@history.CourseName</td>
-                                                                        <td class="text-center align-middle">
-                                                                            <button type="button" class="btn btn-sm btn-outline-danger btn-remove-history" title="ลบ">
-                                                                                <i class="fas fa-trash"></i>
-                                                                            </button>
-                                                                        </td>
-                                                                    </tr>
-                                                                    rowIndex++;
-                                                                }
-                                                            }
-                                                        </tbody>
-                                                    </table>
-                                                </div>
-                                                <input type="hidden" name="TrainingHistoryJson" id="trainingHistoryJson" value="">
-                                            </div>
                                         </div>
                                     </div>
 
@@ -1529,7 +1531,18 @@
                                             document.getElementById('nonMemberCost').addEventListener('input', syncMembershipCost);
 
                                             // ===== Auto-fill ยอดเงินคงเหลือจากตารางพนักงาน =====
+                                            // ✅ ปรับ Logic: TYP = แก้ไขได้ / Department = readonly + auto-fill
                                             function updateDeptBudgetRemaining() {
+                                                var field = document.getElementById('hrdDeptBudgetRemaining');
+                                                var budgetUsage = document.querySelector('input[name="HRD_BudgetUsage"]:checked');
+
+                                                // ถ้าเลือก TYP → ไม่ต้อง auto-fill (ให้ user กรอกเอง)
+                                                if (budgetUsage && budgetUsage.value === 'TYP') {
+                                                    console.log('📊 Budget Usage: TYP - Skip auto-fill');
+                                                    return;
+                                                }
+
+                                                // ถ้าเลือก Department หรือยังไม่เลือก → auto-fill จากตาราง
                                                 var rows = document.querySelectorAll('#employeeTableBody tr');
                                                 var lastRemainingCost = 0;
                                                 if (rows.length > 0) {
@@ -1541,12 +1554,35 @@
                                                         lastRemainingCost = parseFloat(val) || 0;
                                                     }
                                                 }
-                                                var field = document.getElementById('hrdDeptBudgetRemaining');
                                                 if (field) {
                                                     field.value = lastRemainingCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
                                                 }
                                                 console.log('✅ Updated hrdDeptBudgetRemaining:', lastRemainingCost);
                                             }
+
+                                            // ✅ Toggle readonly สำหรับ HRD_DepartmentBudgetRemaining ตาม HRD_BudgetUsage
+                                            function toggleBudgetRemainingReadonly() {
+                                                var field = document.getElementById('hrdDeptBudgetRemaining');
+                                                var budgetUsage = document.querySelector('input[name="HRD_BudgetUsage"]:checked');
+
+                                                if (!field) return;
+
+                                                if (budgetUsage && budgetUsage.value === 'TYP') {
+                                                    // TYP: ให้แก้ไขได้
+                                                    field.removeAttribute('readonly');
+                                                    console.log('📊 Budget Usage: TYP - Field is editable');
+                                                } else {
+                                                    // Department หรือยังไม่เลือก: readonly + auto-fill
+                                                    field.setAttribute('readonly', 'readonly');
+                                                    updateDeptBudgetRemaining();
+                                                    console.log('📊 Budget Usage: Department - Field is readonly + auto-fill');
+                                                }
+                                            }
+
+                                            // ✅ Event listener สำหรับ radio button HRD_BudgetUsage
+                                            document.querySelectorAll('input[name="HRD_BudgetUsage"]').forEach(function(radio) {
+                                                radio.addEventListener('change', toggleBudgetRemainingReadonly);
+                                            });
 
                                             // Observe changes to employee table
                                             var empTableBody = document.getElementById('employeeTableBody');
@@ -1555,6 +1591,9 @@
                                                 observer.observe(empTableBody, { childList: true, subtree: true, characterData: true });
                                                 updateDeptBudgetRemaining(); // Initial
                                             }
+
+                                            // ✅ Initial state check เมื่อโหลดหน้า
+                                            toggleBudgetRemainingReadonly();
 
                                             // ===== Training History Table Management =====
                                             var trainingHistories = [];
