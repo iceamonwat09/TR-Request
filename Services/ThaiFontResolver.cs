@@ -8,26 +8,29 @@ namespace TrainingRequestApp.Services
     /// Custom Font Resolver สำหรับ PdfSharpCore
     /// แก้ปัญหาภาษาไทย (ไม้เอก ไม้โท สระบน ฯลฯ) ไม่แสดงใน PDF
     ///
-    /// วิธีใช้:
-    /// - วางไฟล์ฟอนต์ .ttf ในโฟลเดอร์ Fonts/
-    /// - ถ้ามี Tahoma.ttf / tahomabd.ttf จะใช้ Tahoma
-    /// - ถ้าไม่มี จะ fallback ไปใช้ Loma.ttf / Loma-Bold.ttf
+    /// วิธีใช้ Tahoma:
+    ///   1. คัดลอกไฟล์จาก Windows: C:\Windows\Fonts\tahoma.ttf และ tahomabd.ttf
+    ///   2. วางในโฟลเดอร์: [โปรเจค]/Fonts/tahoma.ttf และ Fonts/tahomabd.ttf
+    ///   3. ระบบจะใช้ Tahoma โดยอัตโนมัติ
+    ///
+    /// ถ้าไม่มี Tahoma จะ fallback ใช้ Loma.ttf (ฟอนต์ไทยที่ฝังมาด้วย)
     /// </summary>
     public class ThaiFontResolver : IFontResolver
     {
-        // Face name keys
         private const string REGULAR_FACE = "Thai#Regular";
         private const string BOLD_FACE = "Thai#Bold";
 
         private static string _fontsDirectory;
+        private static string _resolvedRegularFont;
+        private static string _resolvedBoldFont;
 
         static ThaiFontResolver()
         {
             // ค้นหาโฟลเดอร์ Fonts จากหลายตำแหน่ง
             string[] searchPaths = new[]
             {
-                Path.Combine(AppContext.BaseDirectory, "Fonts"),
                 Path.Combine(Directory.GetCurrentDirectory(), "Fonts"),
+                Path.Combine(AppContext.BaseDirectory, "Fonts"),
                 Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Fonts")
             };
 
@@ -44,37 +47,43 @@ namespace TrainingRequestApp.Services
             if (_fontsDirectory == null)
             {
                 throw new DirectoryNotFoundException(
-                    "ไม่พบโฟลเดอร์ Fonts/ กรุณาสร้างโฟลเดอร์และวางไฟล์ฟอนต์ .ttf");
+                    "ไม่พบโฟลเดอร์ Fonts/ กรุณาสร้างโฟลเดอร์ Fonts/ ในโปรเจค");
             }
+
+            // ค้นหาฟอนต์ล่วงหน้า และแจ้งว่าใช้ฟอนต์อะไร
+            _resolvedRegularFont = FindFont(false);
+            _resolvedBoldFont = FindFont(true);
+
+            Console.WriteLine($"[ThaiFontResolver] Fonts directory: {_fontsDirectory}");
+            Console.WriteLine($"[ThaiFontResolver] Regular: {Path.GetFileName(_resolvedRegularFont ?? "NOT FOUND")}");
+            Console.WriteLine($"[ThaiFontResolver] Bold: {Path.GetFileName(_resolvedBoldFont ?? "NOT FOUND")}");
         }
 
         public FontResolverInfo ResolveTypeface(string familyName, bool isBold, bool isItalic)
         {
-            // ทุก font family ที่ร้องขอ จะถูก map ไปที่ฟอนต์ไทยที่ฝังไว้
-            string faceName = isBold ? BOLD_FACE : REGULAR_FACE;
-            return new FontResolverInfo(faceName);
+            return new FontResolverInfo(isBold ? BOLD_FACE : REGULAR_FACE);
         }
 
         public byte[] GetFont(string faceName)
         {
-            string fontPath = GetFontFilePath(faceName == BOLD_FACE);
+            string fontPath = (faceName == BOLD_FACE) ? _resolvedBoldFont : _resolvedRegularFont;
 
             if (string.IsNullOrEmpty(fontPath) || !File.Exists(fontPath))
             {
                 throw new FileNotFoundException(
                     $"ไม่พบไฟล์ฟอนต์ใน {_fontsDirectory}/ " +
-                    "กรุณาวางไฟล์ Tahoma.ttf หรือ Loma.ttf");
+                    "กรุณาวาง tahoma.ttf + tahomabd.ttf (คัดลอกจาก C:\\Windows\\Fonts\\) " +
+                    "หรือ Loma.ttf + Loma-Bold.ttf ในโฟลเดอร์ Fonts/");
             }
 
             return File.ReadAllBytes(fontPath);
         }
 
         /// <summary>
-        /// ค้นหาไฟล์ฟอนต์ โดยเช็ค Tahoma ก่อน ถ้าไม่มีจะ fallback เป็น Loma
+        /// ค้นหาฟอนต์ตามลำดับ: tahoma → Loma
         /// </summary>
-        private string GetFontFilePath(bool isBold)
+        private static string FindFont(bool isBold)
         {
-            // ลำดับการค้นหา: Tahoma → Loma
             string[] candidates = isBold
                 ? new[] { "tahomabd.ttf", "Tahoma-Bold.ttf", "Loma-Bold.ttf" }
                 : new[] { "tahoma.ttf", "Tahoma.ttf", "Loma.ttf" };
