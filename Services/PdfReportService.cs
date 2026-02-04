@@ -4,6 +4,7 @@ using System.Data.SqlClient;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using PdfSharpCore.Drawing;
+using PdfSharpCore.Fonts;
 using PdfSharpCore.Pdf;
 
 namespace TrainingRequestApp.Services
@@ -36,10 +37,25 @@ namespace TrainingRequestApp.Services
         private XPen _thinPen;
         private XPen _dottedPen;
 
+        // ป้องกันการลงทะเบียน FontResolver ซ้ำ (thread-safe)
+        private static bool _fontResolverRegistered = false;
+        private static readonly object _fontResolverLock = new object();
+
         public PdfReportService(IConfiguration configuration)
         {
             _configuration = configuration;
             _connectionString = _configuration.GetConnectionString("DefaultConnection");
+
+            // ลงทะเบียน ThaiFontResolver เพื่อฝังฟอนต์ .ttf ลง PDF
+            // แก้ปัญหาไม้เอก ไม้โท สระบน ไม่แสดงบน Linux Server
+            lock (_fontResolverLock)
+            {
+                if (!_fontResolverRegistered)
+                {
+                    GlobalFontSettings.FontResolver = new ThaiFontResolver();
+                    _fontResolverRegistered = true;
+                }
+            }
 
             var options = new XPdfFontOptions(PdfFontEncoding.Unicode);
             string fontName = "Tahoma";
