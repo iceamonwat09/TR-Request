@@ -39,10 +39,25 @@ namespace TrainingRequestApp.Services
         private const char PUA_SARA_UEE     = '\uF704';
 
         // PUA: combined above-vowel + tone mark
+        // Sara I (ิ) combinations
         private const char PUA_SARA_I_MAI_EK       = '\uF710';
         private const char PUA_SARA_I_MAI_THO      = '\uF711';
         private const char PUA_SARA_I_MAI_TRI      = '\uF712';
         private const char PUA_SARA_I_MAI_CHATTAWA = '\uF713';
+
+        // Sara II (ี) combinations - สำหรับ "ที่" "มี่" ฯลฯ
+        private const char PUA_SARA_II_MAI_EK       = '\uF714';
+        private const char PUA_SARA_II_MAI_THO      = '\uF715';
+        private const char PUA_SARA_II_MAI_TRI      = '\uF716';
+        private const char PUA_SARA_II_MAI_CHATTAWA = '\uF717';
+
+        // Sara UE (ึ) combinations
+        private const char PUA_SARA_UE_MAI_EK       = '\uF718';
+        private const char PUA_SARA_UE_MAI_THO      = '\uF719';
+
+        // Sara UEE (ื) combinations - สำหรับ "ชื่อ" "ลื่น" ฯลฯ
+        private const char PUA_SARA_UEE_MAI_EK      = '\uF71A';
+        private const char PUA_SARA_UEE_MAI_THO     = '\uF71B';
 
         // Tall consonants ที่ต้องใช้ lowered marks
         private static readonly HashSet<char> TallConsonants = new HashSet<char>
@@ -131,7 +146,7 @@ namespace TrainingRequestApp.Services
         /// </summary>
         private static char GetCombinedForm(char vowel, char puaMark)
         {
-            // Sara I + tone mark → combined PUA
+            // Sara I (ิ) + tone mark → combined PUA
             if (vowel == SARA_I || vowel == PUA_SARA_I)
             {
                 switch (puaMark)
@@ -140,6 +155,38 @@ namespace TrainingRequestApp.Services
                     case PUA_MAI_THO:      return PUA_SARA_I_MAI_THO;
                     case PUA_MAI_TRI:      return PUA_SARA_I_MAI_TRI;
                     case PUA_MAI_CHATTAWA: return PUA_SARA_I_MAI_CHATTAWA;
+                }
+            }
+
+            // Sara II (ี) + tone mark → combined PUA (สำหรับ "ที่" "มี่" ฯลฯ)
+            if (vowel == SARA_II || vowel == PUA_SARA_II)
+            {
+                switch (puaMark)
+                {
+                    case PUA_MAI_EK:       return PUA_SARA_II_MAI_EK;
+                    case PUA_MAI_THO:      return PUA_SARA_II_MAI_THO;
+                    case PUA_MAI_TRI:      return PUA_SARA_II_MAI_TRI;
+                    case PUA_MAI_CHATTAWA: return PUA_SARA_II_MAI_CHATTAWA;
+                }
+            }
+
+            // Sara UE (ึ) + tone mark → combined PUA
+            if (vowel == SARA_UE || vowel == PUA_SARA_UE)
+            {
+                switch (puaMark)
+                {
+                    case PUA_MAI_EK:  return PUA_SARA_UE_MAI_EK;
+                    case PUA_MAI_THO: return PUA_SARA_UE_MAI_THO;
+                }
+            }
+
+            // Sara UEE (ื) + tone mark → combined PUA (สำหรับ "ชื่อ" "ลื่น" ฯลฯ)
+            if (vowel == SARA_UEE || vowel == PUA_SARA_UEE)
+            {
+                switch (puaMark)
+                {
+                    case PUA_MAI_EK:  return PUA_SARA_UEE_MAI_EK;
+                    case PUA_MAI_THO: return PUA_SARA_UEE_MAI_THO;
                 }
             }
 
