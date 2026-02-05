@@ -185,7 +185,7 @@ namespace TrainingRequestApp.Services
 
             DrawThaiString(gfx,"ประเภทการอบรม :", _fontBold, XBrushes.Black, new XPoint(labelX, currentY + textOffsetY));
             // [FIX v4.5] ปรับ checkbox offset จาก +4 → +2 เพื่อไม่ให้ด้านล่างถูกตัด
-            DrawCheckbox(gfx, checkboxCol1, currentY + 2, data.TrainingType == "In-House");
+            DrawCheckbox(gfx, checkboxCol1, currentY + 2, data.TrainingType == "In House");
             DrawThaiString(gfx,"อบรมภายใน (In-House Training)", _fontSmall, XBrushes.Black, new XPoint(checkboxCol1 + 14, currentY + textOffsetY));
             DrawCheckbox(gfx, checkboxCol2, currentY + 2, data.TrainingType == "Public");
             DrawThaiString(gfx,"อบรมภายนอก (Public Training)", _fontSmall, XBrushes.Black, new XPoint(checkboxCol2 + 14, currentY + textOffsetY));
