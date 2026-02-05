@@ -264,8 +264,7 @@ namespace TrainingRequestApp.Services
             // === Row 14: วัตถุประสงค์ ===
             currentY = DrawObjectivesSection(gfx, data, contentX, currentY, contentWidth, padding, textOffsetY);
 
-            // === Row 14.5: Knowledge Management (เฉพาะ Public) ===
-            if (data.TrainingType == "Public")
+            // === Row 14.5: Knowledge Management (ทั้ง In-House และ Public) ===
             {
                 currentY += 3;
                 gfx.DrawLine(new XPen(XColors.Black, 0.5), contentX, currentY, contentX + contentWidth, currentY);
