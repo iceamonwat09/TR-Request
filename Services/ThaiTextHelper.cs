@@ -7,88 +7,59 @@ namespace TrainingRequestApp.Services
     /// แปลง Thai combining marks (ไม้เอก ไม้โท สระบน ฯลฯ) เป็น PUA glyphs
     /// เพื่อให้แสดงผลถูกต้องใน PdfSharpCore ซึ่งไม่รองรับ OpenType GPOS
     ///
-    /// หลักการ: ฟอนต์ไทย (Tahoma, Loma ฯลฯ) มี pre-positioned glyphs อยู่ใน
-    /// Private Use Area (U+F700-F71F) ซึ่งไม่ต้องอาศัย GPOS ในการจัดตำแหน่ง
+    /// สำหรับฟอนต์ Loma: ใช้ LOW variants (U+F70A-F70E) สำหรับวรรณยุกต์
+    /// ที่ตามหลังสระบน (ิ ี ึ ื ั) เพื่อไม่ให้ซ้อนทับกัน
     /// </summary>
     public static class ThaiTextHelper
     {
-        // Tone marks: standard → PUA (lowered/pre-positioned)
+        // Standard Thai tone marks
         private const char MAI_EK       = '\u0E48';  // ่
         private const char MAI_THO      = '\u0E49';  // ้
         private const char MAI_TRI      = '\u0E4A';  // ๊
         private const char MAI_CHATTAWA = '\u0E4B';  // ๋
         private const char THANTHAKHAT  = '\u0E4C';  // ์
 
-        private const char PUA_MAI_EK       = '\uF705';
-        private const char PUA_MAI_THO      = '\uF706';
-        private const char PUA_MAI_TRI      = '\uF707';
-        private const char PUA_MAI_CHATTAWA = '\uF708';
-        private const char PUA_THANTHAKHAT  = '\uF709';
+        // Loma PUA: LOW variants of tone marks (ใช้เมื่อมีสระบนนำหน้า)
+        private const char PUA_MAI_EK_LOW       = '\uF70A';
+        private const char PUA_MAI_THO_LOW      = '\uF70B';
+        private const char PUA_MAI_TRI_LOW      = '\uF70C';
+        private const char PUA_MAI_CHATTAWA_LOW = '\uF70D';
+        private const char PUA_THANTHAKHAT_LOW  = '\uF70E';
 
-        // Above-vowels that combine with tone marks
-        private const char SARA_I       = '\u0E34';  // ิ
-        private const char SARA_II      = '\u0E35';  // ี
-        private const char SARA_UE      = '\u0E36';  // ึ
-        private const char SARA_UEE     = '\u0E37';  // ื
-        private const char MAI_HAN_AKAT = '\u0E31';  // ั
-
-        // PUA: lowered above-vowels (for tall consonants)
-        private const char PUA_SARA_I       = '\uF701';
-        private const char PUA_SARA_II      = '\uF702';
-        private const char PUA_SARA_UE      = '\uF703';
-        private const char PUA_SARA_UEE     = '\uF704';
-
-        // PUA: combined above-vowel + tone mark
-        // Sara I (ิ) combinations
-        private const char PUA_SARA_I_MAI_EK       = '\uF710';
-        private const char PUA_SARA_I_MAI_THO      = '\uF711';
-        private const char PUA_SARA_I_MAI_TRI      = '\uF712';
-        private const char PUA_SARA_I_MAI_CHATTAWA = '\uF713';
-
-        // Sara II (ี) combinations - สำหรับ "ที่" "มี่" ฯลฯ
-        private const char PUA_SARA_II_MAI_EK       = '\uF714';
-        private const char PUA_SARA_II_MAI_THO      = '\uF715';
-        private const char PUA_SARA_II_MAI_TRI      = '\uF716';
-        private const char PUA_SARA_II_MAI_CHATTAWA = '\uF717';
-
-        // Sara UE (ึ) combinations
-        private const char PUA_SARA_UE_MAI_EK       = '\uF718';
-        private const char PUA_SARA_UE_MAI_THO      = '\uF719';
-
-        // Sara UEE (ื) combinations - สำหรับ "ชื่อ" "ลื่น" ฯลฯ
-        private const char PUA_SARA_UEE_MAI_EK      = '\uF71A';
-        private const char PUA_SARA_UEE_MAI_THO     = '\uF71B';
-
-        // Tall consonants ที่ต้องใช้ lowered marks
-        private static readonly HashSet<char> TallConsonants = new HashSet<char>
+        // Above-vowels ที่ทำให้ต้องใช้ LOW variant ของวรรณยุกต์
+        private static readonly HashSet<char> AboveVowels = new HashSet<char>
         {
-            '\u0E1B', // ป
-            '\u0E1D', // ฝ
-            '\u0E1F', // ฟ
-            '\u0E2C', // ฬ
+            '\u0E31', // ั MAI HAN AKAT
+            '\u0E34', // ิ SARA I
+            '\u0E35', // ี SARA II
+            '\u0E36', // ึ SARA UE
+            '\u0E37', // ื SARA UEE
+            '\u0E47', // ็ MAITAIKHU
+            '\u0E4D', // ํ NIKHAHIT
         };
 
         /// <summary>
-        /// แปลง Thai combining marks เป็น PUA pre-positioned glyphs
-        /// ข้อความที่ไม่มีอักขระไทยจะคืนค่าเดิมโดยไม่เปลี่ยนแปลง
+        /// แปลง Thai combining marks เป็น PUA glyphs ที่เหมาะสมกับ Loma font
+        /// - วรรณยุกต์ที่ตามหลังสระบน → ใช้ LOW variant (F70A-F70E)
+        /// - วรรณยุกต์เดี่ยว → คงเดิม
         /// </summary>
         public static string Fix(string text)
         {
             if (string.IsNullOrEmpty(text))
                 return text;
 
-            // Quick check: skip if no Thai combining marks
-            bool hasThai = false;
+            // Quick check: skip if no Thai tone marks
+            bool hasToneMark = false;
             for (int i = 0; i < text.Length; i++)
             {
                 char c = text[i];
-                if (c >= '\u0E48' && c <= '\u0E4C')
+                if (c >= MAI_EK && c <= THANTHAKHAT)
                 {
-                    hasThai = true;
+                    hasToneMark = true;
                     break;
                 }
             }
-            if (!hasThai)
+            if (!hasToneMark)
                 return text;
 
             var sb = new StringBuilder(text.Length);
@@ -97,26 +68,30 @@ namespace TrainingRequestApp.Services
             {
                 char c = text[i];
 
-                // Replace tone marks with PUA equivalents
-                if (c == MAI_EK || c == MAI_THO || c == MAI_TRI ||
-                    c == MAI_CHATTAWA || c == THANTHAKHAT)
+                // Check if this is a tone mark
+                if (c >= MAI_EK && c <= THANTHAKHAT)
                 {
-                    char puaMark = ToPuaToneMark(c);
-
-                    // Check if preceded by above-vowel → use combined form
+                    // Check if preceded by an above-vowel → use LOW variant
+                    bool uselow = false;
                     if (sb.Length > 0)
                     {
                         char prev = sb[sb.Length - 1];
-                        char combined = GetCombinedForm(prev, puaMark);
-                        if (combined != '\0')
+                        if (AboveVowels.Contains(prev))
                         {
-                            // Replace previous char with combined form
-                            sb[sb.Length - 1] = combined;
-                            continue;
+                            uselow = true;
                         }
                     }
 
-                    sb.Append(puaMark);
+                    if (uselow)
+                    {
+                        // Use Loma PUA LOW variant
+                        sb.Append(ToPuaLowToneMark(c));
+                    }
+                    else
+                    {
+                        // Keep standard tone mark
+                        sb.Append(c);
+                    }
                 }
                 else
                 {
@@ -127,70 +102,20 @@ namespace TrainingRequestApp.Services
             return sb.ToString();
         }
 
-        private static char ToPuaToneMark(char mark)
+        /// <summary>
+        /// แปลงวรรณยุกต์เป็น LOW variant (Loma PUA)
+        /// </summary>
+        private static char ToPuaLowToneMark(char mark)
         {
             switch (mark)
             {
-                case MAI_EK:       return PUA_MAI_EK;
-                case MAI_THO:      return PUA_MAI_THO;
-                case MAI_TRI:      return PUA_MAI_TRI;
-                case MAI_CHATTAWA: return PUA_MAI_CHATTAWA;
-                case THANTHAKHAT:  return PUA_THANTHAKHAT;
+                case MAI_EK:       return PUA_MAI_EK_LOW;
+                case MAI_THO:      return PUA_MAI_THO_LOW;
+                case MAI_TRI:      return PUA_MAI_TRI_LOW;
+                case MAI_CHATTAWA: return PUA_MAI_CHATTAWA_LOW;
+                case THANTHAKHAT:  return PUA_THANTHAKHAT_LOW;
                 default:           return mark;
             }
-        }
-
-        /// <summary>
-        /// ถ้า above-vowel + tone-mark มี combined PUA form ให้คืนค่า combined char
-        /// ถ้าไม่มี คืน '\0'
-        /// </summary>
-        private static char GetCombinedForm(char vowel, char puaMark)
-        {
-            // Sara I (ิ) + tone mark → combined PUA
-            if (vowel == SARA_I || vowel == PUA_SARA_I)
-            {
-                switch (puaMark)
-                {
-                    case PUA_MAI_EK:       return PUA_SARA_I_MAI_EK;
-                    case PUA_MAI_THO:      return PUA_SARA_I_MAI_THO;
-                    case PUA_MAI_TRI:      return PUA_SARA_I_MAI_TRI;
-                    case PUA_MAI_CHATTAWA: return PUA_SARA_I_MAI_CHATTAWA;
-                }
-            }
-
-            // Sara II (ี) + tone mark → combined PUA (สำหรับ "ที่" "มี่" ฯลฯ)
-            if (vowel == SARA_II || vowel == PUA_SARA_II)
-            {
-                switch (puaMark)
-                {
-                    case PUA_MAI_EK:       return PUA_SARA_II_MAI_EK;
-                    case PUA_MAI_THO:      return PUA_SARA_II_MAI_THO;
-                    case PUA_MAI_TRI:      return PUA_SARA_II_MAI_TRI;
-                    case PUA_MAI_CHATTAWA: return PUA_SARA_II_MAI_CHATTAWA;
-                }
-            }
-
-            // Sara UE (ึ) + tone mark → combined PUA
-            if (vowel == SARA_UE || vowel == PUA_SARA_UE)
-            {
-                switch (puaMark)
-                {
-                    case PUA_MAI_EK:  return PUA_SARA_UE_MAI_EK;
-                    case PUA_MAI_THO: return PUA_SARA_UE_MAI_THO;
-                }
-            }
-
-            // Sara UEE (ื) + tone mark → combined PUA (สำหรับ "ชื่อ" "ลื่น" ฯลฯ)
-            if (vowel == SARA_UEE || vowel == PUA_SARA_UEE)
-            {
-                switch (puaMark)
-                {
-                    case PUA_MAI_EK:  return PUA_SARA_UEE_MAI_EK;
-                    case PUA_MAI_THO: return PUA_SARA_UEE_MAI_THO;
-                }
-            }
-
-            return '\0';
         }
     }
 }
