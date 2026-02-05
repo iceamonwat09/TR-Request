@@ -8,12 +8,11 @@ namespace TrainingRequestApp.Services
     /// Custom Font Resolver สำหรับ PdfSharpCore
     /// แก้ปัญหาภาษาไทย (ไม้เอก ไม้โท สระบน ฯลฯ) ไม่แสดงใน PDF
     ///
-    /// วิธีใช้ Tahoma:
-    ///   1. คัดลอกไฟล์จาก Windows: C:\Windows\Fonts\tahoma.ttf และ tahomabd.ttf
-    ///   2. วางในโฟลเดอร์: [โปรเจค]/Fonts/tahoma.ttf และ Fonts/tahomabd.ttf
-    ///   3. ระบบจะใช้ Tahoma โดยอัตโนมัติ
+    /// ใช้ฟอนต์ Loma เป็นหลัก เพราะมี PUA glyphs (U+F700-F71F)
+    /// สำหรับ pre-positioned tone marks ที่ทำงานร่วมกับ ThaiTextHelper
     ///
-    /// ถ้าไม่มี Tahoma จะ fallback ใช้ Loma.ttf (ฟอนต์ไทยที่ฝังมาด้วย)
+    /// ไฟล์ที่ต้องมีใน Fonts/:
+    ///   - Loma.ttf และ Loma-Bold.ttf (ฝังมากับโปรเจค)
     /// </summary>
     public class ThaiFontResolver : IFontResolver
     {
@@ -72,21 +71,22 @@ namespace TrainingRequestApp.Services
             {
                 throw new FileNotFoundException(
                     $"ไม่พบไฟล์ฟอนต์ใน {_fontsDirectory}/ " +
-                    "กรุณาวาง tahoma.ttf + tahomabd.ttf (คัดลอกจาก C:\\Windows\\Fonts\\) " +
-                    "หรือ Loma.ttf + Loma-Bold.ttf ในโฟลเดอร์ Fonts/");
+                    "กรุณาวาง Loma.ttf + Loma-Bold.ttf ในโฟลเดอร์ Fonts/");
             }
 
             return File.ReadAllBytes(fontPath);
         }
 
         /// <summary>
-        /// ค้นหาฟอนต์ตามลำดับ: tahoma → Loma
+        /// ค้นหาฟอนต์ตามลำดับ: Loma (มี PUA glyphs สำหรับไม้เอก ไม้โท) → tahoma
         /// </summary>
         private static string FindFont(bool isBold)
         {
+            // Loma มี PUA glyphs (U+F700-F71F) สำหรับ pre-positioned tone marks
+            // Tahoma จาก Windows ไม่มี PUA glyphs จึงต้องใช้ Loma ก่อน
             string[] candidates = isBold
-                ? new[] { "tahomabd.ttf", "Tahoma-Bold.ttf", "Loma-Bold.ttf" }
-                : new[] { "tahoma.ttf", "Tahoma.ttf", "Loma.ttf" };
+                ? new[] { "Loma-Bold.ttf", "tahomabd.ttf", "Tahoma-Bold.ttf" }
+                : new[] { "Loma.ttf", "tahoma.ttf", "Tahoma.ttf" };
 
             foreach (var fileName in candidates)
             {
@@ -100,6 +100,6 @@ namespace TrainingRequestApp.Services
             return null;
         }
 
-        public string DefaultFontName => "Tahoma";
+        public string DefaultFontName => "Loma";
     }
 }
