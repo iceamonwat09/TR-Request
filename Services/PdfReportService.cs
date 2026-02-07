@@ -532,7 +532,8 @@ namespace TrainingRequestApp.Services
             DrawThaiString(gfx,signLabel, _fontSmall, XBrushes.Black, new XPoint(leftX, leftY + textOffsetY));
             XSize signLabelSize = gfx.MeasureString(signLabel, _fontSmall);
             double signDataX = leftX + signLabelSize.Width + labelToDataGap;
-            double signUnderlineWidth = halfWidth - signLabelSize.Width - labelToDataGap - padding * 2 - 10;
+            // [FIX v4.7] ขยายเส้นให้ยาวถึงขอบ (ลบ -10 ออก)
+            double signUnderlineWidth = halfWidth - signLabelSize.Width - labelToDataGap - padding * 2;
             DrawUnderline(gfx, signDataX, leftY + textOffsetY + 3, signUnderlineWidth);
 
             if ((isDeputyManagingApproved || isDeputyManagingRejected) && !string.IsNullOrEmpty(data.DeputyManagingDirectorId))
@@ -558,7 +559,8 @@ namespace TrainingRequestApp.Services
             DrawThaiString(gfx,posLabel, _fontSmall, XBrushes.Black, new XPoint(leftX, leftY + textOffsetY));
             XSize posLabelSize = gfx.MeasureString(posLabel, _fontSmall);
             double posDataX = leftX + posLabelSize.Width + labelToDataGap;
-            double posUnderlineWidth = halfWidth - posLabelSize.Width - labelToDataGap - padding * 2 - 10;
+            // [FIX v4.7] ขยายเส้นให้ยาวถึงขอบ (ลบ -10 ออก)
+            double posUnderlineWidth = halfWidth - posLabelSize.Width - labelToDataGap - padding * 2;
             DrawUnderline(gfx, posDataX, leftY + textOffsetY + 3, posUnderlineWidth);
 
             if ((isDeputyManagingApproved || isDeputyManagingRejected) && !string.IsNullOrEmpty(data.DeputyManagingDirectorLevel))
@@ -648,11 +650,12 @@ namespace TrainingRequestApp.Services
             // เส้นใต้ต้องยาวจาก label ไปถึง checkbox (รวม checkbox ด้วย)
             double underlineEndX = cashCheckboxX + 15; // สิ้นสุดหลัง checkbox
 
+            // [FIX v4.7] ขยายเส้นให้ยาวถึงขอบ เหมือน ภายในวันที่
             string trainingRecordLabel = "- บันทึกประวัติฝึกอบรม Training Record :";
             DrawThaiString(gfx,trainingRecordLabel, _fontSmall, XBrushes.Black, new XPoint(rightX, rightY + textOffsetY));
             double trLabelWidth = gfx.MeasureString(trainingRecordLabel, _fontSmall).Width;
             double trUnderlineStart = rightX + trLabelWidth + 3;
-            DrawUnderline(gfx, trUnderlineStart, rightY + textOffsetY + 3, underlineEndX - trUnderlineStart);
+            DrawUnderline(gfx, trUnderlineStart, rightY + textOffsetY + 3, fullUnderlineWidth - trLabelWidth - 3);
             DrawCheckbox(gfx, cashCheckboxX, rightY + 2, data.HRD_TrainingRecord == true);
             rightY += lineHeight;
 
@@ -660,7 +663,7 @@ namespace TrainingRequestApp.Services
             DrawThaiString(gfx,kmLabel, _fontSmall, XBrushes.Black, new XPoint(rightX, rightY + textOffsetY));
             double kmLabelWidth = gfx.MeasureString(kmLabel, _fontSmall).Width;
             double kmUnderlineStart = rightX + kmLabelWidth + 3;
-            DrawUnderline(gfx, kmUnderlineStart, rightY + textOffsetY + 3, underlineEndX - kmUnderlineStart);
+            DrawUnderline(gfx, kmUnderlineStart, rightY + textOffsetY + 3, fullUnderlineWidth - kmLabelWidth - 3);
             DrawCheckbox(gfx, cashCheckboxX, rightY + 2, data.HRD_KnowledgeManagementDone == true);
             rightY += lineHeight;
 
@@ -668,16 +671,18 @@ namespace TrainingRequestApp.Services
             DrawThaiString(gfx,certLabel, _fontSmall, XBrushes.Black, new XPoint(rightX, rightY + textOffsetY));
             double certLabelWidth = gfx.MeasureString(certLabel, _fontSmall).Width;
             double certUnderlineStart = rightX + certLabelWidth + 3;
-            DrawUnderline(gfx, certUnderlineStart, rightY + textOffsetY + 3, underlineEndX - certUnderlineStart);
+            DrawUnderline(gfx, certUnderlineStart, rightY + textOffsetY + 3, fullUnderlineWidth - certLabelWidth - 3);
             DrawCheckbox(gfx, cashCheckboxX, rightY + 2, data.HRD_CourseCertification == true);
             rightY += lineHeight + 2;
 
             // ลงชื่อ + ผู้บันทึก
+            // [FIX v4.7] ขยายเส้นให้ยาวถึงขอบ แต่เว้นที่ให้ "ผู้บันทึก" ต่อท้าย
             string signLabel2 = "ลงชื่อ :";
             DrawThaiString(gfx,signLabel2, _fontSmall, XBrushes.Black, new XPoint(rightX, rightY + textOffsetY));
             XSize signLabel2Size = gfx.MeasureString(signLabel2, _fontSmall);
             double signDataX2 = rightX + signLabel2Size.Width + labelToDataGap;
-            double signUnderlineWidth2 = content4Width - signLabel2Size.Width - labelToDataGap - padding * 2 - 50;
+            XSize recorderLabelSize = gfx.MeasureString("ผู้บันทึก", _fontSmall);
+            double signUnderlineWidth2 = fullUnderlineWidth - signLabel2Size.Width - labelToDataGap - recorderLabelSize.Width - 10;
             DrawUnderline(gfx, signDataX2, rightY + textOffsetY + 3, signUnderlineWidth2);
             if (!string.IsNullOrEmpty(data.HRD_RecorderSignature))
             {
