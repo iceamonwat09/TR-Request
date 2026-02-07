@@ -285,18 +285,20 @@ namespace TrainingRequestApp.Services
                 DrawCheckbox(gfx, labelX, currentY + 4, data.KM_CreateReport == true);
                 DrawThaiString(gfx,"จัดทำเป็นรายงานหรือ PPT ส่งผู้จัดการส่วน/ฝ่าย เพื่อพิจารณา หลังจากนั้นนำส่งให้แผนกฝึกอบรม   โปรดระบุวันที่ดำเนินการ",
                     _fontTiny, XBrushes.Black, new XPoint(labelX + 14, currentY + textOffsetY));
-                // [FIX v4.4] ลบ ...../...../...... ออก - แสดงเฉพาะวันที่จริงหรือเว้นว่าง
+                // [FIX v4.6] ขยายเส้นให้ยาวถึงขอบขวา
                 string reportDate = data.KM_CreateReportDate?.ToString("dd/MM/yyyy") ?? "";
-                DrawUnderlineText(gfx, labelX + 400, currentY + textOffsetY, 80, reportDate, 0);
+                double lineStartX = labelX + 420;
+                double lineWidth = contentWidth - 430;
+                DrawUnderlineText(gfx, lineStartX, currentY + textOffsetY, lineWidth, reportDate, 0);
                 currentY += rowHeight;
 
                 // Checkbox 3: ถ่ายทอดความรู้ + วันที่
                 DrawCheckbox(gfx, labelX, currentY + 4, data.KM_KnowledgeSharing == true);
                 DrawThaiString(gfx,"ถ่ายทอดความรู้ที่ได้รับจากการอบรม (Knowledge Sharing) โดยจัดบรรยายถ่ายทอดความรู้ภายในหน่วยงาน  โปรดระบุวันที่ดำเนินการ",
                     _fontTiny, XBrushes.Black, new XPoint(labelX + 14, currentY + textOffsetY));
-                // [FIX v4.4] ลบ ...../...../...... ออก - แสดงเฉพาะวันที่จริงหรือเว้นว่าง
+                // [FIX v4.6] ขยายเส้นให้ยาวถึงขอบขวา
                 string sharingDate = data.KM_KnowledgeSharingDate?.ToString("dd/MM/yyyy") ?? "";
-                DrawUnderlineText(gfx, labelX + 400, currentY + textOffsetY, 80, sharingDate, 0);
+                DrawUnderlineText(gfx, lineStartX, currentY + textOffsetY, lineWidth, sharingDate, 0);
                 currentY += rowHeight;
             }
 
