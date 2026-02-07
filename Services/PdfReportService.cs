@@ -745,12 +745,14 @@ namespace TrainingRequestApp.Services
         // ==========================================
         private void DrawThaiString(XGraphics gfx, string text, XFont font, XBrush brush, XPoint point)
         {
-            gfx.DrawString(ThaiTextHelper.Fix(text), font, brush, point);
+            // ทดสอบ: ปิด ThaiTextHelper ชั่วคราว เพื่อดูว่า standard Thai ทำงานอย่างไร
+            gfx.DrawString(text, font, brush, point);
         }
 
         private void DrawThaiString(XGraphics gfx, string text, XFont font, XBrush brush, XRect rect, XStringFormat format)
         {
-            gfx.DrawString(ThaiTextHelper.Fix(text), font, brush, rect, format);
+            // ทดสอบ: ปิด ThaiTextHelper ชั่วคราว
+            gfx.DrawString(text, font, brush, rect, format);
         }
 
         // ==========================================
