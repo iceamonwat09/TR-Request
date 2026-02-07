@@ -741,17 +741,16 @@ namespace TrainingRequestApp.Services
         }
 
         // ==========================================
-        // Thai Text Wrapper - แก้ไม้เอก ไม้โท สระบน ไม่แสดง
+        // Thai Text Wrapper
+        // Loma font รองรับภาษาไทยได้ถูกต้องโดยไม่ต้องใช้ PUA remapping
         // ==========================================
         private void DrawThaiString(XGraphics gfx, string text, XFont font, XBrush brush, XPoint point)
         {
-            // ทดสอบ: ปิด ThaiTextHelper ชั่วคราว เพื่อดูว่า standard Thai ทำงานอย่างไร
             gfx.DrawString(text, font, brush, point);
         }
 
         private void DrawThaiString(XGraphics gfx, string text, XFont font, XBrush brush, XRect rect, XStringFormat format)
         {
-            // ทดสอบ: ปิด ThaiTextHelper ชั่วคราว
             gfx.DrawString(text, font, brush, rect, format);
         }
 
