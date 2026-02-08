@@ -205,6 +205,9 @@ namespace TrainingRequestApp.Controllers
                 {
                     await conn.OpenAsync();
 
+                    // ✅ แก้ไข: รองรับ BudgetSource
+                    // - ใบที่ BudgetSource = 'TYP' → ยอดไปแสดงที่ CENTRAL_TRAINING_BUDGET
+                    // - ใบที่ BudgetSource = 'Department' หรือ NULL → ยอดไปแสดงที่ฝ่ายเดิม (backward compatible)
                     string query = @"
                         SELECT
                             qc.Department,
@@ -218,7 +221,13 @@ namespace TrainingRequestApp.Controllers
                             END AS UsagePercent
                         FROM [TrainingRequest_Cost] qc
                         LEFT JOIN [TrainingRequests] tr
-                            ON tr.Department = qc.Department
+                            ON (
+                                -- กรณีงบกลาง TYP: ใบที่ BudgetSource = 'TYP' จะ JOIN กับ CENTRAL_TRAINING_BUDGET
+                                (qc.Department = 'CENTRAL_TRAINING_BUDGET' AND UPPER(tr.BudgetSource) = 'TYP')
+                                OR
+                                -- กรณีงบฝ่าย: ใบที่ BudgetSource = 'Department' หรือ NULL จะ JOIN กับฝ่ายเดิม
+                                (qc.Department != 'CENTRAL_TRAINING_BUDGET' AND tr.Department = qc.Department AND (tr.BudgetSource IS NULL OR UPPER(tr.BudgetSource) = 'DEPARTMENT'))
+                            )
                             AND tr.StartDate >= @StartDate
                             AND tr.StartDate <= @EndDate
                             AND tr.IsActive = 1

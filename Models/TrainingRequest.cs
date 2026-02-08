@@ -116,6 +116,10 @@ namespace TrainingRequestApp.Models
         [StringLength(20)]
         public string? HRD_BudgetUsage { get; set; } // "TYP" or "Department"
 
+        [Display(Name = "แหล่งงบประมาณ")]
+        [StringLength(20)]
+        public string? BudgetSource { get; set; } // "TYP" = งบกลาง CENTRAL_TRAINING_BUDGET, "Department" = งบต้นสังกัด
+
         [Display(Name = "ยอดเงินคงเหลือต้นสังกัด")]
         public decimal? HRD_DepartmentBudgetRemaining { get; set; }
 

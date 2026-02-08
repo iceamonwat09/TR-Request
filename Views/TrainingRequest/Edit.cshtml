@@ -156,6 +156,34 @@
                                 </div>
                             </div>
 
+                            <!-- ==================== แหล่งงบประมาณ (เฉพาะ Public) ==================== -->
+                            <div class="row mt-3" id="budgetSourceSection" style="display: @(Model.TrainingType == "Public" ? "block" : "none");">
+                                <div class="col-md-12">
+                                    <div class="form-group">
+                                        <label class="form-label fw-bold text-dark mb-2">
+                                            💰 แหล่งงบประมาณ <span class="text-danger">*</span>
+                                        </label>
+                                        <div class="d-flex gap-4">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="BudgetSource" value="TYP" id="budgetSourceTYP"
+                                                       @(Model.BudgetSource == "TYP" ? "checked" : "") style="transform: scale(1.2);">
+                                                <label class="form-check-label fw-medium" for="budgetSourceTYP">
+                                                    ใช้งบประมาณตามแผน TYP
+                                                </label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="BudgetSource" value="Department" id="budgetSourceDept"
+                                                       @(Model.BudgetSource == "Department" ? "checked" : "") style="transform: scale(1.2);">
+                                                <label class="form-check-label fw-medium" for="budgetSourceDept">
+                                                    ใช้งบต้นสังกัด
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <small class="text-muted" id="budgetSourceHelp">กรุณาเลือกแหล่งงบประมาณก่อนเพิ่มพนักงาน</small>
+                                    </div>
+                                </div>
+                            </div>
+
                             <hr class="my-4">
 
                             <!-- ส่วนแรก - ข้อมูลหลัก -->
@@ -578,6 +606,7 @@
                                         const budgetPublicCard = document.getElementById('budgetPublicCard');
                                         const budgetInHouseCard = document.getElementById('budgetInHouseCard');
                                         const trainingHistorySection = document.getElementById('trainingHistorySection');
+                                        const budgetSourceSection = document.getElementById('budgetSourceSection');
                                         const trainingTypeRadios = document.querySelectorAll('input[name="TrainingType"]');
 
                                         function toggleBudgetCards() {
@@ -589,6 +618,7 @@
                                                 if (budgetPublicCard) budgetPublicCard.style.display = 'none';
                                                 if (budgetInHouseCard) budgetInHouseCard.style.display = 'none';
                                                 if (trainingHistorySection) trainingHistorySection.style.display = 'none';
+                                                if (budgetSourceSection) budgetSourceSection.style.display = 'none';
                                                 console.log('🔄 No training type selected - hiding all budget cards and training history table');
                                                 return;
                                             }
@@ -599,6 +629,7 @@
                                                 if (budgetPublicCard) budgetPublicCard.style.display = 'block';
                                                 if (budgetInHouseCard) budgetInHouseCard.style.display = 'none';
                                                 if (trainingHistorySection) trainingHistorySection.style.display = 'block';
+                                                if (budgetSourceSection) budgetSourceSection.style.display = 'block';
 
                                                 // ✅ สำหรับ Public: ตั้งเป็น readonly และแสดง help text
                                                 if (participantCountField) {
@@ -616,6 +647,10 @@
                                                 if (budgetPublicCard) budgetPublicCard.style.display = 'none';
                                                 if (budgetInHouseCard) budgetInHouseCard.style.display = 'block';
                                                 if (trainingHistorySection) trainingHistorySection.style.display = 'none';
+                                                // ✅ In House: ซ่อน Radio แหล่งงบ + clear selection
+                                                if (budgetSourceSection) budgetSourceSection.style.display = 'none';
+                                                const budgetSourceChecked = document.querySelector('input[name="BudgetSource"]:checked');
+                                                if (budgetSourceChecked) budgetSourceChecked.checked = false;
 
                                                 // ✅ สำหรับ In House: ให้กรอกได้ปกติ
                                                 if (participantCountField) {
@@ -2781,6 +2816,17 @@
                         alert('⚠️ กรุณาเลือก ฝ่าย และ แผนก ก่อนค้นหาพนักงาน');
                         return false;
                     }
+
+                    // ✅ ต้องเลือกแหล่งงบประมาณก่อนเพิ่มพนักงาน (เฉพาะ Public)
+                    const trainingType = document.querySelector('input[name="TrainingType"]:checked')?.value;
+                    if (trainingType === 'Public') {
+                        const budgetSource = document.querySelector('input[name="BudgetSource"]:checked');
+                        if (!budgetSource) {
+                            event.preventDefault();
+                            alert('⚠️ กรุณาเลือกแหล่งงบประมาณ (งบ TYP หรืองบต้นสังกัด) ก่อนเพิ่มพนักงาน');
+                            return false;
+                        }
+                    }
                 });
 
                 document.getElementById('employeeSearchModal').addEventListener('hidden.bs.modal', () => {
@@ -2794,6 +2840,52 @@
                         this.recalculateFromCurrentQuota();
                     });
                 }
+
+                // ✅ Event listener สำหรับ BudgetSource radio (auto recalculate + debounce 500ms + sync HRD)
+                let budgetSourceDebounceTimer = null;
+                document.querySelectorAll('input[name="BudgetSource"]').forEach(radio => {
+                    radio.addEventListener('change', (e) => {
+                        const selectedValue = e.target.value;
+                        console.log('💰 BudgetSource changed to:', selectedValue);
+
+                        // ✅ Sync กับ HRD Section (HRD_BudgetUsage)
+                        const hrdRadio = document.querySelector(`input[name="HRD_BudgetUsage"][value="${selectedValue}"]`);
+                        if (hrdRadio) {
+                            hrdRadio.checked = true;
+                            console.log('🔄 Synced HRD_BudgetUsage to:', selectedValue);
+                        }
+
+                        // ✅ Auto recalculate with debounce 500ms (เฉพาะเมื่อมีพนักงานในตาราง)
+                        if (this.employees && this.employees.length > 0) {
+                            clearTimeout(budgetSourceDebounceTimer);
+                            budgetSourceDebounceTimer = setTimeout(() => {
+                                console.log('🔄 Auto recalculating after BudgetSource change...');
+                                this.recalculateFromCurrentQuota();
+                            }, 500);
+                        }
+                    });
+                });
+
+                // ✅ Sync กลับ: เมื่อ HRD เปลี่ยน HRD_BudgetUsage → sync กลับมาที่ BudgetSource
+                document.querySelectorAll('input[name="HRD_BudgetUsage"]').forEach(radio => {
+                    radio.addEventListener('change', (e) => {
+                        const selectedValue = e.target.value;
+                        const budgetSourceRadio = document.querySelector(`input[name="BudgetSource"][value="${selectedValue}"]`);
+                        if (budgetSourceRadio) {
+                            budgetSourceRadio.checked = true;
+                            console.log('🔄 Synced BudgetSource from HRD to:', selectedValue);
+
+                            // ✅ Auto recalculate with debounce
+                            if (this.employees && this.employees.length > 0) {
+                                clearTimeout(budgetSourceDebounceTimer);
+                                budgetSourceDebounceTimer = setTimeout(() => {
+                                    console.log('🔄 Auto recalculating after HRD BudgetUsage change...');
+                                    this.recalculateFromCurrentQuota();
+                                }, 500);
+                            }
+                        }
+                    });
+                });
             }
 
             async searchEmployee() {
@@ -2853,13 +2945,15 @@
                 try {
                     console.log('🔍 Searching for employee:', employeeCode);
 
-                    // ✅ ดึงค่า Department และ TrainingType
+                    // ✅ ดึงค่า Department, TrainingType, และ BudgetSource
                     const departmentSelect = document.getElementById('departmentSelect');
                     const department = departmentSelect ? departmentSelect.value : '';
                     const trainingType = document.querySelector('input[name="TrainingType"]:checked')?.value || '';
+                    const budgetSource = document.querySelector('input[name="BudgetSource"]:checked')?.value || '';
 
                     console.log('🏢 Department:', department);
                     console.log('🎓 Training Type:', trainingType);
+                    console.log('💰 Budget Source:', budgetSource);
 
                     // ✅ สร้าง URL พร้อม query parameters
                     let url = `/api/employee/search/${employeeCode}`;
@@ -2868,6 +2962,9 @@
                     if (department && trainingType) {
                         params.append('department', department);
                         params.append('trainingType', trainingType);
+                    }
+                    if (budgetSource) {
+                        params.append('budgetSource', budgetSource);
                     }
 
                     if (params.toString()) {
@@ -3375,7 +3472,8 @@
             console.log('📡 Fetching current quota for department:', department);
             console.log('   Using employee:', firstEmployee.empCode);
 
-            const url = `/api/employee/search/${firstEmployee.empCode}?department=${encodeURIComponent(department)}&trainingType=${trainingType}`;
+            const budgetSource = document.querySelector('input[name="BudgetSource"]:checked')?.value || '';
+            const url = `/api/employee/search/${firstEmployee.empCode}?department=${encodeURIComponent(department)}&trainingType=${trainingType}&budgetSource=${encodeURIComponent(budgetSource)}`;
             const response = await fetch(url);
 
             if (!response.ok) {

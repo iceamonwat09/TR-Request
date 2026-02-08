@@ -96,6 +96,9 @@ namespace TrainingRequestApp.Models
         public string? HRD_MembershipType { get; set; }
         public decimal? HRD_MembershipCost { get; set; }
 
+        // แหล่งงบประมาณ (User เลือก: "TYP" = งบกลาง, "Department" = งบต้นสังกัด)
+        public string? BudgetSource { get; set; }
+
         // Training History (HRD Section)
         public List<TrainingHistoryViewModel> TrainingHistories { get; set; } = new List<TrainingHistoryViewModel>();
 

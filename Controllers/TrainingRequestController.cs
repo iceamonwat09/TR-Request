@@ -192,6 +192,7 @@ namespace TrainingRequestApp.Controllers
                             HRD_ContactDate, HRD_ContactPerson, HRD_PaymentDate, HRD_PaymentMethod, HRD_RecorderSignature,
                             HRD_TrainingRecord, HRD_KnowledgeManagementDone, HRD_CourseCertification,
                             HRD_BudgetPlan, HRD_BudgetUsage, HRD_DepartmentBudgetRemaining, HRD_MembershipType, HRD_MembershipCost,
+                            BudgetSource,
                             Status, CreatedDate, CreatedBy
                         FROM [HRDSYSTEM].[dbo].[TrainingRequests]
                         WHERE DocNo = @DocNo AND IsActive = 1";
@@ -282,6 +283,7 @@ namespace TrainingRequestApp.Controllers
                                     HRD_DepartmentBudgetRemaining = reader["HRD_DepartmentBudgetRemaining"] != DBNull.Value ? (decimal?)reader.GetDecimal(reader.GetOrdinal("HRD_DepartmentBudgetRemaining")) : null,
                                     HRD_MembershipType = reader["HRD_MembershipType"]?.ToString(),
                                     HRD_MembershipCost = reader["HRD_MembershipCost"] != DBNull.Value ? (decimal?)reader.GetDecimal(reader.GetOrdinal("HRD_MembershipCost")) : null,
+                                    BudgetSource = reader["BudgetSource"]?.ToString(),
                                     Status = reader["Status"].ToString(),
                                     CreatedDate = reader.GetDateTime(reader.GetOrdinal("CreatedDate")),
                                     CreatedBy = reader["CreatedBy"].ToString()
@@ -1192,7 +1194,8 @@ namespace TrainingRequestApp.Controllers
                     [DeputyManagingDirectorId], [Status_DeputyManagingDirector],
                     [KM_SubmitDocument], [KM_CreateReport], [KM_CreateReportDate], [KM_KnowledgeSharing], [KM_KnowledgeSharingDate],
                     [HRD_ContactDate], [HRD_ContactPerson], [HRD_PaymentDate], [HRD_PaymentMethod], [HRD_RecorderSignature],
-                    [HRD_TrainingRecord], [HRD_KnowledgeManagementDone], [HRD_CourseCertification]
+                    [HRD_TrainingRecord], [HRD_KnowledgeManagementDone], [HRD_CourseCertification],
+                    [BudgetSource]
                 )
                 VALUES (
                     @DocNo, @Company, @TrainingType, @Factory, @CCEmail, @Department,@Position,
@@ -1210,7 +1213,8 @@ namespace TrainingRequestApp.Controllers
                     @DeputyManagingDirectorId, 'Pending',
                     @KM_SubmitDocument, @KM_CreateReport, @KM_CreateReportDate, @KM_KnowledgeSharing, @KM_KnowledgeSharingDate,
                     NULL, NULL, NULL, NULL, NULL,
-                    NULL, NULL, NULL
+                    NULL, NULL, NULL,
+                    @BudgetSource
                 );
                 SELECT CAST(SCOPE_IDENTITY() AS INT);";
 
@@ -1266,6 +1270,9 @@ namespace TrainingRequestApp.Controllers
                 cmd.Parameters.AddWithValue("@KM_CreateReportDate", formData.KM_CreateReportDate ?? (object)DBNull.Value);
                 cmd.Parameters.AddWithValue("@KM_KnowledgeSharing", formData.KM_KnowledgeSharing ?? (object)DBNull.Value);
                 cmd.Parameters.AddWithValue("@KM_KnowledgeSharingDate", formData.KM_KnowledgeSharingDate ?? (object)DBNull.Value);
+
+                // BudgetSource (แหล่งงบประมาณ: "TYP" หรือ "Department")
+                cmd.Parameters.AddWithValue("@BudgetSource", formData.BudgetSource ?? (object)DBNull.Value);
 
                 var result = await cmd.ExecuteScalarAsync();
                 return Convert.ToInt32(result);
@@ -1566,6 +1573,7 @@ namespace TrainingRequestApp.Controllers
                     [HRD_DepartmentBudgetRemaining] = @HRD_DepartmentBudgetRemaining,
                     [HRD_MembershipType] = @HRD_MembershipType,
                     [HRD_MembershipCost] = @HRD_MembershipCost,
+                    [BudgetSource] = @BudgetSource,
                     [UpdatedBy] = @UpdatedBy,
                     [UpdatedDate] = GETDATE()
                 WHERE [DocNo] = @DocNo AND [IsActive] = 1";
@@ -1658,6 +1666,9 @@ namespace TrainingRequestApp.Controllers
                 cmd.Parameters.AddWithValue("@HRD_DepartmentBudgetRemaining", formData.HRD_DepartmentBudgetRemaining ?? (object)DBNull.Value);
                 cmd.Parameters.AddWithValue("@HRD_MembershipType", formData.HRD_MembershipType ?? (object)DBNull.Value);
                 cmd.Parameters.AddWithValue("@HRD_MembershipCost", formData.HRD_MembershipCost ?? (object)DBNull.Value);
+
+                // BudgetSource (แหล่งงบประมาณ: "TYP" หรือ "Department")
+                cmd.Parameters.AddWithValue("@BudgetSource", formData.BudgetSource ?? (object)DBNull.Value);
 
                 // ✅ UpdatedBy - ใช้ Email ของผู้แก้ไขจาก Session
                 cmd.Parameters.AddWithValue("@UpdatedBy", updatedBy);
@@ -2384,6 +2395,9 @@ namespace TrainingRequestApp.Controllers
         public decimal? HRD_DepartmentBudgetRemaining { get; set; }
         public string? HRD_MembershipType { get; set; }
         public decimal? HRD_MembershipCost { get; set; }
+
+        // แหล่งงบประมาณ (User เลือก: "TYP" = งบกลาง, "Department" = งบต้นสังกัด)
+        public string? BudgetSource { get; set; }
 
         // Training History JSON
         public string? TrainingHistoryJson { get; set; }
