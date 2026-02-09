@@ -255,13 +255,13 @@
                                         <div class="col-md-6">
                                             <div class="form-group">
                                                 <label asp-for="StartDate" class="form-label fw-bold">📅 วันที่เริ่มอบรม</label>
-                                                <input asp-for="StartDate" id="StartDate" name="StartDate" class="form-control form-control-lg" type="date" value="@Model.StartDate?.ToString("yyyy-MM-dd")" style="border-radius: 10px;" />
+                                                <input asp-for="StartDate" id="StartDate" name="StartDate" class="form-control form-control-lg" type="text" placeholder="dd/mm/yyyy" value="@Model.StartDate?.ToString("yyyy-MM-dd")" style="border-radius: 10px;" />
                                             </div>
                                         </div>
                                         <div class="col-md-6">
                                             <div class="form-group">
                                                 <label asp-for="EndDate" class="form-label fw-bold">📅 วันที่สิ้นสุดการอบรม</label>
-                                                <input asp-for="EndDate" id="EndDate" name="EndDate" class="form-control form-control-lg" type="date" value="@Model.EndDate?.ToString("yyyy-MM-dd")" style="border-radius: 10px;" />
+                                                <input asp-for="EndDate" id="EndDate" name="EndDate" class="form-control form-control-lg" type="text" placeholder="dd/mm/yyyy" value="@Model.EndDate?.ToString("yyyy-MM-dd")" style="border-radius: 10px;" />
                                             </div>
                                         </div>
                                     </div>
@@ -416,66 +416,70 @@
                                         console.log('✅ Training Request Form Script Loaded - Final Correct Version');
 
                                         // ============================================================
-                                        // 📅 STEP 3: จัดการวันที่อัจฉริยะ (Smart Date Handling)
+                                        // 📅 STEP 3: จัดการวันที่ด้วย Flatpickr (แสดง dd/mm/yyyy ทุกเครื่อง)
                                         // ============================================================
 
                                         const startDateInput = document.getElementById('StartDate');
                                         const endDateInput = document.getElementById('EndDate');
 
-                                        function addWorkingDays(date, days) {
-                                            let currentDate = new Date(date);
-                                            let addedDays = 0;
+                                        // Flatpickr instances
+                                        let fpStart = null;
+                                        let fpEnd = null;
 
-                                            while (addedDays < days) {
-                                                currentDate.setDate(currentDate.getDate() + 1);
-                                                if (currentDate.getDay() !== 0) {
-                                                    addedDays++;
-                                                }
-                                            }
-
-                                            return currentDate;
-                                        }
-
-                                        function setMinStartDate() {
-                                            if (!startDateInput) return;
-
-                                            const today = new Date();
-                                            const minDate = addWorkingDays(today, 3);
-                                            const minDateStr = minDate.toISOString().split('T')[0];
-                                            startDateInput.setAttribute('min', minDateStr);
-
-                                            console.log('📅 Min Start Date:', minDateStr);
-                                        }
-
+                                        // ✅ ไม่ตั้ง minDate ในหน้า Edit เพื่อให้แก้ไขเอกสารเก่าที่มีวันที่ผ่านมาแล้วได้
                                         if (startDateInput) {
-                                            startDateInput.addEventListener('change', function() {
-                                                const startDate = this.value;
-
-                                                if (startDate) {
-                                                    if (endDateInput) {
-                                                        endDateInput.value = startDate;
-                                                        endDateInput.setAttribute('min', startDate);
+                                            fpStart = flatpickr(startDateInput, {
+                                                dateFormat: "Y-m-d",
+                                                altInput: true,
+                                                altFormat: "d/m/Y",
+                                                allowInput: false,
+                                                altInputClass: "form-control form-control-lg flatpickr-alt-input",
+                                                onChange: function(selectedDates, dateStr) {
+                                                    if (dateStr && fpEnd) {
+                                                        fpEnd.set('minDate', dateStr);
+                                                        // ถ้า EndDate < StartDate → reset
+                                                        if (fpEnd.selectedDates.length && fpEnd.selectedDates[0] < selectedDates[0]) {
+                                                            fpEnd.setDate(dateStr, true);
+                                                        }
                                                     }
-
-                                                    console.log('📅 Start Date Selected:', startDate);
+                                                    console.log('📅 Start Date Selected:', dateStr);
                                                 }
                                             });
+                                            console.log('📅 Flatpickr initialized for StartDate (Edit mode - no minDate)');
                                         }
 
                                         if (endDateInput) {
-                                            endDateInput.addEventListener('change', function() {
-                                                const startDate = startDateInput ? startDateInput.value : '';
-                                                const endDate = this.value;
-
-                                                if (startDate && endDate && endDate < startDate) {
-                                                    alert('⚠️ วันที่สิ้นสุดการอบรมต้องไม่น้อยกว่าวันที่เริ่มอบรม');
-                                                    this.value = startDate;
+                                            fpEnd = flatpickr(endDateInput, {
+                                                dateFormat: "Y-m-d",
+                                                altInput: true,
+                                                altFormat: "d/m/Y",
+                                                allowInput: false,
+                                                altInputClass: "form-control form-control-lg flatpickr-alt-input",
+                                                minDate: startDateInput ? startDateInput.value : null,
+                                                onChange: function(selectedDates, dateStr) {
+                                                    const startVal = startDateInput ? startDateInput.value : '';
+                                                    if (startVal && dateStr && dateStr < startVal) {
+                                                        alert('⚠️ วันที่สิ้นสุดการอบรมต้องไม่น้อยกว่าวันที่เริ่มอบรม');
+                                                        fpEnd.setDate(startVal, true);
+                                                    }
+                                                    console.log('📅 End Date Selected:', dateStr);
                                                 }
                                             });
+                                            console.log('📅 Flatpickr initialized for EndDate');
                                         }
 
-                                        // ✅ ไม่ตั้ง min date ในหน้า Edit เพื่อให้แก้ไขเอกสารเก่าที่มีวันที่ผ่านมาแล้วได้
-                                        // setMinStartDate();
+                                        // ✅ Disable flatpickr ในโหมด View/Approve (canEdit มาจาก script ด้านล่าง)
+                                        if (typeof canEdit !== 'undefined' && !canEdit) {
+                                            if (fpStart && fpStart.altInput) {
+                                                fpStart.altInput.disabled = true;
+                                                fpStart.altInput.style.cursor = 'not-allowed';
+                                            }
+                                            if (fpEnd && fpEnd.altInput) {
+                                                fpEnd.altInput.disabled = true;
+                                                fpEnd.altInput.style.cursor = 'not-allowed';
+                                            }
+                                            console.log('🔒 Flatpickr disabled in read-only mode');
+                                        }
 
                                         // ============================================================
                                         // 🔢 STEP 2: Auto-clear ค่า 0 เมื่อ Focus
@@ -2069,7 +2073,17 @@
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
 
+<!-- ✅ Flatpickr CSS (แก้ปัญหาวันที่แสดงผลต่างกันตาม locale) -->
+<link href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" rel="stylesheet" />
+
 <style>
+    /* Flatpickr alt input styling */
+    .flatpickr-alt-input {
+        border-radius: 10px !important;
+        background-color: #fff !important;
+        cursor: pointer;
+    }
+
     .form-control:focus {
         border-color: #0d6efd;
         box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
@@ -2212,6 +2226,8 @@
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <!-- ✅ Select2 JS -->
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<!-- ✅ Flatpickr JS -->
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 
 <script>
         // ====================================================================
