@@ -448,6 +448,16 @@
             const company = $('#company').val();
             const status = $('#status').val();
 
+            // ✅ Debug: แสดงค่าที่กำลังส่งไป server
+            console.log('🔍 loadData() - Values being sent:');
+            console.log('   startDate:', JSON.stringify(startDate));
+            console.log('   endDate:', JSON.stringify(endDate));
+            console.log('   docNo:', JSON.stringify(docNo));
+            console.log('   company:', JSON.stringify(company));
+            console.log('   status:', JSON.stringify(status));
+            console.log('   Hidden input #startDate type:', $('#startDate').attr('type'));
+            console.log('   Hidden input #startDate raw value:', document.getElementById('startDate')?.value);
+
             showLoading();
 
             $.ajax({
@@ -462,6 +472,8 @@
                 },
                 success: function(response) {
                     hideLoading();
+                    console.log('✅ AJAX response:', JSON.stringify(response).substring(0, 500));
+                    console.log('   success:', response.success, '| count:', response.count);
                     if (response.success) {
                         $('#totalCount').text(response.count);
                         renderTable(response.data);
@@ -469,10 +481,11 @@
                         alert('เกิดข้อผิดพลาด: ' + response.message);
                     }
                 },
-                error: function(xhr) {
+                error: function(xhr, textStatus, errorThrown) {
                     hideLoading();
+                    console.error('❌ AJAX error:', textStatus, errorThrown);
+                    console.error('   Response:', xhr.responseText?.substring(0, 500));
                     alert('ไม่สามารถโหลดข้อมูลได้');
-                    console.error(xhr);
                 }
             });
         }
