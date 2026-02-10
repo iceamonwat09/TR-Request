@@ -433,6 +433,7 @@
                                                 altInput: true,
                                                 altFormat: "d/m/Y",
                                                 allowInput: false,
+                                                appendTo: document.body,
                                                 altInputClass: "form-control form-control-lg flatpickr-alt-input",
                                                 onChange: function(selectedDates, dateStr) {
                                                     if (dateStr && fpEnd) {
@@ -454,6 +455,7 @@
                                                 altInput: true,
                                                 altFormat: "d/m/Y",
                                                 allowInput: false,
+                                                appendTo: document.body,
                                                 altInputClass: "form-control form-control-lg flatpickr-alt-input",
                                                 minDate: startDateInput ? startDateInput.value : null,
                                                 onChange: function(selectedDates, dateStr) {
@@ -928,6 +930,7 @@
                                                 altInput: true,
                                                 altFormat: "d/m/Y",
                                                 allowInput: false,
+                                                appendTo: document.body,
                                                 altInputClass: "form-control flatpickr-alt-input"
                                             });
                                             if (fpKmCreateEdit.altInput) fpKmCreateEdit.altInput.disabled = isKmCreateDisabled;
@@ -939,6 +942,7 @@
                                                 altInput: true,
                                                 altFormat: "d/m/Y",
                                                 allowInput: false,
+                                                appendTo: document.body,
                                                 altInputClass: "form-control flatpickr-alt-input"
                                             });
                                             if (fpKmSharingEdit.altInput) fpKmSharingEdit.altInput.disabled = isKmSharingDisabled;
@@ -1675,45 +1679,57 @@
                                             toggleBudgetRemainingReadonly();
 
                                             // ===== Flatpickr สำหรับ HRD dates และ History date =====
-                                            var hrdContactEl = document.getElementById('HRD_ContactDate');
-                                            if (hrdContactEl) {
-                                                var fpHrdContact = flatpickr(hrdContactEl, {
-                                                    dateFormat: "Y-m-d",
-                                                    altInput: true,
-                                                    altFormat: "d/m/Y",
-                                                    allowInput: false,
-                                                    altInputClass: "form-control form-control-lg flatpickr-alt-input"
-                                                });
-                                                if (typeof canEdit !== 'undefined' && !canEdit && fpHrdContact.altInput) {
-                                                    fpHrdContact.altInput.disabled = true;
-                                                    fpHrdContact.altInput.style.cursor = 'not-allowed';
+                                            // ===== Flatpickr สำหรับ HRD dates =====
+                                            // ใช้ appendTo: document.body เพื่อป้องกัน calendar ถูกบังโดย card ซ้อน
+                                            try {
+                                                var hrdContactEl = document.getElementById('HRD_ContactDate');
+                                                if (hrdContactEl) {
+                                                    var fpHrdContact = flatpickr(hrdContactEl, {
+                                                        dateFormat: "Y-m-d",
+                                                        altInput: true,
+                                                        altFormat: "d/m/Y",
+                                                        allowInput: false,
+                                                        appendTo: document.body,
+                                                        altInputClass: "form-control form-control-lg flatpickr-alt-input"
+                                                    });
+                                                    if (typeof canEdit !== 'undefined' && !canEdit && fpHrdContact.altInput) {
+                                                        fpHrdContact.altInput.disabled = true;
+                                                        fpHrdContact.altInput.style.cursor = 'not-allowed';
+                                                    }
+                                                    console.log('✅ Flatpickr initialized: HRD_ContactDate');
                                                 }
-                                            }
 
-                                            var hrdPaymentEl = document.getElementById('HRD_PaymentDate');
-                                            if (hrdPaymentEl) {
-                                                var fpHrdPayment = flatpickr(hrdPaymentEl, {
-                                                    dateFormat: "Y-m-d",
-                                                    altInput: true,
-                                                    altFormat: "d/m/Y",
-                                                    allowInput: false,
-                                                    altInputClass: "form-control form-control-lg flatpickr-alt-input"
-                                                });
-                                                if (typeof canEdit !== 'undefined' && !canEdit && fpHrdPayment.altInput) {
-                                                    fpHrdPayment.altInput.disabled = true;
-                                                    fpHrdPayment.altInput.style.cursor = 'not-allowed';
+                                                var hrdPaymentEl = document.getElementById('HRD_PaymentDate');
+                                                if (hrdPaymentEl) {
+                                                    var fpHrdPayment = flatpickr(hrdPaymentEl, {
+                                                        dateFormat: "Y-m-d",
+                                                        altInput: true,
+                                                        altFormat: "d/m/Y",
+                                                        allowInput: false,
+                                                        appendTo: document.body,
+                                                        altInputClass: "form-control form-control-lg flatpickr-alt-input"
+                                                    });
+                                                    if (typeof canEdit !== 'undefined' && !canEdit && fpHrdPayment.altInput) {
+                                                        fpHrdPayment.altInput.disabled = true;
+                                                        fpHrdPayment.altInput.style.cursor = 'not-allowed';
+                                                    }
+                                                    console.log('✅ Flatpickr initialized: HRD_PaymentDate');
                                                 }
-                                            }
 
-                                            var historyDateEl = document.getElementById('historyDate');
-                                            if (historyDateEl) {
-                                                flatpickr(historyDateEl, {
-                                                    dateFormat: "Y-m-d",
-                                                    altInput: true,
-                                                    altFormat: "d/m/Y",
-                                                    allowInput: false,
-                                                    altInputClass: "form-control flatpickr-alt-input"
-                                                });
+                                                var historyDateEl = document.getElementById('historyDate');
+                                                if (historyDateEl) {
+                                                    flatpickr(historyDateEl, {
+                                                        dateFormat: "Y-m-d",
+                                                        altInput: true,
+                                                        altFormat: "d/m/Y",
+                                                        allowInput: false,
+                                                        appendTo: document.body,
+                                                        altInputClass: "form-control flatpickr-alt-input"
+                                                    });
+                                                    console.log('✅ Flatpickr initialized: historyDate');
+                                                }
+                                            } catch (e) {
+                                                console.error('❌ Flatpickr init error (HRD/History):', e);
                                             }
 
                                             // ===== Training History Table Management =====
@@ -2165,6 +2181,16 @@
         border-radius: 10px !important;
         background-color: #fff !important;
         cursor: pointer;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%236c757d' viewBox='0 0 16 16'%3E%3Cpath d='M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5zM1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4H1z'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 12px center;
+        padding-right: 36px !important;
+    }
+
+    /* ✅ Flatpickr calendar dropdown z-index (ป้องกันถูกบังโดย card/modal) */
+    .flatpickr-calendar {
+        z-index: 9999 !important;
+    }
     }
 
     .form-control:focus {
