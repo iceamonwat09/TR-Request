@@ -448,6 +448,10 @@
                 success: function(response) {
                     hideLoading();
                     console.log('✅ AJAX success | count:', response.count);
+                    console.log('📦 response.data type:', typeof response.data, '| isArray:', Array.isArray(response.data), '| length:', response.data ? response.data.length : 'null');
+                    if (response.data && response.data.length > 0) {
+                        console.log('📦 First item:', JSON.stringify(response.data[0]));
+                    }
                     if (response.success) {
                         $('#totalCount').text(response.count);
                         renderTable(response.data);
@@ -464,14 +468,19 @@
         }
 
         function renderTable(data) {
+            console.log('🎨 renderTable() called | data count:', data ? data.length : 'null/undefined');
+
             if (dataTable) {
+                console.log('🗑️ Destroying existing DataTable');
                 dataTable.destroy();
+                dataTable = null;
             }
 
             var tbody = $('#tableBody');
+            console.log('🎯 #tableBody found:', tbody.length > 0);
             tbody.empty();
 
-            if (data.length === 0) {
+            if (!data || data.length === 0) {
                 tbody.append('<tr><td colspan="9" class="text-center text-muted py-5"><i class="fas fa-inbox fa-3x mb-3"></i><h5>ไม่พบข้อมูล</h5></td></tr>');
                 return;
             }
@@ -483,30 +492,43 @@
                 tbody.append(
                     '<tr>' +
                         '<td class="text-center">' + (index + 1) + '</td>' +
-                        '<td><strong>' + item.docNo + '</strong></td>' +
-                        '<td>' + item.company + '</td>' +
+                        '<td><strong>' + (item.docNo || '') + '</strong></td>' +
+                        '<td>' + (item.company || '') + '</td>' +
                         '<td class="text-center">' + startDateDisplay + '</td>' +
-                        '<td>' + item.seminarTitle + '</td>' +
-                        '<td>' + item.createdBy + '</td>' +
+                        '<td>' + (item.seminarTitle || '') + '</td>' +
+                        '<td>' + (item.createdBy || '') + '</td>' +
                         '<td class="text-center">' + statusBadge + '</td>' +
-                        '<td class="text-center"><span class="badge bg-info">' + item.participantCount + ' คน</span></td>' +
+                        '<td class="text-center"><span class="badge bg-info">' + (item.participantCount || 0) + ' คน</span></td>' +
                         '<td class="text-center">' +
-                            '<button class="action-btn btn-edit" onclick="editRequest(\'' + item.docNo + '\')" title="แก้ไข"><i class="fas fa-edit"></i></button>' +
+                            '<button class="action-btn btn-edit" onclick="editRequest(\'' + (item.docNo || '') + '\')" title="แก้ไข"><i class="fas fa-edit"></i></button>' +
                             '<button class="action-btn btn-report" onclick="viewReport(' + item.id + ')" title="รายงาน"><i class="fas fa-file-alt"></i></button>' +
-                            '<button class="action-btn btn-workflow" onclick="viewWorkflow(\'' + item.docNo + '\')" title="Flow การอนุมัติ"><i class="fas fa-project-diagram"></i></button>' +
+                            '<button class="action-btn btn-workflow" onclick="viewWorkflow(\'' + (item.docNo || '') + '\')" title="Flow การอนุมัติ"><i class="fas fa-project-diagram"></i></button>' +
                         '</td>' +
                     '</tr>'
                 );
             });
 
-            dataTable = $('#trainingTable').DataTable({
-                language: {
-                    url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/th.json'
-                },
-                order: [[1, 'desc']],
-                pageLength: 25,
-                responsive: true
-            });
+            console.log('✅ Appended', data.length, 'rows to tbody');
+            console.log('🔢 tbody children count:', tbody.children().length);
+
+            // Init DataTable with try-catch
+            try {
+                if ($.fn.DataTable) {
+                    dataTable = $('#trainingTable').DataTable({
+                        language: {
+                            url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/th.json'
+                        },
+                        order: [[1, 'desc']],
+                        pageLength: 25,
+                        responsive: true
+                    });
+                    console.log('✅ DataTable initialized');
+                } else {
+                    console.warn('⚠️ DataTable plugin not available');
+                }
+            } catch (e) {
+                console.error('❌ DataTable init error:', e);
+            }
         }
 
         function getStatusBadge(status) {
