@@ -14,7 +14,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
 
-    <!-- ✅ Flatpickr (แก้ปัญหาวันที่แสดงผลต่างกันตาม locale) -->
+    <!-- ✅ Flatpickr CSS -->
     <link href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" rel="stylesheet" />
 
     <style>
@@ -378,59 +378,39 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 
     <script>
-        // ✅ Flatpickr สำหรับ filter dates
-        var fpStartDate = flatpickr('#startDate', {
-            dateFormat: "Y-m-d",
-            altInput: true,
-            altFormat: "d/m/Y",
-            allowInput: false,
-            altInputClass: "form-control flatpickr-alt-input"
-        });
-        var fpEndDate = flatpickr('#endDate', {
-            dateFormat: "Y-m-d",
-            altInput: true,
-            altFormat: "d/m/Y",
-            allowInput: false,
-            altInputClass: "form-control flatpickr-alt-input"
-        });
+        // ====================================================================
+        // ✅ ประกาศ variable และ function ทั้งหมดก่อน เพื่อให้ script ไม่พังทั้ง block
+        // ====================================================================
+        console.log('📋 MonthlyRequests script loaded');
 
-        let dataTable;
-        let rotationAngle = 0;
+        var fpStartDate = null;
+        var fpEndDate = null;
+        var dataTable;
+        var rotationAngle = 0;
 
-        // Animation สำหรับ spinner ด้วย JavaScript แทน CSS keyframes
+        function formatDate(date) {
+            var year = date.getFullYear();
+            var month = String(date.getMonth() + 1).padStart(2, '0');
+            var day = String(date.getDate()).padStart(2, '0');
+            return year + '-' + month + '-' + day;
+        }
+
+        // ✅ Helper: set date ให้ทำงานได้ทั้งแบบ flatpickr และแบบ plain input
+        function setDateValue(inputId, fpInstance, value) {
+            if (fpInstance) {
+                fpInstance.setDate(value, true);
+            } else {
+                document.getElementById(inputId).value = value;
+            }
+        }
+
         function animateSpinner() {
-            const spinner = document.getElementById('spinnerElement');
+            var spinner = document.getElementById('spinnerElement');
             if (spinner) {
                 rotationAngle += 5;
                 spinner.style.transform = 'rotate(' + rotationAngle + 'deg)';
                 requestAnimationFrame(animateSpinner);
             }
-        }
-
-        $(document).ready(function() {
-            // เริ่ม animation
-            animateSpinner();
-
-            // Fade in card
-            setTimeout(function() {
-                $('#mainCard').addClass('show');
-            }, 100);
-
-            const now = new Date();
-            const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
-            const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-
-            fpStartDate.setDate(formatDate(firstDay), true);
-            fpEndDate.setDate(formatDate(lastDay), true);
-
-            loadData();
-        });
-
-        function formatDate(date) {
-            const year = date.getFullYear();
-            const month = String(date.getMonth() + 1).padStart(2, '0');
-            const day = String(date.getDate()).padStart(2, '0');
-            return `${year}-${month}-${day}`;
         }
 
         function showLoading() {
@@ -442,21 +422,16 @@
         }
 
         function loadData() {
-            const startDate = $('#startDate').val();
-            const endDate = $('#endDate').val();
-            const docNo = $('#docNo').val();
-            const company = $('#company').val();
-            const status = $('#status').val();
+            var startDate = $('#startDate').val();
+            var endDate = $('#endDate').val();
+            var docNo = $('#docNo').val();
+            var company = $('#company').val();
+            var status = $('#status').val();
 
-            // ✅ Debug: แสดงค่าที่กำลังส่งไป server
             console.log('🔍 loadData() - Values being sent:');
             console.log('   startDate:', JSON.stringify(startDate));
             console.log('   endDate:', JSON.stringify(endDate));
-            console.log('   docNo:', JSON.stringify(docNo));
-            console.log('   company:', JSON.stringify(company));
-            console.log('   status:', JSON.stringify(status));
-            console.log('   Hidden input #startDate type:', $('#startDate').attr('type'));
-            console.log('   Hidden input #startDate raw value:', document.getElementById('startDate')?.value);
+            console.log('   #startDate type:', document.getElementById('startDate') ? document.getElementById('startDate').type : 'NOT FOUND');
 
             showLoading();
 
@@ -472,8 +447,7 @@
                 },
                 success: function(response) {
                     hideLoading();
-                    console.log('✅ AJAX response:', JSON.stringify(response).substring(0, 500));
-                    console.log('   success:', response.success, '| count:', response.count);
+                    console.log('✅ AJAX success | count:', response.count);
                     if (response.success) {
                         $('#totalCount').text(response.count);
                         renderTable(response.data);
@@ -484,7 +458,6 @@
                 error: function(xhr, textStatus, errorThrown) {
                     hideLoading();
                     console.error('❌ AJAX error:', textStatus, errorThrown);
-                    console.error('   Response:', xhr.responseText?.substring(0, 500));
                     alert('ไม่สามารถโหลดข้อมูลได้');
                 }
             });
@@ -495,56 +468,35 @@
                 dataTable.destroy();
             }
 
-            const tbody = $('#tableBody');
+            var tbody = $('#tableBody');
             tbody.empty();
 
             if (data.length === 0) {
-                tbody.append(`
-                    <tr>
-                        <td colspan="9" class="text-center text-muted py-5">
-                            <i class="fas fa-inbox fa-3x mb-3"></i>
-                            <h5>ไม่พบข้อมูล</h5>
-                        </td>
-                    </tr>
-                `);
+                tbody.append('<tr><td colspan="9" class="text-center text-muted py-5"><i class="fas fa-inbox fa-3x mb-3"></i><h5>ไม่พบข้อมูล</h5></td></tr>');
                 return;
             }
 
-            data.forEach((item, index) => {
-                const statusBadge = getStatusBadge(item.status);
-                const startDateDisplay = item.startDate ? new Date(item.startDate).toLocaleDateString('th-TH') : '-';
+            data.forEach(function(item, index) {
+                var statusBadge = getStatusBadge(item.status);
+                var startDateDisplay = item.startDate ? new Date(item.startDate).toLocaleDateString('th-TH') : '-';
 
-                tbody.append(`
-                    <tr>
-                        <td class="text-center">${index + 1}</td>
-                        <td><strong>${item.docNo}</strong></td>
-                        <td>${item.company}</td>
-                        <td class="text-center">${startDateDisplay}</td>
-                        <td>${item.seminarTitle}</td>
-                        <td>${item.createdBy}</td>
-                        <td class="text-center">${statusBadge}</td>
-                        <td class="text-center">
-                            <span class="badge bg-info">${item.participantCount} คน</span>
-                        </td>
-                        <td class="text-center">
-                            <button class="action-btn btn-edit"
-                                    onclick="editRequest('${item.docNo}')"
-                                    title="แก้ไข">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button class="action-btn btn-report"
-                                    onclick="viewReport(${item.id})"
-                                    title="รายงาน">
-                                <i class="fas fa-file-alt"></i>
-                            </button>
-                            <button class="action-btn btn-workflow"
-                                    onclick="viewWorkflow('${item.docNo}')"
-                                    title="Flow การอนุมัติ">
-                                <i class="fas fa-project-diagram"></i>
-                            </button>
-                        </td>
-                    </tr>
-                `);
+                tbody.append(
+                    '<tr>' +
+                        '<td class="text-center">' + (index + 1) + '</td>' +
+                        '<td><strong>' + item.docNo + '</strong></td>' +
+                        '<td>' + item.company + '</td>' +
+                        '<td class="text-center">' + startDateDisplay + '</td>' +
+                        '<td>' + item.seminarTitle + '</td>' +
+                        '<td>' + item.createdBy + '</td>' +
+                        '<td class="text-center">' + statusBadge + '</td>' +
+                        '<td class="text-center"><span class="badge bg-info">' + item.participantCount + ' คน</span></td>' +
+                        '<td class="text-center">' +
+                            '<button class="action-btn btn-edit" onclick="editRequest(\'' + item.docNo + '\')" title="แก้ไข"><i class="fas fa-edit"></i></button>' +
+                            '<button class="action-btn btn-report" onclick="viewReport(' + item.id + ')" title="รายงาน"><i class="fas fa-file-alt"></i></button>' +
+                            '<button class="action-btn btn-workflow" onclick="viewWorkflow(\'' + item.docNo + '\')" title="Flow การอนุมัติ"><i class="fas fa-project-diagram"></i></button>' +
+                        '</td>' +
+                    '</tr>'
+                );
             });
 
             dataTable = $('#trainingTable').DataTable({
@@ -558,7 +510,6 @@
         }
 
         function getStatusBadge(status) {
-            // ✅ แสดงสถานะตามที่เก็บในฐานข้อมูลจริง (ไม่แปลงเป็นภาษาไทย)
             switch(status) {
                 case 'Pending':
                     return '<span class="badge bg-warning text-dark"><i class="fas fa-clock"></i> ' + status + '</span>';
@@ -596,12 +547,12 @@
         }
 
         function resetFilters() {
-            const now = new Date();
-            const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
-            const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+            var now = new Date();
+            var firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+            var lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
 
-            fpStartDate.setDate(formatDate(firstDay), true);
-            fpEndDate.setDate(formatDate(lastDay), true);
+            setDateValue('startDate', fpStartDate, formatDate(firstDay));
+            setDateValue('endDate', fpEndDate, formatDate(lastDay));
             $('#docNo').val('');
             $('#company').val('');
             $('#status').val('');
@@ -620,6 +571,56 @@
         function viewWorkflow(docNo) {
             window.location.href = '@Url.Action("ApprovalFlow", "TrainingRequest")?docNo=' + encodeURIComponent(docNo);
         }
+
+        // ====================================================================
+        // ✅ Initialize เมื่อ DOM พร้อม
+        // ====================================================================
+        $(document).ready(function() {
+            console.log('📋 Document ready');
+
+            animateSpinner();
+            setTimeout(function() { $('#mainCard').addClass('show'); }, 100);
+
+            // ✅ Init flatpickr (ครอบ try-catch เพื่อป้องกัน CDN โหลดไม่สำเร็จ)
+            try {
+                if (typeof flatpickr === 'function') {
+                    fpStartDate = flatpickr('#startDate', {
+                        dateFormat: "Y-m-d",
+                        altInput: true,
+                        altFormat: "d/m/Y",
+                        allowInput: false,
+                        clickOpens: true,
+                        altInputClass: "form-control flatpickr-alt-input"
+                    });
+                    fpEndDate = flatpickr('#endDate', {
+                        dateFormat: "Y-m-d",
+                        altInput: true,
+                        altFormat: "d/m/Y",
+                        allowInput: false,
+                        clickOpens: true,
+                        altInputClass: "form-control flatpickr-alt-input"
+                    });
+                    console.log('✅ Flatpickr initialized for startDate & endDate');
+                } else {
+                    console.warn('⚠️ Flatpickr not available, using plain text inputs');
+                }
+            } catch (e) {
+                console.error('❌ Flatpickr init error:', e);
+            }
+
+            // ✅ Set initial date range (เดือนปัจจุบัน)
+            var now = new Date();
+            var firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+            var lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+            setDateValue('startDate', fpStartDate, formatDate(firstDay));
+            setDateValue('endDate', fpEndDate, formatDate(lastDay));
+
+            console.log('📅 Initial dates set:', formatDate(firstDay), '~', formatDate(lastDay));
+
+            // ✅ Load data
+            loadData();
+        });
     </script>
 </body>
 </html>
