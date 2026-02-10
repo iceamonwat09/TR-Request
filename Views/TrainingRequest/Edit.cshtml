@@ -1260,6 +1260,7 @@
                                         <div class="card-body p-4" style="background-color: #fffbf0;">
                                             @* 🔍 Debug: Log HRD Model values *@
                                             <script>
+                                                window.__canEditHRDSection = true;
                                                 console.log('📋 HRD Fields from Model:');
                                                 console.log('   ContactDate: @Model.HRD_ContactDate');
                                                 console.log('   ContactPerson: @Model.HRD_ContactPerson');
@@ -1581,7 +1582,74 @@
 
                                     <script>
                                         document.addEventListener('DOMContentLoaded', function () {
+
+                                            // ===== ✅ Flatpickr สำหรับ HRD dates (init FIRST เพื่อป้องกัน error จาก code อื่นบล็อก) =====
+                                            try {
+                                                var hrdContactEl = document.getElementById('HRD_ContactDate');
+                                                if (hrdContactEl) {
+                                                    var fpHrdContact = flatpickr(hrdContactEl, {
+                                                        dateFormat: "Y-m-d",
+                                                        altInput: true,
+                                                        altFormat: "d/m/Y",
+                                                        allowInput: false,
+                                                        clickOpens: true,
+                                                        appendTo: document.body,
+                                                        altInputClass: "form-control form-control-lg flatpickr-alt-input",
+                                                        onReady: function() { console.log('✅ Flatpickr READY: HRD_ContactDate'); }
+                                                    });
+                                                    // ✅ Force re-enable: HRD section จะแสดงเฉพาะ user ที่มีสิทธิ์ (canEditHRDSection=true)
+                                                    // ดังนั้นต้องเปิดให้แก้ไขได้เสมอ ไม่ว่า canEdit จะเป็น true/false
+                                                    hrdContactEl.disabled = false;
+                                                    if (fpHrdContact.altInput) {
+                                                        fpHrdContact.altInput.disabled = false;
+                                                        fpHrdContact.altInput.style.cursor = 'pointer';
+                                                    }
+                                                    console.log('✅ Flatpickr initialized: HRD_ContactDate');
+                                                } else {
+                                                    console.warn('⚠️ Element not found: HRD_ContactDate');
+                                                }
+
+                                                var hrdPaymentEl = document.getElementById('HRD_PaymentDate');
+                                                if (hrdPaymentEl) {
+                                                    var fpHrdPayment = flatpickr(hrdPaymentEl, {
+                                                        dateFormat: "Y-m-d",
+                                                        altInput: true,
+                                                        altFormat: "d/m/Y",
+                                                        allowInput: false,
+                                                        clickOpens: true,
+                                                        appendTo: document.body,
+                                                        altInputClass: "form-control form-control-lg flatpickr-alt-input",
+                                                        onReady: function() { console.log('✅ Flatpickr READY: HRD_PaymentDate'); }
+                                                    });
+                                                    hrdPaymentEl.disabled = false;
+                                                    if (fpHrdPayment.altInput) {
+                                                        fpHrdPayment.altInput.disabled = false;
+                                                        fpHrdPayment.altInput.style.cursor = 'pointer';
+                                                    }
+                                                    console.log('✅ Flatpickr initialized: HRD_PaymentDate');
+                                                } else {
+                                                    console.warn('⚠️ Element not found: HRD_PaymentDate');
+                                                }
+
+                                                var historyDateEl = document.getElementById('historyDate');
+                                                if (historyDateEl) {
+                                                    flatpickr(historyDateEl, {
+                                                        dateFormat: "Y-m-d",
+                                                        altInput: true,
+                                                        altFormat: "d/m/Y",
+                                                        allowInput: false,
+                                                        clickOpens: true,
+                                                        appendTo: document.body,
+                                                        altInputClass: "form-control flatpickr-alt-input"
+                                                    });
+                                                    console.log('✅ Flatpickr initialized: historyDate');
+                                                }
+                                            } catch (e) {
+                                                console.error('❌ Flatpickr init error (HRD/History):', e);
+                                            }
+
                                             // ===== Membership Radio Toggle =====
+                                            try {
                                             document.querySelectorAll('input[name="HRD_MembershipType"]').forEach(function (radio) {
                                                 radio.addEventListener('change', function () {
                                                     var memberCost = document.getElementById('memberCost');
@@ -1677,59 +1745,8 @@
 
                                             // ✅ Initial state check เมื่อโหลดหน้า
                                             toggleBudgetRemainingReadonly();
-
-                                            // ===== Flatpickr สำหรับ HRD dates และ History date =====
-                                            // ===== Flatpickr สำหรับ HRD dates =====
-                                            // ใช้ appendTo: document.body เพื่อป้องกัน calendar ถูกบังโดย card ซ้อน
-                                            try {
-                                                var hrdContactEl = document.getElementById('HRD_ContactDate');
-                                                if (hrdContactEl) {
-                                                    var fpHrdContact = flatpickr(hrdContactEl, {
-                                                        dateFormat: "Y-m-d",
-                                                        altInput: true,
-                                                        altFormat: "d/m/Y",
-                                                        allowInput: false,
-                                                        appendTo: document.body,
-                                                        altInputClass: "form-control form-control-lg flatpickr-alt-input"
-                                                    });
-                                                    if (typeof canEdit !== 'undefined' && !canEdit && fpHrdContact.altInput) {
-                                                        fpHrdContact.altInput.disabled = true;
-                                                        fpHrdContact.altInput.style.cursor = 'not-allowed';
-                                                    }
-                                                    console.log('✅ Flatpickr initialized: HRD_ContactDate');
-                                                }
-
-                                                var hrdPaymentEl = document.getElementById('HRD_PaymentDate');
-                                                if (hrdPaymentEl) {
-                                                    var fpHrdPayment = flatpickr(hrdPaymentEl, {
-                                                        dateFormat: "Y-m-d",
-                                                        altInput: true,
-                                                        altFormat: "d/m/Y",
-                                                        allowInput: false,
-                                                        appendTo: document.body,
-                                                        altInputClass: "form-control form-control-lg flatpickr-alt-input"
-                                                    });
-                                                    if (typeof canEdit !== 'undefined' && !canEdit && fpHrdPayment.altInput) {
-                                                        fpHrdPayment.altInput.disabled = true;
-                                                        fpHrdPayment.altInput.style.cursor = 'not-allowed';
-                                                    }
-                                                    console.log('✅ Flatpickr initialized: HRD_PaymentDate');
-                                                }
-
-                                                var historyDateEl = document.getElementById('historyDate');
-                                                if (historyDateEl) {
-                                                    flatpickr(historyDateEl, {
-                                                        dateFormat: "Y-m-d",
-                                                        altInput: true,
-                                                        altFormat: "d/m/Y",
-                                                        allowInput: false,
-                                                        appendTo: document.body,
-                                                        altInputClass: "form-control flatpickr-alt-input"
-                                                    });
-                                                    console.log('✅ Flatpickr initialized: historyDate');
-                                                }
                                             } catch (e) {
-                                                console.error('❌ Flatpickr init error (HRD/History):', e);
+                                                console.error('⚠️ HRD membership/budget init error:', e);
                                             }
 
                                             // ===== Training History Table Management =====
@@ -2191,7 +2208,6 @@
     .flatpickr-calendar {
         z-index: 9999 !important;
     }
-    }
 
     .form-control:focus {
         border-color: #0d6efd;
@@ -2388,6 +2404,36 @@
                     console.log('   - #approvalComment disabled:', document.getElementById('approvalComment')?.disabled);
                     console.log('   - #approvalComment readonly:', document.getElementById('approvalComment')?.readOnly);
                 }, 100);
+            }
+        }
+
+        // ====================================================================
+        // ✅ Re-enable HRD Section (ถ้า user มีสิทธิ์ canEditHRDSection)
+        // เมื่อ canEdit=false แต่ canEditHRDSection=true, global script จะ disable
+        // ทุก input รวมถึง HRD fields → ต้อง re-enable HRD fields กลับมา
+        // ====================================================================
+        if (!canEdit && window.__canEditHRDSection) {
+            console.log('🔓 Re-enabling HRD section fields (canEditHRDSection=true)');
+            var hrdCard = document.querySelector('.card.border-warning');
+            if (hrdCard) {
+                hrdCard.querySelectorAll('input, select, textarea').forEach(function(el) {
+                    el.disabled = false;
+                    el.style.cursor = '';
+                });
+                hrdCard.querySelectorAll('button').forEach(function(btn) {
+                    btn.disabled = false;
+                    btn.style.cursor = '';
+                });
+                // ✅ Re-enable flatpickr alt inputs ด้วย (อยู่ที่ document.body เพราะ appendTo)
+                document.querySelectorAll('.flatpickr-alt-input').forEach(function(altInput) {
+                    // เฉพาะ alt input ที่ sibling ของ HRD date fields
+                    var prevInput = altInput.previousElementSibling;
+                    if (prevInput && (prevInput.id === 'HRD_ContactDate' || prevInput.id === 'HRD_PaymentDate' || prevInput.id === 'historyDate')) {
+                        altInput.disabled = false;
+                        altInput.style.cursor = 'pointer';
+                    }
+                });
+                console.log('✅ HRD section fields re-enabled');
             }
         }
 
