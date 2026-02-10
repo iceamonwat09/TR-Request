@@ -862,8 +862,9 @@
                                                         </label>
                                                         <div class="mt-2">
                                                             <label class="form-label text-primary fw-semibold">โปรดระบุวันที่ดำเนินการ:</label>
-                                                            <input type="date" class="form-control" name="KM_CreateReportDate" id="kmCreateReportDateEdit"
+                                                            <input type="text" class="form-control" name="KM_CreateReportDate" id="kmCreateReportDateEdit"
                                                                    value="@Model.KM_CreateReportDate?.ToString("yyyy-MM-dd")"
+                                                                   placeholder="dd/mm/yyyy"
                                                                    style="max-width: 250px; border-radius: 8px;"
                                                                    @(Model.KM_CreateReport != true ? "disabled" : "")
                                                                    @(!canEdit ? "disabled" : "")>
@@ -884,8 +885,9 @@
                                                         </label>
                                                         <div class="mt-2">
                                                             <label class="form-label text-primary fw-semibold">โปรดระบุวันที่ดำเนินการ:</label>
-                                                            <input type="date" class="form-control" name="KM_KnowledgeSharingDate" id="kmKnowledgeSharingDateEdit"
+                                                            <input type="text" class="form-control" name="KM_KnowledgeSharingDate" id="kmKnowledgeSharingDateEdit"
                                                                    value="@Model.KM_KnowledgeSharingDate?.ToString("yyyy-MM-dd")"
+                                                                   placeholder="dd/mm/yyyy"
                                                                    style="max-width: 250px; border-radius: 8px;"
                                                                    @(Model.KM_KnowledgeSharing != true ? "disabled" : "")
                                                                    @(!canEdit ? "disabled" : "")>
@@ -914,13 +916,46 @@
                                             radio.addEventListener('change', toggleKMSectionEdit);
                                         });
 
+                                        // ✅ Flatpickr สำหรับ KM date fields (Edit)
+                                        var kmCreateDateEl = document.getElementById('kmCreateReportDateEdit');
+                                        var kmSharingDateEl = document.getElementById('kmKnowledgeSharingDateEdit');
+                                        var isKmCreateDisabled = @((Model.KM_CreateReport != true || !canEdit).ToString().ToLower());
+                                        var isKmSharingDisabled = @((Model.KM_KnowledgeSharing != true || !canEdit).ToString().ToLower());
+
+                                        if (kmCreateDateEl) {
+                                            var fpKmCreateEdit = flatpickr(kmCreateDateEl, {
+                                                dateFormat: "Y-m-d",
+                                                altInput: true,
+                                                altFormat: "d/m/Y",
+                                                allowInput: false,
+                                                altInputClass: "form-control flatpickr-alt-input"
+                                            });
+                                            if (fpKmCreateEdit.altInput) fpKmCreateEdit.altInput.disabled = isKmCreateDisabled;
+                                        }
+
+                                        if (kmSharingDateEl) {
+                                            var fpKmSharingEdit = flatpickr(kmSharingDateEl, {
+                                                dateFormat: "Y-m-d",
+                                                altInput: true,
+                                                altFormat: "d/m/Y",
+                                                allowInput: false,
+                                                altInputClass: "form-control flatpickr-alt-input"
+                                            });
+                                            if (fpKmSharingEdit.altInput) fpKmSharingEdit.altInput.disabled = isKmSharingDisabled;
+                                        }
+
                                         // Enable/Disable date fields based on checkbox (Edit)
                                         var kmCreateReportEdit = document.getElementById('kmCreateReportEdit');
                                         if (kmCreateReportEdit) {
                                             kmCreateReportEdit.addEventListener('change', function () {
                                                 var dateField = document.getElementById('kmCreateReportDateEdit');
                                                 dateField.disabled = !this.checked;
-                                                if (!this.checked) dateField.value = '';
+                                                if (dateField._flatpickr && dateField._flatpickr.altInput) {
+                                                    dateField._flatpickr.altInput.disabled = !this.checked;
+                                                }
+                                                if (!this.checked && dateField._flatpickr) {
+                                                    dateField._flatpickr.clear();
+                                                }
                                             });
                                         }
 
@@ -929,7 +964,12 @@
                                             kmKnowledgeSharingEdit.addEventListener('change', function () {
                                                 var dateField = document.getElementById('kmKnowledgeSharingDateEdit');
                                                 dateField.disabled = !this.checked;
-                                                if (!this.checked) dateField.value = '';
+                                                if (dateField._flatpickr && dateField._flatpickr.altInput) {
+                                                    dateField._flatpickr.altInput.disabled = !this.checked;
+                                                }
+                                                if (!this.checked && dateField._flatpickr) {
+                                                    dateField._flatpickr.clear();
+                                                }
                                             });
                                         }
                                     });
@@ -1361,8 +1401,8 @@
                                                     <label asp-for="HRD_ContactDate" class="form-label fw-bold">
                                                         📞 ติดต่อสถาบัน/ผู้สอน : วันที่
                                                     </label>
-                                                    <input asp-for="HRD_ContactDate" name="HRD_ContactDate" type="date" class="form-control form-control-lg"
-                                                           value="@Model.HRD_ContactDate?.ToString("yyyy-MM-dd")" style="border-radius: 8px;" />
+                                                    <input asp-for="HRD_ContactDate" name="HRD_ContactDate" type="text" class="form-control form-control-lg"
+                                                           value="@Model.HRD_ContactDate?.ToString("yyyy-MM-dd")" placeholder="dd/mm/yyyy" style="border-radius: 8px;" />
                                                 </div>
 
                                                 <!-- ชื่อผู้ติดต่อ -->
@@ -1379,8 +1419,8 @@
                                                     <label asp-for="HRD_PaymentDate" class="form-label fw-bold">
                                                         💰 การชำระเงิน : ชำระเงินภายในวันที่
                                                     </label>
-                                                    <input asp-for="HRD_PaymentDate" name="HRD_PaymentDate" type="date" class="form-control form-control-lg"
-                                                           value="@Model.HRD_PaymentDate?.ToString("yyyy-MM-dd")" style="border-radius: 8px;" />
+                                                    <input asp-for="HRD_PaymentDate" name="HRD_PaymentDate" type="text" class="form-control form-control-lg"
+                                                           value="@Model.HRD_PaymentDate?.ToString("yyyy-MM-dd")" placeholder="dd/mm/yyyy" style="border-radius: 8px;" />
                                                 </div>
 
                                                 <!-- วิธีชำระเงิน (3 ช่อง: เช็ค, โอนเงิน, เงินสด) -->
@@ -1518,7 +1558,7 @@
                                                     </div>
                                                     <div class="mb-3">
                                                         <label class="form-label fw-bold">เมื่อวันที่</label>
-                                                        <input type="date" class="form-control" id="historyDate" style="border-radius: 8px;">
+                                                        <input type="text" class="form-control" id="historyDate" placeholder="dd/mm/yyyy" style="border-radius: 8px;">
                                                     </div>
                                                     <div class="mb-3">
                                                         <label class="form-label fw-bold">ชื่อหลักสูตร</label>
@@ -1634,6 +1674,48 @@
                                             // ✅ Initial state check เมื่อโหลดหน้า
                                             toggleBudgetRemainingReadonly();
 
+                                            // ===== Flatpickr สำหรับ HRD dates และ History date =====
+                                            var hrdContactEl = document.getElementById('HRD_ContactDate');
+                                            if (hrdContactEl) {
+                                                var fpHrdContact = flatpickr(hrdContactEl, {
+                                                    dateFormat: "Y-m-d",
+                                                    altInput: true,
+                                                    altFormat: "d/m/Y",
+                                                    allowInput: false,
+                                                    altInputClass: "form-control form-control-lg flatpickr-alt-input"
+                                                });
+                                                if (typeof canEdit !== 'undefined' && !canEdit && fpHrdContact.altInput) {
+                                                    fpHrdContact.altInput.disabled = true;
+                                                    fpHrdContact.altInput.style.cursor = 'not-allowed';
+                                                }
+                                            }
+
+                                            var hrdPaymentEl = document.getElementById('HRD_PaymentDate');
+                                            if (hrdPaymentEl) {
+                                                var fpHrdPayment = flatpickr(hrdPaymentEl, {
+                                                    dateFormat: "Y-m-d",
+                                                    altInput: true,
+                                                    altFormat: "d/m/Y",
+                                                    allowInput: false,
+                                                    altInputClass: "form-control form-control-lg flatpickr-alt-input"
+                                                });
+                                                if (typeof canEdit !== 'undefined' && !canEdit && fpHrdPayment.altInput) {
+                                                    fpHrdPayment.altInput.disabled = true;
+                                                    fpHrdPayment.altInput.style.cursor = 'not-allowed';
+                                                }
+                                            }
+
+                                            var historyDateEl = document.getElementById('historyDate');
+                                            if (historyDateEl) {
+                                                flatpickr(historyDateEl, {
+                                                    dateFormat: "Y-m-d",
+                                                    altInput: true,
+                                                    altFormat: "d/m/Y",
+                                                    allowInput: false,
+                                                    altInputClass: "form-control flatpickr-alt-input"
+                                                });
+                                            }
+
                                             // ===== Training History Table Management =====
                                             var trainingHistories = [];
 
@@ -1689,7 +1771,8 @@
                                                 document.getElementById('historyEmpCode').value = '';
                                                 document.getElementById('historyEmpName').value = '';
                                                 document.querySelectorAll('input[name="historyType"]').forEach(r => r.checked = false);
-                                                document.getElementById('historyDate').value = '';
+                                                var historyDateEl = document.getElementById('historyDate');
+                                                if (historyDateEl._flatpickr) historyDateEl._flatpickr.clear();
                                                 document.getElementById('historyCourseName').value = '';
 
                                                 // Close modal

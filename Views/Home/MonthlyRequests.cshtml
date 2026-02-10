@@ -14,7 +14,15 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
 
+    <!-- ✅ Flatpickr (แก้ปัญหาวันที่แสดงผลต่างกันตาม locale) -->
+    <link href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" rel="stylesheet" />
+
     <style>
+        .flatpickr-alt-input {
+            border-radius: 6px !important;
+            background-color: #fff !important;
+            cursor: pointer;
+        }
         body {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
@@ -264,13 +272,13 @@
                             <label class="form-label fw-bold">
                                 <i class="fas fa-calendar-alt"></i> วันที่เริ่มต้น
                             </label>
-                            <input type="date" id="startDate" class="form-control" />
+                            <input type="text" id="startDate" class="form-control" placeholder="dd/mm/yyyy" />
                         </div>
                         <div class="col-md-3">
                             <label class="form-label fw-bold">
                                 <i class="fas fa-calendar-check"></i> วันที่สิ้นสุด
                             </label>
-                            <input type="date" id="endDate" class="form-control" />
+                            <input type="text" id="endDate" class="form-control" placeholder="dd/mm/yyyy" />
                         </div>
                         <div class="col-md-2">
                             <label class="form-label fw-bold">
@@ -359,8 +367,26 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+    <!-- ✅ Flatpickr JS -->
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 
     <script>
+        // ✅ Flatpickr สำหรับ filter dates
+        var fpStartDate = flatpickr('#startDate', {
+            dateFormat: "Y-m-d",
+            altInput: true,
+            altFormat: "d/m/Y",
+            allowInput: false,
+            altInputClass: "form-control flatpickr-alt-input"
+        });
+        var fpEndDate = flatpickr('#endDate', {
+            dateFormat: "Y-m-d",
+            altInput: true,
+            altFormat: "d/m/Y",
+            allowInput: false,
+            altInputClass: "form-control flatpickr-alt-input"
+        });
+
         let dataTable;
         let rotationAngle = 0;
 
@@ -387,8 +413,8 @@
             const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
             const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
 
-            $('#startDate').val(formatDate(firstDay));
-            $('#endDate').val(formatDate(lastDay));
+            fpStartDate.setDate(formatDate(firstDay), true);
+            fpEndDate.setDate(formatDate(lastDay), true);
 
             loadData();
         });
@@ -554,8 +580,8 @@
             const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
             const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
 
-            $('#startDate').val(formatDate(firstDay));
-            $('#endDate').val(formatDate(lastDay));
+            fpStartDate.setDate(formatDate(firstDay), true);
+            fpEndDate.setDate(formatDate(lastDay), true);
             $('#docNo').val('');
             $('#company').val('');
             $('#status').val('');

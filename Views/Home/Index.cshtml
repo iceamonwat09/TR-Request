@@ -19,7 +19,16 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
 
+    <!-- ✅ Flatpickr (แก้ปัญหาวันที่แสดงผลต่างกันตาม locale) -->
+    <link href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
     <style>
+        .flatpickr-alt-input {
+            border-radius: 6px !important;
+            background-color: #fff !important;
+            cursor: pointer;
+        }
         body {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
@@ -312,11 +321,11 @@
                     </div>
                     <div class="col-md-3">
                         <label for="filterStartDate">วันที่เริ่มต้น</label>
-                        <input type="date" class="form-control" id="filterStartDate">
+                        <input type="text" class="form-control" id="filterStartDate" placeholder="dd/mm/yyyy">
                     </div>
                     <div class="col-md-3">
                         <label for="filterEndDate">วันที่สิ้นสุด</label>
-                        <input type="date" class="form-control" id="filterEndDate">
+                        <input type="text" class="form-control" id="filterEndDate" placeholder="dd/mm/yyyy">
                     </div>
                     <div class="col-md-3">
                         <label>&nbsp;</label>
@@ -437,6 +446,29 @@
         };
 
         // ====================================================================
+        // ✅ Flatpickr สำหรับ filter dates
+        // ====================================================================
+        var fpFilterStart = flatpickr('#filterStartDate', {
+            dateFormat: "Y-m-d",
+            altInput: true,
+            altFormat: "d/m/Y",
+            allowInput: false,
+            altInputClass: "form-control flatpickr-alt-input"
+        });
+        var fpFilterEnd = flatpickr('#filterEndDate', {
+            dateFormat: "Y-m-d",
+            altInput: true,
+            altFormat: "d/m/Y",
+            allowInput: false,
+            altInputClass: "form-control flatpickr-alt-input"
+        });
+
+        // Helper: set date via flatpickr
+        function setFpDate(fpInstance, value) {
+            if (fpInstance) fpInstance.setDate(value, true);
+        }
+
+        // ====================================================================
         // Initialize Dashboard
         // ====================================================================
         document.addEventListener('DOMContentLoaded', function() {
@@ -446,8 +478,8 @@
             // Set default year and dates to current year
             const year = new Date().getFullYear();
             document.getElementById('filterYear').value = year;
-            document.getElementById('filterStartDate').value = `${year}-01-01`;
-            document.getElementById('filterEndDate').value = `${year}-12-31`;
+            setFpDate(fpFilterStart, `${year}-01-01`);
+            setFpDate(fpFilterEnd, `${year}-12-31`);
 
             // Load initial data
             loadDashboard();
@@ -985,8 +1017,8 @@
         function resetFilters() {
             const year = new Date().getFullYear();
             document.getElementById('filterYear').value = year;
-            document.getElementById('filterStartDate').value = `${year}-01-01`;
-            document.getElementById('filterEndDate').value = `${year}-12-31`;
+            setFpDate(fpFilterStart, `${year}-01-01`);
+            setFpDate(fpFilterEnd, `${year}-12-31`);
 
             currentFilters = {
                 year: year,
