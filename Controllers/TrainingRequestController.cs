@@ -1868,7 +1868,7 @@ namespace TrainingRequestApp.Controllers
                     tr.CreatedDate,
                     ISNULL(tr.TotalPeople, 0) AS ParticipantCount
                 FROM TrainingRequests tr
-                WHERE CAST(tr.CreatedDate AS DATE) BETWEEN @StartDate AND @EndDate";
+                WHERE CAST(tr.StartDate AS DATE) BETWEEN @StartDate AND @EndDate";
 
                     // ✅ User เห็นเฉพาะข้อมูลที่ตัวเองสร้าง
                     if (!isAdmin)
