@@ -18,7 +18,7 @@ namespace TrainingRequestApp.Controllers
         }
 
         [HttpGet("search/{employeeCode}")]
-        public IActionResult SearchEmployee(string employeeCode, [FromQuery] string department = null, [FromQuery] string trainingType = null)
+        public IActionResult SearchEmployee(string employeeCode, [FromQuery] string department = null, [FromQuery] string trainingType = null, [FromQuery] string budgetSource = null)
         {
             try
             {
@@ -26,6 +26,7 @@ namespace TrainingRequestApp.Controllers
                 System.Diagnostics.Debug.WriteLine($"[SEARCH] SearchEmployee called for: {employeeCode}");
                 System.Diagnostics.Debug.WriteLine($"[SEARCH] Department Filter: {department}");
                 System.Diagnostics.Debug.WriteLine($"[SEARCH] Training Type: {trainingType}");
+                System.Diagnostics.Debug.WriteLine($"[SEARCH] Budget Source: {budgetSource}");
 
                 if (string.IsNullOrWhiteSpace(employeeCode))
                 {
@@ -110,9 +111,13 @@ namespace TrainingRequestApp.Controllers
                         }
                     }
 
-                    // 2. ดึงโควต้าฝ่ายจาก TrainingRequest_Cost (เฉพาะ Public)
+                    // 2. ดึงโควต้าจาก TrainingRequest_Cost (เฉพาะ Public)
+                    // ถ้า budgetSource = "TYP" → ดึงจาก CENTRAL_TRAINING_BUDGET
+                    // ถ้า budgetSource = "Department" หรือไม่ระบุ → ดึงจากฝ่ายของพนักงาน (เดิม)
                     decimal departmentQuota = 0;
                     int departmentQhours = 0;
+                    bool isTYP = budgetSource?.ToUpper() == "TYP";
+                    string quotaDepartment = isTYP ? "CENTRAL_TRAINING_BUDGET" : empDepartment;
 
                     if (trainingType?.ToUpper() == "PUBLIC")
                     {
@@ -124,11 +129,11 @@ namespace TrainingRequestApp.Controllers
                     WHERE [Department] = @DeptParam
                         AND [Year] = @Year";
 
-                        System.Diagnostics.Debug.WriteLine("[SEARCH] Fetching department quota...");
+                        System.Diagnostics.Debug.WriteLine($"[SEARCH] Fetching quota for: {quotaDepartment} (BudgetSource: {budgetSource})");
 
                         using (SqlCommand command = new SqlCommand(quotaDeptQuery, connection))
                         {
-                            command.Parameters.AddWithValue("@DeptParam", empDepartment);
+                            command.Parameters.AddWithValue("@DeptParam", quotaDepartment);
                             command.Parameters.AddWithValue("@Year", DateTime.Now.Year.ToString());
 
                             using (SqlDataReader reader = command.ExecuteReader())
@@ -138,7 +143,7 @@ namespace TrainingRequestApp.Controllers
                                     departmentQuota = Convert.ToDecimal(reader["DepartmentQuota"]);
                                     departmentQhours = Convert.ToInt32(reader["DepartmentQhours"]);
 
-                                    System.Diagnostics.Debug.WriteLine($"[SEARCH] Department Quota - Cost: {departmentQuota}, Hours: {departmentQhours}");
+                                    System.Diagnostics.Debug.WriteLine($"[SEARCH] Quota - Cost: {departmentQuota}, Hours: {departmentQhours}");
                                 }
                             }
                         }
@@ -146,21 +151,44 @@ namespace TrainingRequestApp.Controllers
                         // ✅ เช็คว่ามีโควต้าหรือไม่
                         if (departmentQuota == 0 || departmentQhours == 0)
                         {
+                            string quotaLabel = isTYP ? "งบกลาง (CENTRAL_TRAINING_BUDGET)" : $"ฝ่าย {empDepartment}";
                             return BadRequest(new
                             {
                                 success = false,
-                                message = $"❌ ไม่มี Cost หรือ Qhours สำหรับฝ่าย {empDepartment} กรุณาติดต่อผู้ดูแลระบบ"
+                                message = $"❌ ไม่มี Cost หรือ Qhours สำหรับ{quotaLabel} กรุณาติดต่อผู้ดูแลระบบ"
                             });
                         }
                     }
 
-                    // 3. คำนวณยอดใช้ไปของฝ่าย (Department-based สำหรับ Public)
+                    // 3. คำนวณยอดใช้ไป (Department-based สำหรับ Public)
+                    // ถ้า TYP → นับจากทุกฝ่ายที่เลือก BudgetSource = 'TYP'
+                    // ถ้า Department → นับจากฝ่ายเดียวกัน ที่ BudgetSource = 'Department' หรือ NULL (backward compatible)
                     int currentYearHours = 0;
                     decimal currentYearCost = 0;
 
                     if (trainingType?.ToUpper() == "PUBLIC")
                     {
-                        string usageQuery = @"
+                        string usageQuery;
+
+                        if (isTYP)
+                        {
+                            // ✅ TYP: นับยอดใช้จากทุกฝ่ายที่เลือก BudgetSource = 'TYP'
+                            usageQuery = @"
+                    SELECT
+                        ISNULL(SUM(tre.CurrentTrainingHours), 0) AS TotalHours,
+                        ISNULL(SUM(tre.CurrentTrainingCost), 0) AS TotalCost
+                    FROM [HRDSYSTEM].[dbo].[TrainingRequestEmployees] tre
+                    INNER JOIN [HRDSYSTEM].[dbo].[TrainingRequests] tr
+                        ON tre.TrainingRequestId = tr.Id
+                    WHERE UPPER(tr.BudgetSource) = 'TYP'
+                        AND UPPER(tr.Status) IN ('APPROVED', 'RESCHEDULED', 'COMPLETE')
+                        AND UPPER(tr.TrainingType) = 'PUBLIC'
+                        AND YEAR(tr.StartDate) = YEAR(GETDATE())";
+                        }
+                        else
+                        {
+                            // ✅ Department: นับยอดใช้จากฝ่ายเดียวกัน ที่ไม่ได้ใช้ TYP (backward compatible กับข้อมูลเก่าที่ BudgetSource = NULL)
+                            usageQuery = @"
                     SELECT
                         ISNULL(SUM(tre.CurrentTrainingHours), 0) AS TotalHours,
                         ISNULL(SUM(tre.CurrentTrainingCost), 0) AS TotalCost
@@ -168,15 +196,20 @@ namespace TrainingRequestApp.Controllers
                     INNER JOIN [HRDSYSTEM].[dbo].[TrainingRequests] tr
                         ON tre.TrainingRequestId = tr.Id
                     WHERE tre.Department = @DeptParam
+                        AND (tr.BudgetSource IS NULL OR UPPER(tr.BudgetSource) = 'DEPARTMENT')
                         AND UPPER(tr.Status) IN ('APPROVED', 'RESCHEDULED', 'COMPLETE')
                         AND UPPER(tr.TrainingType) = 'PUBLIC'
                         AND YEAR(tr.StartDate) = YEAR(GETDATE())";
+                        }
 
-                        System.Diagnostics.Debug.WriteLine("[SEARCH] Running department usage query...");
+                        System.Diagnostics.Debug.WriteLine($"[SEARCH] Running usage query (BudgetSource: {(isTYP ? "TYP" : "Department")})...");
 
                         using (SqlCommand command = new SqlCommand(usageQuery, connection))
                         {
-                            command.Parameters.AddWithValue("@DeptParam", empDepartment);
+                            if (!isTYP)
+                            {
+                                command.Parameters.AddWithValue("@DeptParam", empDepartment);
+                            }
 
                             using (SqlDataReader reader = command.ExecuteReader())
                             {
@@ -185,7 +218,7 @@ namespace TrainingRequestApp.Controllers
                                     currentYearHours = Convert.ToInt32(reader["TotalHours"]);
                                     currentYearCost = Convert.ToDecimal(reader["TotalCost"]);
 
-                                    System.Diagnostics.Debug.WriteLine($"[SEARCH] Department Usage - Hours: {currentYearHours}, Cost: {currentYearCost}");
+                                    System.Diagnostics.Debug.WriteLine($"[SEARCH] Usage - Hours: {currentYearHours}, Cost: {currentYearCost}");
                                 }
                             }
                         }

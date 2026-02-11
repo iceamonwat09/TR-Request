@@ -18,7 +18,22 @@
     <!-- DataTables -->
     <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
 
+    <!-- ✅ Flatpickr (แก้ปัญหาวันที่แสดงผลต่างกันตาม locale) -->
+    <link href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" rel="stylesheet" />
+
     <style>
+        .flatpickr-alt-input {
+            border-radius: 6px !important;
+            background-color: #fff !important;
+            cursor: pointer;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%236c757d' viewBox='0 0 16 16'%3E%3Cpath d='M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5zM1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4H1z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            padding-right: 36px !important;
+        }
+        .flatpickr-calendar {
+            z-index: 9999 !important;
+        }
         body {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
@@ -310,13 +325,13 @@
                     <label class="form-label fw-bold">
                         <i class="fa fa-calendar-alt text-primary"></i> Start Date
                     </label>
-                    <input type="date" id="filterStartDate" class="form-control" />
+                    <input type="text" id="filterStartDate" class="form-control" placeholder="dd/mm/yyyy" />
                 </div>
                 <div class="col-md-3">
                     <label class="form-label fw-bold">
                         <i class="fa fa-calendar-check text-primary"></i> End Date
                     </label>
-                    <input type="date" id="filterEndDate" class="form-control" />
+                    <input type="text" id="filterEndDate" class="form-control" placeholder="dd/mm/yyyy" />
                 </div>
                 <div class="col-md-3">
                     <label class="form-label fw-bold">
@@ -482,8 +497,28 @@
     <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+    <!-- ✅ Flatpickr JS -->
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 
     <script>
+        // ====================================================================
+        // ✅ Flatpickr สำหรับ filter dates
+        // ====================================================================
+        var fpFilterStart = flatpickr('#filterStartDate', {
+            dateFormat: "Y-m-d",
+            altInput: true,
+            altFormat: "d/m/Y",
+            allowInput: false,
+            altInputClass: "form-control flatpickr-alt-input"
+        });
+        var fpFilterEnd = flatpickr('#filterEndDate', {
+            dateFormat: "Y-m-d",
+            altInput: true,
+            altFormat: "d/m/Y",
+            allowInput: false,
+            altInputClass: "form-control flatpickr-alt-input"
+        });
+
         // ====================================================================
         // Global Variables
         // ====================================================================
@@ -510,8 +545,8 @@
             const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
             const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
 
-            $('#filterStartDate').val(formatDateForInput(firstDay));
-            $('#filterEndDate').val(formatDateForInput(lastDay));
+            fpFilterStart.setDate(formatDateForInput(firstDay), true);
+            fpFilterEnd.setDate(formatDateForInput(lastDay), true);
         }
 
         // ====================================================================
