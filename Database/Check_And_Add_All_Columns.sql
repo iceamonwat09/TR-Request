@@ -146,7 +146,7 @@ BEGIN
         [Cost] DECIMAL(12, 2) NULL DEFAULT 0,
         [Qhours] INT NULL DEFAULT 0,
         [CreatedBy] NVARCHAR(100) NULL,
-        [ModifyBy] NVARCHAR(200) NULL
+        [ModifyBy] NVARCHAR(100) NULL
     );
     PRINT 'CREATED  >> Table [dbo].[TrainingRequest_Cost]'
 END
@@ -159,11 +159,11 @@ IF OBJECT_ID('dbo.RetryEmailHistory', 'U') IS NULL
 BEGIN
     CREATE TABLE [dbo].[RetryEmailHistory] (
         [Id] INT PRIMARY KEY IDENTITY(1,1),
-        [TrainingRequestId] INT NOT NULL,
+        [TrainingRequestId] INT NULL,
         [DocNo] NVARCHAR(50) NULL,
-        [RetryBy] NVARCHAR(255) NOT NULL,
-        [RetryDate] DATETIME NOT NULL DEFAULT GETDATE(),
-        [StatusAtRetry] NVARCHAR(100) NOT NULL,
+        [RetryBy] NVARCHAR(255) NULL,
+        [RetryDate] DATETIME NULL DEFAULT GETDATE(),
+        [StatusAtRetry] NVARCHAR(100) NULL,
         [IPAddress] NVARCHAR(50) NULL,
         CONSTRAINT [FK_RetryEmailHistory_TrainingRequests]
             FOREIGN KEY ([TrainingRequestId])
@@ -1119,8 +1119,8 @@ ELSE PRINT 'EXISTS   >> TrainingRequest_Cost.CreatedBy - skip'
 
 IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('dbo.TrainingRequest_Cost') AND name = 'ModifyBy')
 BEGIN
-    ALTER TABLE [dbo].[TrainingRequest_Cost] ADD [ModifyBy] NVARCHAR(200) NULL;
-    PRINT 'ADDED    >> TrainingRequest_Cost.ModifyBy NVARCHAR(200)'
+    ALTER TABLE [dbo].[TrainingRequest_Cost] ADD [ModifyBy] NVARCHAR(100) NULL;
+    PRINT 'ADDED    >> TrainingRequest_Cost.ModifyBy NVARCHAR(100)'
 END
 ELSE PRINT 'EXISTS   >> TrainingRequest_Cost.ModifyBy - skip'
 GO
@@ -1133,7 +1133,7 @@ PRINT '--- Table: RetryEmailHistory ---'
 
 IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('dbo.RetryEmailHistory') AND name = 'TrainingRequestId')
 BEGIN
-    ALTER TABLE [dbo].[RetryEmailHistory] ADD [TrainingRequestId] INT NOT NULL;
+    ALTER TABLE [dbo].[RetryEmailHistory] ADD [TrainingRequestId] INT NULL;
     PRINT 'ADDED    >> RetryEmailHistory.TrainingRequestId INT'
 END
 ELSE PRINT 'EXISTS   >> RetryEmailHistory.TrainingRequestId - skip'
@@ -1147,21 +1147,21 @@ ELSE PRINT 'EXISTS   >> RetryEmailHistory.DocNo - skip'
 
 IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('dbo.RetryEmailHistory') AND name = 'RetryBy')
 BEGIN
-    ALTER TABLE [dbo].[RetryEmailHistory] ADD [RetryBy] NVARCHAR(255) NOT NULL DEFAULT '';
+    ALTER TABLE [dbo].[RetryEmailHistory] ADD [RetryBy] NVARCHAR(255) NULL;
     PRINT 'ADDED    >> RetryEmailHistory.RetryBy NVARCHAR(255)'
 END
 ELSE PRINT 'EXISTS   >> RetryEmailHistory.RetryBy - skip'
 
 IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('dbo.RetryEmailHistory') AND name = 'RetryDate')
 BEGIN
-    ALTER TABLE [dbo].[RetryEmailHistory] ADD [RetryDate] DATETIME NOT NULL DEFAULT GETDATE();
+    ALTER TABLE [dbo].[RetryEmailHistory] ADD [RetryDate] DATETIME NULL DEFAULT GETDATE();
     PRINT 'ADDED    >> RetryEmailHistory.RetryDate DATETIME'
 END
 ELSE PRINT 'EXISTS   >> RetryEmailHistory.RetryDate - skip'
 
 IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('dbo.RetryEmailHistory') AND name = 'StatusAtRetry')
 BEGIN
-    ALTER TABLE [dbo].[RetryEmailHistory] ADD [StatusAtRetry] NVARCHAR(100) NOT NULL DEFAULT '';
+    ALTER TABLE [dbo].[RetryEmailHistory] ADD [StatusAtRetry] NVARCHAR(100) NULL;
     PRINT 'ADDED    >> RetryEmailHistory.StatusAtRetry NVARCHAR(100)'
 END
 ELSE PRINT 'EXISTS   >> RetryEmailHistory.StatusAtRetry - skip'
