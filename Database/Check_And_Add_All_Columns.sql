@@ -948,28 +948,6 @@ BEGIN
 END
 ELSE PRINT 'EXISTS   >> TrainingRequests.TargetGroup - skip'
 
--- C# Model Additional Fields: TrainingTitle, TrainingDate, Location
-IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('dbo.TrainingRequests') AND name = 'TrainingTitle')
-BEGIN
-    ALTER TABLE [dbo].[TrainingRequests] ADD [TrainingTitle] NVARCHAR(200) NULL;
-    PRINT 'ADDED    >> TrainingRequests.TrainingTitle NVARCHAR(200)'
-END
-ELSE PRINT 'EXISTS   >> TrainingRequests.TrainingTitle - skip'
-
-IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('dbo.TrainingRequests') AND name = 'TrainingDate')
-BEGIN
-    ALTER TABLE [dbo].[TrainingRequests] ADD [TrainingDate] DATE NULL;
-    PRINT 'ADDED    >> TrainingRequests.TrainingDate DATE'
-END
-ELSE PRINT 'EXISTS   >> TrainingRequests.TrainingDate - skip'
-
-IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('dbo.TrainingRequests') AND name = 'Location')
-BEGIN
-    ALTER TABLE [dbo].[TrainingRequests] ADD [Location] NVARCHAR(200) NULL;
-    PRINT 'ADDED    >> TrainingRequests.Location NVARCHAR(200)'
-END
-ELSE PRINT 'EXISTS   >> TrainingRequests.Location - skip'
-
 GO
 
 -- =====================================================
