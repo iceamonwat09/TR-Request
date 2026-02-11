@@ -1705,15 +1705,15 @@ namespace TrainingRequestApp.Controllers
         // ====================================================================
 
         [HttpPost]
-        public async Task<IActionResult> Create(string TrainingTitle, DateTime TrainingDate, string Location, string ParticipantsJson)
+        public async Task<IActionResult> Create(string SeminarTitle, DateTime StartDate, string TrainingLocation, string ParticipantsJson)
         {
             try
             {
                 var trainingRequest = new TrainingRequest
                 {
-                    TrainingTitle = TrainingTitle,
-                    TrainingDate = TrainingDate,
-                    Location = Location
+                    SeminarTitle = SeminarTitle,
+                    StartDate = StartDate,
+                    TrainingLocation = TrainingLocation
                 };
 
                 var createdRequest = await _trainingRequestService.CreateTrainingRequestAsync(trainingRequest);
@@ -1746,9 +1746,9 @@ namespace TrainingRequestApp.Controllers
             catch (Exception ex)
             {
                 ModelState.AddModelError("", "เกิดข้อผิดพลาดในการบันทึกข้อมูล: " + ex.Message);
-                ViewBag.TrainingTitle = TrainingTitle;
-                ViewBag.TrainingDate = TrainingDate;
-                ViewBag.Location = Location;
+                ViewBag.SeminarTitle = SeminarTitle;
+                ViewBag.StartDate = StartDate;
+                ViewBag.TrainingLocation = TrainingLocation;
                 return View();
             }
         }
@@ -2430,9 +2430,9 @@ namespace TrainingRequestApp.Controllers
 
     public class CreateTrainingRequestViewModel
     {
-        public string TrainingTitle { get; set; } = string.Empty;
-        public DateTime TrainingDate { get; set; }
-        public string Location { get; set; } = string.Empty;
+        public string SeminarTitle { get; set; } = string.Empty;
+        public DateTime StartDate { get; set; }
+        public string TrainingLocation { get; set; } = string.Empty;
         public List<ParticipantViewModel>? Participants { get; set; }
     }
 

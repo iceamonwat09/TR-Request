@@ -31,15 +31,15 @@
                                 </tr>
                                 <tr>
                                     <td><strong>Training Title:</strong></td>
-                                    <td>@Model.TrainingTitle</td>
+                                    <td>@Model.SeminarTitle</td>
                                 </tr>
                                 <tr>
                                     <td><strong>Training Date:</strong></td>
-                                    <td>@Model.TrainingDate.ToString("dd/MM/yyyy")</td>
+                                    <td>@Model.StartDate?.ToString("dd/MM/yyyy")</td>
                                 </tr>
                                 <tr>
                                     <td><strong>Location:</strong></td>
-                                    <td>@Model.Location</td>
+                                    <td>@Model.TrainingLocation</td>
                                 </tr>
                                 <tr>
                                     <td><strong>Status:</strong></td>

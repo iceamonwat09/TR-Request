@@ -46,9 +46,9 @@
                                     {
                                         <tr>
                                             <td>@request.Id</td>
-                                            <td>@request.TrainingTitle</td>
-                                            <td>@request.TrainingDate.ToString("dd/MM/yyyy")</td>
-                                            <td>@request.Location</td>
+                                            <td>@request.SeminarTitle</td>
+                                            <td>@request.StartDate?.ToString("dd/MM/yyyy")</td>
+                                            <td>@request.TrainingLocation</td>
                                             <td>
                                                 <span class="badge bg-info">
                                                     @(request.Participants?.Count ?? 0) participants
