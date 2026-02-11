@@ -5,7 +5,7 @@
 -- Compatible: SQL Server 2014+
 -- Database: HRDSYSTEM
 -- Date: 2026-02-11
--- Updated: Match actual Prod DB schema sizes
+-- Updated: Match Dev DB schema exactly (Dev เป็นหลัก)
 -- =====================================================
 
 USE [HRDSYSTEM]
@@ -16,6 +16,7 @@ GO
 
 PRINT '========================================================'
 PRINT '  HRDSYSTEM - Check & Add All Columns Script'
+PRINT '  (Based on Dev Schema - Dev is Master)'
 PRINT '  Start Time: ' + CONVERT(VARCHAR, GETDATE(), 120)
 PRINT '========================================================'
 PRINT ''
@@ -26,7 +27,7 @@ PRINT ''
 PRINT '--- SECTION 1: Check & Create Tables ---'
 PRINT ''
 
--- 1.1 TrainingRequests (Main Table)
+-- 1.1 TrainingRequests (Main Table - 81 columns)
 IF OBJECT_ID('dbo.TrainingRequests', 'U') IS NULL
 BEGIN
     CREATE TABLE [dbo].[TrainingRequests] (
@@ -73,11 +74,11 @@ BEGIN
         [Status_ManagingDirector] NVARCHAR(40) NULL,
         [Comment_ManagingDirector] NVARCHAR(1000) NULL,
         [ApproveInfo_ManagingDirector] NVARCHAR(400) NULL,
-        [HRDAdminId] NVARCHAR(200) NULL,
+        [HRDAdminid] NVARCHAR(200) NULL,
         [Status_HRDAdmin] NVARCHAR(40) NULL,
         [Comment_HRDAdmin] NVARCHAR(1000) NULL,
         [ApproveInfo_HRDAdmin] NVARCHAR(400) NULL,
-        [HRDConfirmationId] NVARCHAR(200) NULL,
+        [HRDConfirmationid] NVARCHAR(200) NULL,
         [Status_HRDConfirmation] NVARCHAR(40) NULL,
         [Comment_HRDConfirmation] NVARCHAR(1000) NULL,
         [ApproveInfo_HRDConfirmation] NVARCHAR(400) NULL,
@@ -112,13 +113,13 @@ BEGIN
         [HRD_CourseCertification] BIT NULL DEFAULT 0,
         [BudgetSource] NVARCHAR(40) NULL
     );
-    PRINT 'CREATED  >> Table [dbo].[TrainingRequests]'
+    PRINT 'CREATED  >> Table [dbo].[TrainingRequests] (81 columns)'
 END
 ELSE
     PRINT 'EXISTS   >> Table [dbo].[TrainingRequests] - skip'
 GO
 
--- 1.2 TrainingRequestEmployees
+-- 1.2 TrainingRequestEmployees (14 columns)
 IF OBJECT_ID('dbo.TrainingRequestEmployees', 'U') IS NULL
 BEGIN
     CREATE TABLE [dbo].[TrainingRequestEmployees] (
@@ -128,7 +129,7 @@ BEGIN
         [EmployeeName] NVARCHAR(200) NULL,
         [Position] NVARCHAR(200) NULL,
         [Department] NVARCHAR(200) NULL,
-        [Level] NVARCHAR(200) NULL,
+        [level] NVARCHAR(200) NULL,
         [PreviousTrainingHours] INT NULL DEFAULT 0,
         [CurrentTrainingHours] INT NULL DEFAULT 0,
         [RemainingHours] INT NULL DEFAULT 0,
@@ -141,13 +142,13 @@ BEGIN
             REFERENCES [dbo].[TrainingRequests]([Id])
             ON DELETE CASCADE
     );
-    PRINT 'CREATED  >> Table [dbo].[TrainingRequestEmployees]'
+    PRINT 'CREATED  >> Table [dbo].[TrainingRequestEmployees] (14 columns)'
 END
 ELSE
     PRINT 'EXISTS   >> Table [dbo].[TrainingRequestEmployees] - skip'
 GO
 
--- 1.3 TrainingRequestAttachments
+-- 1.3 TrainingRequestAttachments (4 columns)
 IF OBJECT_ID('dbo.TrainingRequestAttachments', 'U') IS NULL
 BEGIN
     CREATE TABLE [dbo].[TrainingRequestAttachments] (
@@ -156,13 +157,13 @@ BEGIN
         [File_Name] NVARCHAR(510) NULL,
         [Modify_Date] NVARCHAR(100) NULL
     );
-    PRINT 'CREATED  >> Table [dbo].[TrainingRequestAttachments]'
+    PRINT 'CREATED  >> Table [dbo].[TrainingRequestAttachments] (4 columns)'
 END
 ELSE
     PRINT 'EXISTS   >> Table [dbo].[TrainingRequestAttachments] - skip'
 GO
 
--- 1.4 TrainingRequest_Cost
+-- 1.4 TrainingRequest_Cost (7 columns)
 IF OBJECT_ID('dbo.TrainingRequest_Cost', 'U') IS NULL
 BEGIN
     CREATE TABLE [dbo].[TrainingRequest_Cost] (
@@ -174,41 +175,36 @@ BEGIN
         [CreatedBy] NVARCHAR(200) NULL,
         [ModifyBy] NVARCHAR(200) NULL
     );
-    PRINT 'CREATED  >> Table [dbo].[TrainingRequest_Cost]'
+    PRINT 'CREATED  >> Table [dbo].[TrainingRequest_Cost] (7 columns)'
 END
 ELSE
     PRINT 'EXISTS   >> Table [dbo].[TrainingRequest_Cost] - skip'
 GO
 
--- 1.5 RetryEmailHistory
+-- 1.5 RetryEmailHistory (7 columns)
 IF OBJECT_ID('dbo.RetryEmailHistory', 'U') IS NULL
 BEGIN
     CREATE TABLE [dbo].[RetryEmailHistory] (
         [Id] INT PRIMARY KEY IDENTITY(1,1),
-        [TrainingRequestId] INT NOT NULL,
+        [TrainingRequestId] INT NULL,
         [DocNo] NVARCHAR(100) NULL,
-        [RetryBy] NVARCHAR(510) NOT NULL,
-        [RetryDate] DATETIME NOT NULL DEFAULT GETDATE(),
-        [StatusAtRetry] NVARCHAR(200) NOT NULL,
-        [IPAddress] NVARCHAR(100) NULL,
-        CONSTRAINT [FK_RetryEmailHistory_TrainingRequests]
-            FOREIGN KEY ([TrainingRequestId])
-            REFERENCES [dbo].[TrainingRequests]([Id])
-            ON DELETE CASCADE
+        [RetryBy] NVARCHAR(510) NULL,
+        [RetryDate] DATETIME NULL DEFAULT GETDATE(),
+        [StatusAtRetry] NVARCHAR(200) NULL,
+        [IPAddress] NVARCHAR(100) NULL
     );
-    PRINT 'CREATED  >> Table [dbo].[RetryEmailHistory]'
+    PRINT 'CREATED  >> Table [dbo].[RetryEmailHistory] (7 columns)'
 END
 ELSE
     PRINT 'EXISTS   >> Table [dbo].[RetryEmailHistory] - skip'
 GO
 
--- 1.6 EmailLogs
+-- 1.6 EmailLogs (10 columns)
 IF OBJECT_ID('dbo.EmailLogs', 'U') IS NULL
 BEGIN
     CREATE TABLE [dbo].[EmailLogs] (
         [Id] INT PRIMARY KEY IDENTITY(1,1),
         [TrainingRequestId] INT NULL,
-        [DocNo] NVARCHAR(40) NULL,
         [RecipientEmail] NVARCHAR(200) NULL,
         [EmailType] NVARCHAR(100) NULL,
         [Subject] NVARCHAR(400) NULL,
@@ -216,44 +212,35 @@ BEGIN
         [Status] NVARCHAR(40) NULL,
         [ErrorMessage] NVARCHAR(2000) NULL,
         [RetryCount] INT NULL DEFAULT 0,
-        CONSTRAINT [FK_EmailLogs_TrainingRequests]
-            FOREIGN KEY ([TrainingRequestId])
-            REFERENCES [dbo].[TrainingRequests]([Id])
-            ON DELETE SET NULL
+        [DocNo] NVARCHAR(40) NULL
     );
-    PRINT 'CREATED  >> Table [dbo].[EmailLogs]'
+    PRINT 'CREATED  >> Table [dbo].[EmailLogs] (10 columns)'
 END
 ELSE
     PRINT 'EXISTS   >> Table [dbo].[EmailLogs] - skip'
 GO
 
--- 1.7 ApprovalHistory
+-- 1.7 ApprovalHistory (9 columns - ตาม Dev ไม่มี DocNo, IpAddress)
 IF OBJECT_ID('dbo.ApprovalHistory', 'U') IS NULL
 BEGIN
     CREATE TABLE [dbo].[ApprovalHistory] (
         [Id] INT PRIMARY KEY IDENTITY(1,1),
         [TrainingRequestId] INT NOT NULL,
-        [DocNo] NVARCHAR(40) NULL,
         [ApproverRole] NVARCHAR(100) NOT NULL,
         [ApproverEmail] NVARCHAR(200) NOT NULL,
         [Action] NVARCHAR(40) NOT NULL,
         [Comment] NVARCHAR(1000) NULL,
         [ActionDate] DATETIME2(3) NOT NULL DEFAULT GETDATE(),
         [PreviousStatus] NVARCHAR(100) NULL,
-        [NewStatus] NVARCHAR(100) NULL,
-        [IpAddress] NVARCHAR(100) NULL,
-        CONSTRAINT [FK_ApprovalHistory_TrainingRequests]
-            FOREIGN KEY ([TrainingRequestId])
-            REFERENCES [dbo].[TrainingRequests]([Id])
-            ON DELETE CASCADE
+        [NewStatus] NVARCHAR(100) NULL
     );
-    PRINT 'CREATED  >> Table [dbo].[ApprovalHistory]'
+    PRINT 'CREATED  >> Table [dbo].[ApprovalHistory] (9 columns)'
 END
 ELSE
     PRINT 'EXISTS   >> Table [dbo].[ApprovalHistory] - skip'
 GO
 
--- 1.8 TrainingHistory
+-- 1.8 TrainingHistory (8 columns)
 IF OBJECT_ID('dbo.TrainingHistory', 'U') IS NULL
 BEGIN
     CREATE TABLE [dbo].[TrainingHistory] (
@@ -264,40 +251,15 @@ BEGIN
         [HistoryType] NVARCHAR(40) NULL,
         [TrainingDate] DATE NULL,
         [CourseName] NVARCHAR(1000) NULL,
-        [CreatedDate] DATETIME2(3) NULL DEFAULT GETDATE(),
-        CONSTRAINT [FK_TrainingHistory_TrainingRequests]
-            FOREIGN KEY ([TrainingRequestId])
-            REFERENCES [dbo].[TrainingRequests]([Id])
-            ON DELETE CASCADE
+        [CreatedDate] DATETIME2(3) NULL DEFAULT GETDATE()
     );
-    PRINT 'CREATED  >> Table [dbo].[TrainingHistory]'
+    PRINT 'CREATED  >> Table [dbo].[TrainingHistory] (8 columns)'
 END
 ELSE
     PRINT 'EXISTS   >> Table [dbo].[TrainingHistory] - skip'
 GO
 
--- 1.9 TrainingParticipants
-IF OBJECT_ID('dbo.TrainingParticipants', 'U') IS NULL
-BEGIN
-    CREATE TABLE [dbo].[TrainingParticipants] (
-        [Id] INT PRIMARY KEY IDENTITY(1,1),
-        [TrainingRequestId] INT NOT NULL,
-        [UserID] NVARCHAR(100) NOT NULL,
-        [Prefix] NVARCHAR(100) NULL,
-        [Name] NVARCHAR(100) NULL,
-        [Lastname] NVARCHAR(100) NULL,
-        [Level] NVARCHAR(400) NULL,
-        [AddedDate] DATETIME NOT NULL DEFAULT GETDATE(),
-        CONSTRAINT [FK_TrainingParticipants_TrainingRequests]
-            FOREIGN KEY ([TrainingRequestId])
-            REFERENCES [dbo].[TrainingRequests]([Id])
-            ON DELETE CASCADE
-    );
-    PRINT 'CREATED  >> Table [dbo].[TrainingParticipants]'
-END
-ELSE
-    PRINT 'EXISTS   >> Table [dbo].[TrainingParticipants] - skip'
-GO
+-- NOTE: ไม่มี TrainingParticipants (Dev ไม่มีตารางนี้)
 
 PRINT ''
 PRINT '========================================================'
@@ -649,13 +611,13 @@ BEGIN
 END
 ELSE PRINT 'EXISTS   >> TrainingRequests.ApproveInfo_ManagingDirector - skip'
 
--- HRDAdminId
-IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('dbo.TrainingRequests') AND name = 'HRDAdminId')
+-- HRDAdminid (ตัวเล็ก ตาม Dev)
+IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('dbo.TrainingRequests') AND name = 'HRDAdminid')
 BEGIN
-    ALTER TABLE [dbo].[TrainingRequests] ADD [HRDAdminId] NVARCHAR(200) NULL;
-    PRINT 'ADDED    >> TrainingRequests.HRDAdminId NVARCHAR(200)'
+    ALTER TABLE [dbo].[TrainingRequests] ADD [HRDAdminid] NVARCHAR(200) NULL;
+    PRINT 'ADDED    >> TrainingRequests.HRDAdminid NVARCHAR(200)'
 END
-ELSE PRINT 'EXISTS   >> TrainingRequests.HRDAdminId - skip'
+ELSE PRINT 'EXISTS   >> TrainingRequests.HRDAdminid - skip'
 
 -- Status_HRDAdmin
 IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('dbo.TrainingRequests') AND name = 'Status_HRDAdmin')
@@ -681,13 +643,13 @@ BEGIN
 END
 ELSE PRINT 'EXISTS   >> TrainingRequests.ApproveInfo_HRDAdmin - skip'
 
--- HRDConfirmationId
-IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('dbo.TrainingRequests') AND name = 'HRDConfirmationId')
+-- HRDConfirmationid (ตัวเล็ก ตาม Dev)
+IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('dbo.TrainingRequests') AND name = 'HRDConfirmationid')
 BEGIN
-    ALTER TABLE [dbo].[TrainingRequests] ADD [HRDConfirmationId] NVARCHAR(200) NULL;
-    PRINT 'ADDED    >> TrainingRequests.HRDConfirmationId NVARCHAR(200)'
+    ALTER TABLE [dbo].[TrainingRequests] ADD [HRDConfirmationid] NVARCHAR(200) NULL;
+    PRINT 'ADDED    >> TrainingRequests.HRDConfirmationid NVARCHAR(200)'
 END
-ELSE PRINT 'EXISTS   >> TrainingRequests.HRDConfirmationId - skip'
+ELSE PRINT 'EXISTS   >> TrainingRequests.HRDConfirmationid - skip'
 
 -- Status_HRDConfirmation
 IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('dbo.TrainingRequests') AND name = 'Status_HRDConfirmation')
@@ -868,7 +830,7 @@ ELSE PRINT 'EXISTS   >> TrainingRequests.KM_SubmitDocument - skip'
 IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('dbo.TrainingRequests') AND name = 'KM_CreateReport')
 BEGIN
     ALTER TABLE [dbo].[TrainingRequests] ADD [KM_CreateReport] BIT NULL;
-    PRINT 'ADDED    >> TrainingRequests.KM_CreateReport BIT'
+    PRINT 'ADDED    >> TrainingRequests.KM_CreateReport NVARCHAR'
 END
 ELSE PRINT 'EXISTS   >> TrainingRequests.KM_CreateReport - skip'
 
@@ -977,7 +939,7 @@ ELSE PRINT 'EXISTS   >> TrainingRequests.HRD_CourseCertification - skip'
 GO
 
 -- =====================================================
--- SECTION 2.2: TrainingRequestEmployees - All Columns
+-- SECTION 2.2: TrainingRequestEmployees - All Columns (14)
 -- =====================================================
 PRINT ''
 PRINT '--- Table: TrainingRequestEmployees ---'
@@ -1017,12 +979,12 @@ BEGIN
 END
 ELSE PRINT 'EXISTS   >> TrainingRequestEmployees.Department - skip'
 
-IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('dbo.TrainingRequestEmployees') AND name = 'Level')
+IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('dbo.TrainingRequestEmployees') AND name = 'level')
 BEGIN
-    ALTER TABLE [dbo].[TrainingRequestEmployees] ADD [Level] NVARCHAR(200) NULL;
-    PRINT 'ADDED    >> TrainingRequestEmployees.Level NVARCHAR(200)'
+    ALTER TABLE [dbo].[TrainingRequestEmployees] ADD [level] NVARCHAR(200) NULL;
+    PRINT 'ADDED    >> TrainingRequestEmployees.level NVARCHAR(200)'
 END
-ELSE PRINT 'EXISTS   >> TrainingRequestEmployees.Level - skip'
+ELSE PRINT 'EXISTS   >> TrainingRequestEmployees.level - skip'
 
 IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('dbo.TrainingRequestEmployees') AND name = 'PreviousTrainingHours')
 BEGIN
@@ -1075,7 +1037,7 @@ ELSE PRINT 'EXISTS   >> TrainingRequestEmployees.Notes - skip'
 GO
 
 -- =====================================================
--- SECTION 2.3: TrainingRequestAttachments - All Columns
+-- SECTION 2.3: TrainingRequestAttachments - All Columns (4)
 -- =====================================================
 PRINT ''
 PRINT '--- Table: TrainingRequestAttachments ---'
@@ -1103,7 +1065,7 @@ ELSE PRINT 'EXISTS   >> TrainingRequestAttachments.Modify_Date - skip'
 GO
 
 -- =====================================================
--- SECTION 2.4: TrainingRequest_Cost - All Columns
+-- SECTION 2.4: TrainingRequest_Cost - All Columns (7)
 -- =====================================================
 PRINT ''
 PRINT '--- Table: TrainingRequest_Cost ---'
@@ -1152,7 +1114,7 @@ ELSE PRINT 'EXISTS   >> TrainingRequest_Cost.ModifyBy - skip'
 GO
 
 -- =====================================================
--- SECTION 2.5: RetryEmailHistory - All Columns
+-- SECTION 2.5: RetryEmailHistory - All Columns (7)
 -- =====================================================
 PRINT ''
 PRINT '--- Table: RetryEmailHistory ---'
@@ -1201,7 +1163,7 @@ ELSE PRINT 'EXISTS   >> RetryEmailHistory.IPAddress - skip'
 GO
 
 -- =====================================================
--- SECTION 2.6: EmailLogs - All Columns
+-- SECTION 2.6: EmailLogs - All Columns (10)
 -- =====================================================
 PRINT ''
 PRINT '--- Table: EmailLogs ---'
@@ -1212,13 +1174,6 @@ BEGIN
     PRINT 'ADDED    >> EmailLogs.TrainingRequestId INT'
 END
 ELSE PRINT 'EXISTS   >> EmailLogs.TrainingRequestId - skip'
-
-IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('dbo.EmailLogs') AND name = 'DocNo')
-BEGIN
-    ALTER TABLE [dbo].[EmailLogs] ADD [DocNo] NVARCHAR(40) NULL;
-    PRINT 'ADDED    >> EmailLogs.DocNo NVARCHAR(40)'
-END
-ELSE PRINT 'EXISTS   >> EmailLogs.DocNo - skip'
 
 IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('dbo.EmailLogs') AND name = 'RecipientEmail')
 BEGIN
@@ -1268,13 +1223,21 @@ BEGIN
     PRINT 'ADDED    >> EmailLogs.RetryCount INT'
 END
 ELSE PRINT 'EXISTS   >> EmailLogs.RetryCount - skip'
+
+IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('dbo.EmailLogs') AND name = 'DocNo')
+BEGIN
+    ALTER TABLE [dbo].[EmailLogs] ADD [DocNo] NVARCHAR(40) NULL;
+    PRINT 'ADDED    >> EmailLogs.DocNo NVARCHAR(40)'
+END
+ELSE PRINT 'EXISTS   >> EmailLogs.DocNo - skip'
 GO
 
 -- =====================================================
--- SECTION 2.7: ApprovalHistory - All Columns
+-- SECTION 2.7: ApprovalHistory - All Columns (9)
+-- NOTE: ตาม Dev ไม่มี DocNo และ IpAddress
 -- =====================================================
 PRINT ''
-PRINT '--- Table: ApprovalHistory ---'
+PRINT '--- Table: ApprovalHistory (9 columns - match Dev) ---'
 
 IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('dbo.ApprovalHistory') AND name = 'TrainingRequestId')
 BEGIN
@@ -1282,13 +1245,6 @@ BEGIN
     PRINT 'ADDED    >> ApprovalHistory.TrainingRequestId INT'
 END
 ELSE PRINT 'EXISTS   >> ApprovalHistory.TrainingRequestId - skip'
-
-IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('dbo.ApprovalHistory') AND name = 'DocNo')
-BEGIN
-    ALTER TABLE [dbo].[ApprovalHistory] ADD [DocNo] NVARCHAR(40) NULL;
-    PRINT 'ADDED    >> ApprovalHistory.DocNo NVARCHAR(40)'
-END
-ELSE PRINT 'EXISTS   >> ApprovalHistory.DocNo - skip'
 
 IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('dbo.ApprovalHistory') AND name = 'ApproverRole')
 BEGIN
@@ -1338,17 +1294,10 @@ BEGIN
     PRINT 'ADDED    >> ApprovalHistory.NewStatus NVARCHAR(100)'
 END
 ELSE PRINT 'EXISTS   >> ApprovalHistory.NewStatus - skip'
-
-IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('dbo.ApprovalHistory') AND name = 'IpAddress')
-BEGIN
-    ALTER TABLE [dbo].[ApprovalHistory] ADD [IpAddress] NVARCHAR(100) NULL;
-    PRINT 'ADDED    >> ApprovalHistory.IpAddress NVARCHAR(100)'
-END
-ELSE PRINT 'EXISTS   >> ApprovalHistory.IpAddress - skip'
 GO
 
 -- =====================================================
--- SECTION 2.8: TrainingHistory - All Columns
+-- SECTION 2.8: TrainingHistory - All Columns (8)
 -- =====================================================
 PRINT ''
 PRINT '--- Table: TrainingHistory ---'
@@ -1403,61 +1352,7 @@ END
 ELSE PRINT 'EXISTS   >> TrainingHistory.CreatedDate - skip'
 GO
 
--- =====================================================
--- SECTION 2.9: TrainingParticipants - All Columns
--- =====================================================
-PRINT ''
-PRINT '--- Table: TrainingParticipants ---'
-
-IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('dbo.TrainingParticipants') AND name = 'TrainingRequestId')
-BEGIN
-    ALTER TABLE [dbo].[TrainingParticipants] ADD [TrainingRequestId] INT NOT NULL DEFAULT 0;
-    PRINT 'ADDED    >> TrainingParticipants.TrainingRequestId INT'
-END
-ELSE PRINT 'EXISTS   >> TrainingParticipants.TrainingRequestId - skip'
-
-IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('dbo.TrainingParticipants') AND name = 'UserID')
-BEGIN
-    ALTER TABLE [dbo].[TrainingParticipants] ADD [UserID] NVARCHAR(100) NOT NULL DEFAULT '';
-    PRINT 'ADDED    >> TrainingParticipants.UserID NVARCHAR(100)'
-END
-ELSE PRINT 'EXISTS   >> TrainingParticipants.UserID - skip'
-
-IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('dbo.TrainingParticipants') AND name = 'Prefix')
-BEGIN
-    ALTER TABLE [dbo].[TrainingParticipants] ADD [Prefix] NVARCHAR(100) NULL;
-    PRINT 'ADDED    >> TrainingParticipants.Prefix NVARCHAR(100)'
-END
-ELSE PRINT 'EXISTS   >> TrainingParticipants.Prefix - skip'
-
-IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('dbo.TrainingParticipants') AND name = 'Name')
-BEGIN
-    ALTER TABLE [dbo].[TrainingParticipants] ADD [Name] NVARCHAR(100) NULL;
-    PRINT 'ADDED    >> TrainingParticipants.Name NVARCHAR(100)'
-END
-ELSE PRINT 'EXISTS   >> TrainingParticipants.Name - skip'
-
-IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('dbo.TrainingParticipants') AND name = 'Lastname')
-BEGIN
-    ALTER TABLE [dbo].[TrainingParticipants] ADD [Lastname] NVARCHAR(100) NULL;
-    PRINT 'ADDED    >> TrainingParticipants.Lastname NVARCHAR(100)'
-END
-ELSE PRINT 'EXISTS   >> TrainingParticipants.Lastname - skip'
-
-IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('dbo.TrainingParticipants') AND name = 'Level')
-BEGIN
-    ALTER TABLE [dbo].[TrainingParticipants] ADD [Level] NVARCHAR(400) NULL;
-    PRINT 'ADDED    >> TrainingParticipants.Level NVARCHAR(400)'
-END
-ELSE PRINT 'EXISTS   >> TrainingParticipants.Level - skip'
-
-IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('dbo.TrainingParticipants') AND name = 'AddedDate')
-BEGIN
-    ALTER TABLE [dbo].[TrainingParticipants] ADD [AddedDate] DATETIME NOT NULL DEFAULT GETDATE();
-    PRINT 'ADDED    >> TrainingParticipants.AddedDate DATETIME'
-END
-ELSE PRINT 'EXISTS   >> TrainingParticipants.AddedDate - skip'
-GO
+-- NOTE: ไม่มี Section สำหรับ TrainingParticipants (Dev ไม่มีตารางนี้)
 
 -- =====================================================
 -- SECTION 3: Verification Summary
@@ -1466,6 +1361,18 @@ PRINT ''
 PRINT '========================================================'
 PRINT '--- SECTION 3: Verification Summary ---'
 PRINT '========================================================'
+PRINT ''
+
+PRINT 'Expected column counts (match Dev):'
+PRINT '  ApprovalHistory            = 9'
+PRINT '  EmailLogs                  = 10'
+PRINT '  RetryEmailHistory          = 7'
+PRINT '  TrainingHistory            = 8'
+PRINT '  TrainingRequest_Cost       = 7'
+PRINT '  TrainingRequestAttachments = 4'
+PRINT '  TrainingRequestEmployees   = 14'
+PRINT '  TrainingRequests           = 81'
+PRINT '  (TrainingParticipants should NOT exist)'
 PRINT ''
 
 -- Show column count per table
@@ -1482,11 +1389,16 @@ WHERE t.name IN (
     'RetryEmailHistory',
     'EmailLogs',
     'ApprovalHistory',
-    'TrainingHistory',
-    'TrainingParticipants'
+    'TrainingHistory'
 )
 GROUP BY t.name
 ORDER BY t.name;
+
+-- Warn if TrainingParticipants exists
+IF OBJECT_ID('dbo.TrainingParticipants', 'U') IS NOT NULL
+    PRINT 'WARNING  >> TrainingParticipants table exists but Dev does not have it!'
+ELSE
+    PRINT 'OK       >> TrainingParticipants does not exist (match Dev)'
 
 PRINT ''
 PRINT '========================================================'
@@ -1497,8 +1409,8 @@ PRINT ''
 PRINT 'Note:'
 PRINT '- Script นี้สามารถ run ซ้ำได้ (Idempotent)'
 PRINT '- ถ้า Column มีอยู่แล้วจะข้ามไปโดยอัตโนมัติ'
-PRINT '- ถ้า Table ไม่มีจะสร้างใหม่พร้อม FK Constraints'
+PRINT '- ถ้า Table ไม่มีจะสร้างใหม่'
 PRINT '- ข้อมูลเดิมจะไม่ถูกกระทบ'
-PRINT '- Column sizes ตรงกับ Prod DB schema'
+PRINT '- Schema ตรงกับ Dev DB (Dev เป็นหลัก)'
 PRINT ''
 GO
