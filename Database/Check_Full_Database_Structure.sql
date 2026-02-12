@@ -3,7 +3,7 @@
 -- Purpose: ตรวจสอบโครงสร้างทั้งหมดของ Database HRDSYSTEM
 --          ครอบคลุม Tables, Columns, Data Types, Keys,
 --          Indexes, Constraints, Views, Stored Procedures
--- Compatible: SQL Server 2014+
+-- Compatible: SQL Server 2014+ (uses FOR XML PATH instead of STRING_AGG)
 -- Database: HRDSYSTEM
 -- Date: 2026-02-11
 -- =====================================================
@@ -105,13 +105,17 @@ PRINT ''
 SELECT
     t.name AS [Table_Name],
     i.name AS [PK_Name],
-    STRING_AGG(c.name, ', ') WITHIN GROUP (ORDER BY ic.key_ordinal) AS [PK_Columns]
+    STUFF((
+        SELECT ', ' + c2.name
+        FROM sys.index_columns ic2
+        INNER JOIN sys.columns c2 ON ic2.object_id = c2.object_id AND ic2.column_id = c2.column_id
+        WHERE ic2.object_id = i.object_id AND ic2.index_id = i.index_id
+        ORDER BY ic2.key_ordinal
+        FOR XML PATH(''), TYPE
+    ).value('.', 'NVARCHAR(MAX)'), 1, 2, '') AS [PK_Columns]
 FROM sys.tables t
 INNER JOIN sys.indexes i ON t.object_id = i.object_id AND i.is_primary_key = 1
-INNER JOIN sys.index_columns ic ON i.object_id = ic.object_id AND i.index_id = ic.index_id
-INNER JOIN sys.columns c ON ic.object_id = c.object_id AND ic.column_id = c.column_id
 WHERE t.schema_id = SCHEMA_ID('dbo')
-GROUP BY t.name, i.name
 ORDER BY t.name;
 
 -- =====================================================
@@ -153,15 +157,19 @@ SELECT
     i.name AS [Index_Name],
     i.type_desc AS [Index_Type],
     CASE WHEN i.is_unique = 1 THEN 'YES' ELSE 'NO' END AS [Is_Unique],
-    STRING_AGG(c.name, ', ') WITHIN GROUP (ORDER BY ic.key_ordinal) AS [Index_Columns]
+    STUFF((
+        SELECT ', ' + c2.name
+        FROM sys.index_columns ic2
+        INNER JOIN sys.columns c2 ON ic2.object_id = c2.object_id AND ic2.column_id = c2.column_id
+        WHERE ic2.object_id = i.object_id AND ic2.index_id = i.index_id
+        ORDER BY ic2.key_ordinal
+        FOR XML PATH(''), TYPE
+    ).value('.', 'NVARCHAR(MAX)'), 1, 2, '') AS [Index_Columns]
 FROM sys.indexes i
 INNER JOIN sys.tables t ON i.object_id = t.object_id
-INNER JOIN sys.index_columns ic ON i.object_id = ic.object_id AND i.index_id = ic.index_id
-INNER JOIN sys.columns c ON ic.object_id = c.object_id AND ic.column_id = c.column_id
 WHERE t.schema_id = SCHEMA_ID('dbo')
 AND i.index_id > 0
 AND i.is_primary_key = 0
-GROUP BY t.name, i.name, i.type_desc, i.is_unique
 ORDER BY t.name, i.name;
 
 -- =====================================================
@@ -215,14 +223,18 @@ PRINT ''
 SELECT
     t.name AS [Table_Name],
     i.name AS [Constraint_Name],
-    STRING_AGG(c.name, ', ') WITHIN GROUP (ORDER BY ic.key_ordinal) AS [Columns]
+    STUFF((
+        SELECT ', ' + c2.name
+        FROM sys.index_columns ic2
+        INNER JOIN sys.columns c2 ON ic2.object_id = c2.object_id AND ic2.column_id = c2.column_id
+        WHERE ic2.object_id = i.object_id AND ic2.index_id = i.index_id
+        ORDER BY ic2.key_ordinal
+        FOR XML PATH(''), TYPE
+    ).value('.', 'NVARCHAR(MAX)'), 1, 2, '') AS [Columns]
 FROM sys.indexes i
 INNER JOIN sys.tables t ON i.object_id = t.object_id
-INNER JOIN sys.index_columns ic ON i.object_id = ic.object_id AND i.index_id = ic.index_id
-INNER JOIN sys.columns c ON ic.object_id = c.object_id AND ic.column_id = c.column_id
 WHERE t.schema_id = SCHEMA_ID('dbo')
 AND i.is_unique_constraint = 1
-GROUP BY t.name, i.name
 ORDER BY t.name, i.name;
 
 -- =====================================================
