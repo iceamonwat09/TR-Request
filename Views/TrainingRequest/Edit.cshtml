@@ -3759,9 +3759,13 @@
                 warningContainer.style.display = 'none';
             }
 
-            // ✅ Fix #3: อัพเดต HRD_DepartmentBudgetRemaining หลังคำนวณเสร็จ
-            if (typeof updateDeptBudgetRemaining === 'function') {
-                updateDeptBudgetRemaining();
+            // ✅ Fix #3: อัพเดต HRD_DepartmentBudgetRemaining โดยตรงหลังคำนวณเสร็จ
+            // ไม่ใช้ updateDeptBudgetRemaining() เพราะจะ Skip เมื่อ BudgetUsage = TYP
+            const hrdField = document.getElementById('hrdDeptBudgetRemaining');
+            if (hrdField && this.employees.length > 0) {
+                const lastEmp = this.employees[this.employees.length - 1];
+                hrdField.value = lastEmp.remainingCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                console.log('✅ Updated hrdDeptBudgetRemaining:', lastEmp.remainingCost);
             }
 
             // 6. แสดงข้อความสำเร็จ
