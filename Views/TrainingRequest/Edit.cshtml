@@ -3694,11 +3694,17 @@
             let accumulatedHours = 0;
 
             this.employees.forEach((emp, index) => {
+                // ✅ Fix #2: อัพเดต currentYearHours/currentYearCost ใน employee object (ค่าจาก API ใหม่ตาม BudgetSource)
+                emp.currentYearHours = currentYearHours;
+                emp.currentYearCost = currentYearCost;
+
                 // คำนวณยอดคงเหลือ (accumulated)
                 const remainingCost = currentDepartmentQuota - departmentUsedCostExcludingThis - accumulatedCost - emp.thisTimeCost;
                 const remainingHours = currentDepartmentQhours - departmentUsedHoursExcludingThis - accumulatedHours - emp.thisTimeHours;
 
                 console.log(`Employee ${index + 1} (${emp.empCode}):`, {
+                    currentYearHours: emp.currentYearHours,
+                    currentYearCost: emp.currentYearCost,
                     thisTimeCost: emp.thisTimeCost,
                     thisTimeHours: emp.thisTimeHours,
                     accumulatedCost,
@@ -3716,14 +3722,24 @@
                 if (rows[index]) {
                     const cells = rows[index].querySelectorAll('td');
                     if (cells.length >= 10) {
-                        // Column 9: Remaining Hours
-                        cells[8].textContent = remainingHours.toLocaleString();
-                        // Column 10: Remaining Cost
-                        cells[9].textContent = remainingCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                        // ✅ Fix #2: Column 5: ชั่วโมงสะสมปีนี้ (ประวัติการอบรม ไม่รวมครั้งนี้)
+                        cells[4].textContent = currentYearHours;
+                        // ✅ Fix #2: Column 6: ยอดเงินสะสมปีนี้ (ประวัติการอบรม ไม่รวมครั้งนี้)
+                        cells[5].textContent = currentYearCost.toLocaleString();
 
-                        // เปลี่ยนสีถ้าเป็นค่าลบ
-                        cells[8].style.color = remainingHours < 0 ? 'red' : '';
-                        cells[9].style.color = remainingCost < 0 ? 'red' : '';
+                        // Column 9: Remaining Hours
+                        const hoursTextClass = remainingHours >= 0 ? 'bg-success' : 'bg-danger';
+                        const hoursColorClass = remainingHours >= 0 ? '#e8f5e8' : '#ffebee';
+                        cells[8].style.backgroundColor = hoursColorClass;
+                        cells[8].innerHTML = `<span class="badge ${hoursTextClass} text-white px-3 py-2" style="font-size: 1rem;">${remainingHours.toLocaleString()}</span>`;
+
+                        // Column 10: Remaining Cost
+                        const costTextClass = remainingCost >= 0 ? 'bg-success' : 'bg-danger';
+                        const costColorClass = remainingCost >= 0 ? '#e8f5e8' : '#ffebee';
+                        cells[9].style.backgroundColor = costColorClass;
+                        cells[9].innerHTML = `<span class="badge ${costTextClass} text-white px-3 py-2" style="font-size: 1rem;">${remainingCost.toLocaleString()}</span>`;
+                        // ✅ Fix #3: อัพเดต data-value สำหรับ HRD_DepartmentBudgetRemaining
+                        cells[9].dataset.value = remainingCost;
                     }
                 }
 
@@ -3741,6 +3757,11 @@
             const warningContainer = document.getElementById('outdatedWarningContainer');
             if (warningContainer) {
                 warningContainer.style.display = 'none';
+            }
+
+            // ✅ Fix #3: อัพเดต HRD_DepartmentBudgetRemaining หลังคำนวณเสร็จ
+            if (typeof updateDeptBudgetRemaining === 'function') {
+                updateDeptBudgetRemaining();
             }
 
             // 6. แสดงข้อความสำเร็จ

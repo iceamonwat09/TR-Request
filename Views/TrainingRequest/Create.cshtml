@@ -2332,6 +2332,67 @@
         const employeeManager = new EmployeeManager();
         console.log('✅ EmployeeManager initialized');
 
+        // ============================================================
+        // 💰 BudgetSource change listener: ล้างพนักงานเมื่อเปลี่ยนแหล่งงบประมาณ
+        // ============================================================
+        let previousBudgetSource = document.querySelector('input[name="BudgetSource"]:checked')?.value || '';
+
+        document.querySelectorAll('input[name="BudgetSource"]').forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                const newValue = e.target.value;
+                console.log('💰 BudgetSource changed:', previousBudgetSource, '→', newValue);
+
+                // ตรวจสอบว่ามีพนักงานในตารางหรือไม่
+                if (employeeManager.employees && employeeManager.employees.length > 0) {
+                    const confirmed = confirm(
+                        '⚠️ หากมีการเปลี่ยนแปลงแหล่งงบประมาณ\n' +
+                        'ข้อมูลผู้เข้าอบรมในตารางจะถูกลบออกทั้งหมด\n' +
+                        'ผู้ใช้งานจะต้องเพิ่มข้อมูลผู้เข้าอบรมในระบบอีกครั้ง\n\n' +
+                        'ต้องการดำเนินการต่อหรือไม่?'
+                    );
+
+                    if (confirmed) {
+                        // ล้างข้อมูลพนักงานทั้งหมด
+                        document.getElementById('employeeTableBody').innerHTML = '';
+                        employeeManager.employees = [];
+                        employeeManager.rowCounter = 1;
+                        employeeManager.totalCostUsedInForm = 0;
+                        employeeManager.totalHoursUsedInForm = 0;
+                        employeeManager.departmentQuota = 0;
+                        employeeManager.departmentQhours = 0;
+
+                        // รีเซ็ต ParticipantCount
+                        const participantCountField = document.getElementById('ParticipantCount');
+                        if (participantCountField) {
+                            participantCountField.value = '0';
+                        }
+
+                        // คำนวณงบประมาณใหม่ (จำนวนคน = 0)
+                        if (typeof calculateTotalBudgetPublic === 'function') {
+                            calculateTotalBudgetPublic();
+                        }
+
+                        previousBudgetSource = newValue;
+                        console.log('✅ ล้างข้อมูลพนักงานทั้งหมดเรียบร้อย (เปลี่ยนแหล่งงบประมาณ)');
+                    } else {
+                        // คืนค่า radio กลับเป็นค่าเดิม
+                        if (previousBudgetSource) {
+                            const prevRadio = document.querySelector(`input[name="BudgetSource"][value="${previousBudgetSource}"]`);
+                            if (prevRadio) {
+                                prevRadio.checked = true;
+                            }
+                        } else {
+                            e.target.checked = false;
+                        }
+                        console.log('↩️ ยกเลิกการเปลี่ยนแหล่งงบประมาณ คืนค่ากลับเป็น:', previousBudgetSource);
+                    }
+                } else {
+                    // ไม่มีพนักงานในตาราง → เปลี่ยนได้เลย
+                    previousBudgetSource = newValue;
+                    console.log('✅ BudgetSource changed (no employees in table)');
+                }
+            });
+        });
 
       // ===============================================
     // 🔹 Cascade Dropdown: Department → Position
