@@ -1687,13 +1687,7 @@
                                                 var field = document.getElementById('hrdDeptBudgetRemaining');
                                                 var budgetUsage = document.querySelector('input[name="HRD_BudgetUsage"]:checked');
 
-                                                // ถ้าเลือก TYP → ไม่ต้อง auto-fill (ให้ user กรอกเอง)
-                                                if (budgetUsage && budgetUsage.value === 'TYP') {
-                                                    console.log('📊 Budget Usage: TYP - Skip auto-fill');
-                                                    return;
-                                                }
-
-                                                // ถ้าเลือก Department หรือยังไม่เลือก → auto-fill จากตาราง
+                                                // auto-fill จากตาราง (ทั้ง TYP และ Department)
                                                 var rows = document.querySelectorAll('#employeeTableBody tr');
                                                 var lastRemainingCost = 0;
                                                 if (rows.length > 0) {
@@ -1719,15 +1713,14 @@
                                                 if (!field) return;
 
                                                 if (budgetUsage && budgetUsage.value === 'TYP') {
-                                                    // TYP: ให้แก้ไขได้
                                                     field.removeAttribute('readonly');
-                                                    console.log('📊 Budget Usage: TYP - Field is editable');
+                                                    console.log('📊 Budget Usage: TYP - Field is editable + auto-fill');
                                                 } else {
-                                                    // Department หรือยังไม่เลือก: readonly + auto-fill
                                                     field.setAttribute('readonly', 'readonly');
-                                                    updateDeptBudgetRemaining();
                                                     console.log('📊 Budget Usage: Department - Field is readonly + auto-fill');
                                                 }
+                                                // auto-fill ค่าจากตารางทุกกรณี (TYP และ Department)
+                                                updateDeptBudgetRemaining();
                                             }
 
                                             // ✅ Event listener สำหรับ radio button HRD_BudgetUsage
