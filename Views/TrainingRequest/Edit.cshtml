@@ -3752,8 +3752,7 @@
                 warningContainer.style.display = 'none';
             }
 
-            // ✅ Fix #3: อัพเดต HRD_DepartmentBudgetRemaining โดยตรงหลังคำนวณเสร็จ
-            // ไม่ใช้ updateDeptBudgetRemaining() เพราะจะ Skip เมื่อ BudgetUsage = TYP
+            // ✅ อัพเดต HRD_DepartmentBudgetRemaining โดยตรงจาก employee object (เร็วกว่าอ่าน DOM)
             const hrdField = document.getElementById('hrdDeptBudgetRemaining');
             if (hrdField && this.employees.length > 0) {
                 const lastEmp = this.employees[this.employees.length - 1];
