@@ -1538,9 +1538,12 @@
                                                 <div class="modal-body p-4">
                                                     <div class="mb-3">
                                                         <label class="form-label fw-bold">รหัสพนักงาน</label>
+                                                        <!-- Public: dropdown ดึงจากตาราง -->
                                                         <select class="form-select" id="historyEmpCode" style="border-radius: 8px;">
                                                             <option value="">-- เลือกรหัสพนักงาน --</option>
                                                         </select>
+                                                        <!-- In House: พิมพ์เอง (manual) -->
+                                                        <input type="text" class="form-control" id="historyEmpCodeManual" placeholder="ระบุรหัสพนักงาน" style="border-radius: 8px; display: none;">
                                                     </div>
                                                     <div class="mb-3">
                                                         <label class="form-label fw-bold">ชื่อ - สกุล</label>
@@ -1815,9 +1818,18 @@
                                                 }
                                             });
 
+                                            // ✅ Helper: ตรวจว่าตอนนี้เป็นโหมด In House หรือไม่
+                                            function isInHouseMode() {
+                                                var trainingType = document.querySelector('input[name="TrainingType"]:checked');
+                                                return trainingType && trainingType.value === 'In House';
+                                            }
+
                                             // Save Training History
                                             document.getElementById('btnSaveTrainingHistory').addEventListener('click', function () {
-                                                var empCode = document.getElementById('historyEmpCode').value.trim();
+                                                // ✅ อ่านรหัสพนักงานจาก element ที่กำลังแสดง (In House = manual, Public = select)
+                                                var empCode = isInHouseMode()
+                                                    ? document.getElementById('historyEmpCodeManual').value.trim()
+                                                    : document.getElementById('historyEmpCode').value.trim();
                                                 var empName = document.getElementById('historyEmpName').value.trim();
                                                 var historyType = document.querySelector('input[name="historyType"]:checked');
                                                 var trainingDate = document.getElementById('historyDate').value;
@@ -1844,8 +1856,9 @@
                                                 renderTrainingHistoryTable();
                                                 updateTrainingHistoryJson();
 
-                                                // Clear modal
+                                                // Clear modal (ล้างทั้ง select และ manual input)
                                                 document.getElementById('historyEmpCode').value = '';
+                                                document.getElementById('historyEmpCodeManual').value = '';
                                                 document.getElementById('historyEmpName').value = '';
                                                 document.querySelectorAll('input[name="historyType"]').forEach(r => r.checked = false);
                                                 var historyDateEl = document.getElementById('historyDate');
@@ -1956,11 +1969,32 @@
                                                 }
                                             }
 
-                                            // ✅ Populate dropdown เมื่อ Modal เปิด
+                                            // ✅ Populate dropdown + สลับโหมด Public/In House เมื่อ Modal เปิด
                                             var trainingHistoryModalEl = document.getElementById('trainingHistoryModal');
                                             if (trainingHistoryModalEl) {
                                                 trainingHistoryModalEl.addEventListener('show.bs.modal', function () {
-                                                    populateHistoryEmpCodeDropdown();
+                                                    var trainingType = document.querySelector('input[name="TrainingType"]:checked');
+                                                    var isInHouse = trainingType && trainingType.value === 'In House';
+
+                                                    var selectEl = document.getElementById('historyEmpCode');
+                                                    var manualEl = document.getElementById('historyEmpCodeManual');
+                                                    var nameField = document.getElementById('historyEmpName');
+                                                    var searchBtn = document.getElementById('btnSearchTrainingRecord');
+
+                                                    if (isInHouse) {
+                                                        // In House → manual: พิมพ์รหัสเอง, พิมพ์ชื่อเอง, ซ่อนปุ่มค้นหา
+                                                        selectEl.style.display = 'none';
+                                                        manualEl.style.display = '';
+                                                        nameField.removeAttribute('readonly');
+                                                        searchBtn.style.display = 'none';
+                                                    } else {
+                                                        // Public → dropdown จากตาราง, ชื่อ readonly, แสดงปุ่มค้นหา
+                                                        selectEl.style.display = '';
+                                                        manualEl.style.display = 'none';
+                                                        nameField.setAttribute('readonly', 'readonly');
+                                                        searchBtn.style.display = '';
+                                                        populateHistoryEmpCodeDropdown();
+                                                    }
                                                 });
                                             }
 
