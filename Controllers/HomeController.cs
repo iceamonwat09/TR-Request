@@ -76,10 +76,14 @@ namespace TrainingRequestApp.Controllers
                 {
                     await conn.OpenAsync();
 
-                    // ✅ 1. Total Cost
+                    // ✅ 1. Total Cost + Public Cost (แยก Public เพื่อคำนวณ % งบประมาณให้ถูกต้อง)
+                    // - TotalCost = ค่าใช้จ่ายทั้งหมด (Public + In House) → แสดง KPI "ค่าใช้จ่ายทั้งหมด"
+                    // - PublicCost = เฉพาะ Public Training → ใช้คำนวณ % การใช้งบประมาณ (เทียบกับโควต้า)
+                    // - TrainingType IS NULL รองรับใบเก่าที่ยังไม่มีค่า (backward compatible)
                     string costQuery = @"
                         SELECT
                             ISNULL(SUM(TotalCost), 0) AS TotalCost,
+                            ISNULL(SUM(CASE WHEN TrainingType IS NULL OR UPPER(TrainingType) = 'PUBLIC' THEN TotalCost ELSE 0 END), 0) AS PublicCost,
                             COUNT(*) AS TotalRequests
                         FROM [TrainingRequests]
                         WHERE StartDate >= @StartDate AND StartDate <= @EndDate
@@ -88,6 +92,7 @@ namespace TrainingRequestApp.Controllers
                         + (string.IsNullOrEmpty(department) ? "" : " AND Department = @Department");
 
                     decimal totalCost = 0;
+                    decimal publicCost = 0;
                     int totalApproved = 0;
 
                     using (SqlCommand cmd = new SqlCommand(costQuery, conn))
@@ -102,7 +107,8 @@ namespace TrainingRequestApp.Controllers
                             if (await reader.ReadAsync())
                             {
                                 totalCost = reader.GetDecimal(0);
-                                totalApproved = reader.GetInt32(1);
+                                publicCost = reader.GetDecimal(1);
+                                totalApproved = reader.GetInt32(2);
                             }
                         }
                     }
@@ -156,8 +162,8 @@ namespace TrainingRequestApp.Controllers
                         }
                     }
 
-                    // คำนวณ %
-                    decimal budgetUsagePercent = totalQuota > 0 ? (totalCost / totalQuota * 100) : 0;
+                    // คำนวณ % (ใช้ publicCost เทียบกับ totalQuota เพราะโควต้าเป็นงบ Public Training เท่านั้น)
+                    decimal budgetUsagePercent = totalQuota > 0 ? (publicCost / totalQuota * 100) : 0;
                     decimal approvalRate = totalRequests > 0 ? ((decimal)approvedCount / totalRequests * 100) : 0;
 
                     return Json(new
@@ -167,11 +173,13 @@ namespace TrainingRequestApp.Controllers
                         {
                             totalCost = totalCost,
                             totalCostFormatted = totalCost.ToString("N0"),
+                            publicCost = publicCost,
+                            publicCostFormatted = publicCost.ToString("N0"),
                             budgetUsagePercent = Math.Round(budgetUsagePercent, 1),
                             totalQuota = totalQuota,
                             totalQuotaFormatted = totalQuota.ToString("N0"),
-                            remaining = totalQuota - totalCost,
-                            remainingFormatted = (totalQuota - totalCost).ToString("N0"),
+                            remaining = totalQuota - publicCost,
+                            remainingFormatted = (totalQuota - publicCost).ToString("N0"),
                             totalRequests = totalRequests,
                             approvedCount = approvedCount,
                             approvalRate = Math.Round(approvalRate, 1)
@@ -205,9 +213,11 @@ namespace TrainingRequestApp.Controllers
                 {
                     await conn.OpenAsync();
 
-                    // ✅ แก้ไข: รองรับ BudgetSource
+                    // ✅ แก้ไข: รองรับ BudgetSource + กรอง TrainingType
                     // - ใบที่ BudgetSource = 'TYP' → ยอดไปแสดงที่ CENTRAL_TRAINING_BUDGET
                     // - ใบที่ BudgetSource = 'Department' หรือ NULL → ยอดไปแสดงที่ฝ่ายเดิม (backward compatible)
+                    // - กรองเฉพาะ Public Training เท่านั้น (In House ใช้ระบบโควต้ารายบุคคลแยกต่างหาก)
+                    // - TrainingType IS NULL รองรับใบเก่าที่ยังไม่มีค่า (backward compatible)
                     string query = @"
                         SELECT
                             qc.Department,
@@ -228,6 +238,7 @@ namespace TrainingRequestApp.Controllers
                                 -- กรณีงบฝ่าย: ใบที่ BudgetSource = 'Department' หรือ NULL จะ JOIN กับฝ่ายเดิม
                                 (qc.Department != 'CENTRAL_TRAINING_BUDGET' AND tr.Department = qc.Department AND (tr.BudgetSource IS NULL OR UPPER(tr.BudgetSource) = 'DEPARTMENT'))
                             )
+                            AND (tr.TrainingType IS NULL OR UPPER(tr.TrainingType) = 'PUBLIC')
                             AND tr.StartDate >= @StartDate
                             AND tr.StartDate <= @EndDate
                             AND tr.IsActive = 1
