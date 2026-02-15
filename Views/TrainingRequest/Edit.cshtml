@@ -1687,13 +1687,7 @@
                                                 var field = document.getElementById('hrdDeptBudgetRemaining');
                                                 var budgetUsage = document.querySelector('input[name="HRD_BudgetUsage"]:checked');
 
-                                                // ถ้าเลือก TYP → ไม่ต้อง auto-fill (ให้ user กรอกเอง)
-                                                if (budgetUsage && budgetUsage.value === 'TYP') {
-                                                    console.log('📊 Budget Usage: TYP - Skip auto-fill');
-                                                    return;
-                                                }
-
-                                                // ถ้าเลือก Department หรือยังไม่เลือก → auto-fill จากตาราง
+                                                // auto-fill จากตาราง (ทั้ง TYP และ Department)
                                                 var rows = document.querySelectorAll('#employeeTableBody tr');
                                                 var lastRemainingCost = 0;
                                                 if (rows.length > 0) {
@@ -1719,15 +1713,14 @@
                                                 if (!field) return;
 
                                                 if (budgetUsage && budgetUsage.value === 'TYP') {
-                                                    // TYP: ให้แก้ไขได้
                                                     field.removeAttribute('readonly');
-                                                    console.log('📊 Budget Usage: TYP - Field is editable');
+                                                    console.log('📊 Budget Usage: TYP - Field is editable + auto-fill');
                                                 } else {
-                                                    // Department หรือยังไม่เลือก: readonly + auto-fill
                                                     field.setAttribute('readonly', 'readonly');
-                                                    updateDeptBudgetRemaining();
                                                     console.log('📊 Budget Usage: Department - Field is readonly + auto-fill');
                                                 }
+                                                // auto-fill ค่าจากตารางทุกกรณี (TYP และ Department)
+                                                updateDeptBudgetRemaining();
                                             }
 
                                             // ✅ Event listener สำหรับ radio button HRD_BudgetUsage
@@ -3694,11 +3687,17 @@
             let accumulatedHours = 0;
 
             this.employees.forEach((emp, index) => {
+                // ✅ Fix #2: อัพเดต currentYearHours/currentYearCost ใน employee object (ค่าจาก API ใหม่ตาม BudgetSource)
+                emp.currentYearHours = currentYearHours;
+                emp.currentYearCost = currentYearCost;
+
                 // คำนวณยอดคงเหลือ (accumulated)
                 const remainingCost = currentDepartmentQuota - departmentUsedCostExcludingThis - accumulatedCost - emp.thisTimeCost;
                 const remainingHours = currentDepartmentQhours - departmentUsedHoursExcludingThis - accumulatedHours - emp.thisTimeHours;
 
                 console.log(`Employee ${index + 1} (${emp.empCode}):`, {
+                    currentYearHours: emp.currentYearHours,
+                    currentYearCost: emp.currentYearCost,
                     thisTimeCost: emp.thisTimeCost,
                     thisTimeHours: emp.thisTimeHours,
                     accumulatedCost,
@@ -3716,14 +3715,24 @@
                 if (rows[index]) {
                     const cells = rows[index].querySelectorAll('td');
                     if (cells.length >= 10) {
-                        // Column 9: Remaining Hours
-                        cells[8].textContent = remainingHours.toLocaleString();
-                        // Column 10: Remaining Cost
-                        cells[9].textContent = remainingCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                        // ✅ Fix #2: Column 5: ชั่วโมงสะสมปีนี้ (ประวัติการอบรม ไม่รวมครั้งนี้)
+                        cells[4].textContent = currentYearHours;
+                        // ✅ Fix #2: Column 6: ยอดเงินสะสมปีนี้ (ประวัติการอบรม ไม่รวมครั้งนี้)
+                        cells[5].textContent = currentYearCost.toLocaleString();
 
-                        // เปลี่ยนสีถ้าเป็นค่าลบ
-                        cells[8].style.color = remainingHours < 0 ? 'red' : '';
-                        cells[9].style.color = remainingCost < 0 ? 'red' : '';
+                        // Column 9: Remaining Hours
+                        const hoursTextClass = remainingHours >= 0 ? 'bg-success' : 'bg-danger';
+                        const hoursColorClass = remainingHours >= 0 ? '#e8f5e8' : '#ffebee';
+                        cells[8].style.backgroundColor = hoursColorClass;
+                        cells[8].innerHTML = `<span class="badge ${hoursTextClass} text-white px-3 py-2" style="font-size: 1rem;">${remainingHours.toLocaleString()}</span>`;
+
+                        // Column 10: Remaining Cost
+                        const costTextClass = remainingCost >= 0 ? 'bg-success' : 'bg-danger';
+                        const costColorClass = remainingCost >= 0 ? '#e8f5e8' : '#ffebee';
+                        cells[9].style.backgroundColor = costColorClass;
+                        cells[9].innerHTML = `<span class="badge ${costTextClass} text-white px-3 py-2" style="font-size: 1rem;">${remainingCost.toLocaleString()}</span>`;
+                        // ✅ Fix #3: อัพเดต data-value สำหรับ HRD_DepartmentBudgetRemaining
+                        cells[9].dataset.value = remainingCost;
                     }
                 }
 
@@ -3741,6 +3750,14 @@
             const warningContainer = document.getElementById('outdatedWarningContainer');
             if (warningContainer) {
                 warningContainer.style.display = 'none';
+            }
+
+            // ✅ อัพเดต HRD_DepartmentBudgetRemaining โดยตรงจาก employee object (เร็วกว่าอ่าน DOM)
+            const hrdField = document.getElementById('hrdDeptBudgetRemaining');
+            if (hrdField && this.employees.length > 0) {
+                const lastEmp = this.employees[this.employees.length - 1];
+                hrdField.value = lastEmp.remainingCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                console.log('✅ Updated hrdDeptBudgetRemaining:', lastEmp.remainingCost);
             }
 
             // 6. แสดงข้อความสำเร็จ
