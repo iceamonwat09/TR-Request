@@ -82,7 +82,7 @@ namespace TrainingRequestApp.Services
                 "DepartmentManager" => "ผู้จัดการฝ่าย (Department Manager)",
                 "HRDAdmin" => "เจ้าหน้าที่พัฒนาบุคลากร (HRD Admin)",
                 "HRDConfirmation" => "ผู้รับรองการฝึกอบรม (HRD Confirmation)",
-                "ManagingDirector" => "กรรมการผู้จัดการ (Director)",
+                "ManagingDirector" => "ผู้อำนวยการฝ่าย (Director)",
                 "DeputyManagingDirector" => "รองกรรมการผู้จัดการ (Deputy Managing Director)", // 🆕
                 _ => "ผู้อนุมัติ"
             };
@@ -1041,7 +1041,7 @@ namespace TrainingRequestApp.Services
                 "WAITING_FOR_DEPARTMENT_MANAGER" => "ผู้จัดการฝ่าย (Department Manager)",
                 "WAITING_FOR_HRD_ADMIN" => "เจ้าหน้าที่พัฒนาบุคลากร (HRD Admin)",
                 "WAITING_FOR_HRD_CONFIRMATION" => "ผู้รับรองการฝึกอบรม (HRD Confirmation)",
-                "WAITING_FOR_MANAGING_DIRECTOR" => "กรรมการผู้จัดการ (Director)",
+                "WAITING_FOR_MANAGING_DIRECTOR" => "ผู้อำนวยการฝ่าย (Director)",
                 "WAITING_FOR_DEPUTY_MANAGING_DIRECTOR" => "รองกรรมการผู้จัดการ (Deputy Managing Director)", // 🆕
                 _ => "ผู้อนุมัติ"
             };
@@ -1129,7 +1129,7 @@ namespace TrainingRequestApp.Services
                 "WAITING_FOR_DEPARTMENT_MANAGER" => "ผู้จัดการฝ่าย (Department Manager)",
                 "WAITING_FOR_HRD_ADMIN" => "เจ้าหน้าที่พัฒนาบุคลากร (HRD Admin)",
                 "WAITING_FOR_HRD_CONFIRMATION" => "ผู้รับรองการฝึกอบรม (HRD Confirmation)",
-                "WAITING_FOR_MANAGING_DIRECTOR" => "กรรมการผู้จัดการ (Director)",
+                "WAITING_FOR_MANAGING_DIRECTOR" => "ผู้อำนวยการฝ่าย (Director)",
                 "WAITING_FOR_DEPUTY_MANAGING_DIRECTOR" => "รองกรรมการผู้จัดการ (Deputy Managing Director)", // 🆕
                 _ => "ผู้อนุมัติ"
             };
@@ -1517,36 +1517,40 @@ namespace TrainingRequestApp.Services
 
         private string GenerateApprovalStatusHtml(TrainingRequestEditViewModel request)
         {
+            // Helper: ถ้าค่าเป็น SKIP_APPROVER หรือ null → แสดงเป็น "-"
+            string DisplayApprover(string approverId) =>
+                string.IsNullOrEmpty(approverId) || IsSkipApprover(approverId) ? "-" : approverId;
+
             return $@"
 <table style='width: 100%; border-collapse: collapse;'>
     <tr style='border-bottom: 1px solid #e0e0e0;'>
         <td style='padding: 10px; font-weight: bold;'>ผู้จัดการส่วน (Section Manager)</td>
-        <td style='padding: 10px;'>{request.SectionManagerId ?? "-"}</td>
+        <td style='padding: 10px;'>{DisplayApprover(request.SectionManagerId)}</td>
         <td style='padding: 10px;'><span class='status-badge {GetStatusClass(request.Status_SectionManager)}'>{request.Status_SectionManager ?? "รออนุมัติ"}</span></td>
     </tr>
     <tr style='border-bottom: 1px solid #e0e0e0;'>
         <td style='padding: 10px; font-weight: bold;'>ผู้จัดการฝ่าย (Department Manager)</td>
-        <td style='padding: 10px;'>{request.DepartmentManagerId ?? "-"}</td>
+        <td style='padding: 10px;'>{DisplayApprover(request.DepartmentManagerId)}</td>
         <td style='padding: 10px;'><span class='status-badge {GetStatusClass(request.Status_DepartmentManager)}'>{request.Status_DepartmentManager ?? "รออนุมัติ"}</span></td>
     </tr>
     <tr style='border-bottom: 1px solid #e0e0e0;'>
         <td style='padding: 10px; font-weight: bold;'>เจ้าหน้าที่พัฒนาบุคลากร (HRD Admin)</td>
-        <td style='padding: 10px;'>{request.HRDAdminId ?? "-"}</td>
+        <td style='padding: 10px;'>{DisplayApprover(request.HRDAdminId)}</td>
         <td style='padding: 10px;'><span class='status-badge {GetStatusClass(request.Status_HRDAdmin)}'>{request.Status_HRDAdmin ?? "รออนุมัติ"}</span></td>
     </tr>
     <tr style='border-bottom: 1px solid #e0e0e0;'>
         <td style='padding: 10px; font-weight: bold;'>ผู้รับรองการฝึกอบรม (HRD Confirmation)</td>
-        <td style='padding: 10px;'>{request.HRDConfirmationId ?? "-"}</td>
+        <td style='padding: 10px;'>{DisplayApprover(request.HRDConfirmationId)}</td>
         <td style='padding: 10px;'><span class='status-badge {GetStatusClass(request.Status_HRDConfirmation)}'>{request.Status_HRDConfirmation ?? "รออนุมัติ"}</span></td>
     </tr>
     <tr style='border-bottom: 1px solid #e0e0e0;'>
-        <td style='padding: 10px; font-weight: bold;'>กรรมการผู้จัดการ (Director)</td>
-        <td style='padding: 10px;'>{request.ManagingDirectorId ?? "-"}</td>
+        <td style='padding: 10px; font-weight: bold;'>ผู้อำนวยการฝ่าย (Director)</td>
+        <td style='padding: 10px;'>{DisplayApprover(request.ManagingDirectorId)}</td>
         <td style='padding: 10px;'><span class='status-badge {GetStatusClass(request.Status_ManagingDirector)}'>{request.Status_ManagingDirector ?? "รออนุมัติ"}</span></td>
     </tr>
     <tr>
         <td style='padding: 10px; font-weight: bold;'>รองกรรมการผู้จัดการ (Deputy Managing Director)</td>
-        <td style='padding: 10px;'>{request.DeputyManagingDirectorId ?? "-"}</td>
+        <td style='padding: 10px;'>{DisplayApprover(request.DeputyManagingDirectorId)}</td>
         <td style='padding: 10px;'><span class='status-badge {GetStatusClass(request.Status_DeputyManagingDirector)}'>{request.Status_DeputyManagingDirector ?? "รออนุมัติ"}</span></td>
     </tr>
 </table>";
