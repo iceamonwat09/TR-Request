@@ -1538,14 +1538,24 @@
                                                 <div class="modal-body p-4">
                                                     <div class="mb-3">
                                                         <label class="form-label fw-bold">รหัสพนักงาน</label>
-                                                        <input type="text" class="form-control" id="historyEmpCode" placeholder="ระบุรหัสพนักงาน" style="border-radius: 8px;">
+                                                        <!-- Public: dropdown ดึงจากตาราง -->
+                                                        <select class="form-select" id="historyEmpCode" style="border-radius: 8px;">
+                                                            <option value="">-- เลือกรหัสพนักงาน --</option>
+                                                        </select>
+                                                        <!-- In House: พิมพ์เอง (manual) -->
+                                                        <input type="text" class="form-control" id="historyEmpCodeManual" placeholder="ระบุรหัสพนักงาน" style="border-radius: 8px; display: none;">
                                                     </div>
                                                     <div class="mb-3">
                                                         <label class="form-label fw-bold">ชื่อ - สกุล</label>
-                                                        <input type="text" class="form-control" id="historyEmpName" placeholder="ระบุชื่อ - สกุล" style="border-radius: 8px;">
+                                                        <input type="text" class="form-control" id="historyEmpName" placeholder="ระบุชื่อ - สกุล" style="border-radius: 8px;" readonly>
                                                     </div>
                                                     <div class="mb-3">
-                                                        <label class="form-label fw-bold">ประวัติการอบรม</label>
+                                                        <div class="d-flex justify-content-between align-items-center">
+                                                            <label class="form-label fw-bold mb-0">ประวัติการอบรม</label>
+                                                            <button type="button" class="btn btn-sm btn-outline-info" id="btnSearchTrainingRecord" title="ค้นหาประวัติการอบรม" style="border-radius: 15px; padding: 2px 10px;">
+                                                                <i class="fas fa-search me-1"></i>ค้นหา
+                                                            </button>
+                                                        </div>
                                                         <div class="d-flex gap-4 mt-2">
                                                             <div class="form-check">
                                                                 <input class="form-check-input" type="radio" name="historyType" value="Never" id="historyNever" style="transform: scale(1.2);">
@@ -1575,6 +1585,50 @@
                                                     <button type="button" class="btn btn-primary" id="btnSaveTrainingHistory" style="border-radius: 20px;">
                                                         <i class="fas fa-save me-1"></i> บันทึก
                                                     </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- ==================== Modal: ค้นหาประวัติการอบรมจากระบบ ==================== -->
+                                    <div class="modal fade" id="trainingSearchResultModal" tabindex="-1" aria-labelledby="trainingSearchResultModalLabel" aria-hidden="true">
+                                        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+                                            <div class="modal-content" style="border-radius: 15px;">
+                                                <div class="modal-header bg-info text-white" style="border-radius: 15px 15px 0 0;">
+                                                    <h5 class="modal-title" id="trainingSearchResultModalLabel">
+                                                        <i class="fas fa-search me-2"></i>ประวัติการอบรมจากระบบ
+                                                    </h5>
+                                                    <button type="button" class="btn-close btn-close-white" id="btnCloseSearchResult" aria-label="Close"></button>
+                                                </div>
+                                                <div class="modal-body p-4">
+                                                    <div id="searchResultLoading" class="text-center py-4" style="display: none;">
+                                                        <div class="spinner-border text-info" role="status">
+                                                            <span class="visually-hidden">Loading...</span>
+                                                        </div>
+                                                        <p class="mt-2 text-muted">กำลังค้นหาข้อมูล...</p>
+                                                    </div>
+                                                    <div id="searchResultEmpty" class="text-center py-4" style="display: none;">
+                                                        <i class="fas fa-info-circle text-muted" style="font-size: 2rem;"></i>
+                                                        <p class="mt-2 text-muted">ไม่พบประวัติการอบรมของพนักงานคนนี้</p>
+                                                    </div>
+                                                    <div class="table-responsive" id="searchResultTableContainer" style="display: none;">
+                                                        <p class="text-muted mb-2"><small>คลิกเลือกแถวเพื่อนำข้อมูลไปใส่ในฟอร์ม</small></p>
+                                                        <table class="table table-bordered table-hover mb-0" style="font-size: 0.9rem;">
+                                                            <thead class="table-info">
+                                                                <tr>
+                                                                    <th class="text-center" style="min-width: 100px;">รหัสพนักงาน</th>
+                                                                    <th class="text-center" style="min-width: 150px;">ชื่อ - สกุล</th>
+                                                                    <th class="text-center" style="min-width: 200px;">ชื่อหลักสูตร</th>
+                                                                    <th class="text-center" style="min-width: 120px;">อบรมเมื่อวันที่</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody id="searchResultTableBody">
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-secondary" id="btnCancelSearchResult" style="border-radius: 20px;">ยกเลิก</button>
                                                 </div>
                                             </div>
                                         </div>
@@ -1764,9 +1818,18 @@
                                                 }
                                             });
 
+                                            // ✅ Helper: ตรวจว่าตอนนี้เป็นโหมด In House หรือไม่
+                                            function isInHouseMode() {
+                                                var trainingType = document.querySelector('input[name="TrainingType"]:checked');
+                                                return trainingType && trainingType.value === 'In House';
+                                            }
+
                                             // Save Training History
                                             document.getElementById('btnSaveTrainingHistory').addEventListener('click', function () {
-                                                var empCode = document.getElementById('historyEmpCode').value.trim();
+                                                // ✅ อ่านรหัสพนักงานจาก element ที่กำลังแสดง (In House = manual, Public = select)
+                                                var empCode = isInHouseMode()
+                                                    ? document.getElementById('historyEmpCodeManual').value.trim()
+                                                    : document.getElementById('historyEmpCode').value.trim();
                                                 var empName = document.getElementById('historyEmpName').value.trim();
                                                 var historyType = document.querySelector('input[name="historyType"]:checked');
                                                 var trainingDate = document.getElementById('historyDate').value;
@@ -1793,8 +1856,9 @@
                                                 renderTrainingHistoryTable();
                                                 updateTrainingHistoryJson();
 
-                                                // Clear modal
+                                                // Clear modal (ล้างทั้ง select และ manual input)
                                                 document.getElementById('historyEmpCode').value = '';
+                                                document.getElementById('historyEmpCodeManual').value = '';
                                                 document.getElementById('historyEmpName').value = '';
                                                 document.querySelectorAll('input[name="historyType"]').forEach(r => r.checked = false);
                                                 var historyDateEl = document.getElementById('historyDate');
@@ -1870,6 +1934,173 @@
 
                                             // Initial JSON
                                             updateTrainingHistoryJson();
+
+                                            // ===== ✅ Populate dropdown รหัสพนักงานจากตารางประวัติการขออบรมฯ =====
+                                            function populateHistoryEmpCodeDropdown() {
+                                                var select = document.getElementById('historyEmpCode');
+                                                if (!select) return;
+
+                                                // เก็บค่าที่เลือกอยู่ (ถ้ามี)
+                                                var currentVal = select.value;
+
+                                                // ล้าง options เดิม (เหลือแค่ตัวว่าง)
+                                                select.innerHTML = '<option value="">-- เลือกรหัสพนักงาน --</option>';
+
+                                                // ดึงจาก employeeManager.employees[] (ตารางประวัติการขออบรมฯ)
+                                                if (typeof employeeManager !== 'undefined' && employeeManager.employees && employeeManager.employees.length > 0) {
+                                                    var addedCodes = {};
+                                                    employeeManager.employees.forEach(function(emp) {
+                                                        if (emp.empCode && !addedCodes[emp.empCode]) {
+                                                            addedCodes[emp.empCode] = true;
+                                                            var fullName = (emp.prefix || '') + (emp.name || '') + ' ' + (emp.lastname || '');
+                                                            fullName = fullName.trim();
+                                                            var opt = document.createElement('option');
+                                                            opt.value = emp.empCode;
+                                                            opt.textContent = emp.empCode;
+                                                            opt.dataset.fullname = fullName;
+                                                            select.appendChild(opt);
+                                                        }
+                                                    });
+                                                }
+
+                                                // คืนค่าที่เลือกไว้ (ถ้ายังมี)
+                                                if (currentVal) {
+                                                    select.value = currentVal;
+                                                }
+                                            }
+
+                                            // ✅ Populate dropdown + สลับโหมด Public/In House เมื่อ Modal เปิด
+                                            var trainingHistoryModalEl = document.getElementById('trainingHistoryModal');
+                                            if (trainingHistoryModalEl) {
+                                                trainingHistoryModalEl.addEventListener('show.bs.modal', function () {
+                                                    var trainingType = document.querySelector('input[name="TrainingType"]:checked');
+                                                    var isInHouse = trainingType && trainingType.value === 'In House';
+
+                                                    var selectEl = document.getElementById('historyEmpCode');
+                                                    var manualEl = document.getElementById('historyEmpCodeManual');
+                                                    var nameField = document.getElementById('historyEmpName');
+                                                    var searchBtn = document.getElementById('btnSearchTrainingRecord');
+
+                                                    if (isInHouse) {
+                                                        // In House → manual: พิมพ์รหัสเอง, พิมพ์ชื่อเอง, ซ่อนปุ่มค้นหา
+                                                        selectEl.style.display = 'none';
+                                                        manualEl.style.display = '';
+                                                        nameField.removeAttribute('readonly');
+                                                        searchBtn.style.display = 'none';
+                                                    } else {
+                                                        // Public → dropdown จากตาราง, ชื่อ readonly, แสดงปุ่มค้นหา
+                                                        selectEl.style.display = '';
+                                                        manualEl.style.display = 'none';
+                                                        nameField.setAttribute('readonly', 'readonly');
+                                                        searchBtn.style.display = '';
+                                                        populateHistoryEmpCodeDropdown();
+                                                    }
+                                                });
+                                            }
+
+                                            // ✅ เมื่อเลือกรหัสพนักงาน → auto-fill ชื่อ-สกุล
+                                            document.getElementById('historyEmpCode').addEventListener('change', function () {
+                                                var selectedOption = this.options[this.selectedIndex];
+                                                var nameField = document.getElementById('historyEmpName');
+                                                if (this.value && selectedOption && selectedOption.dataset.fullname) {
+                                                    nameField.value = selectedOption.dataset.fullname;
+                                                } else {
+                                                    nameField.value = '';
+                                                }
+                                            });
+
+                                            // ===== ✅ ปุ่มค้นหาประวัติการอบรมจากระบบ =====
+                                            document.getElementById('btnSearchTrainingRecord').addEventListener('click', function () {
+                                                var empCode = document.getElementById('historyEmpCode').value.trim();
+                                                if (!empCode) {
+                                                    alert('กรุณาเลือกรหัสพนักงานก่อน');
+                                                    return;
+                                                }
+
+                                                // แสดง Modal ค้นหา
+                                                var searchModal = new bootstrap.Modal(document.getElementById('trainingSearchResultModal'));
+                                                searchModal.show();
+
+                                                // แสดง loading
+                                                document.getElementById('searchResultLoading').style.display = 'block';
+                                                document.getElementById('searchResultEmpty').style.display = 'none';
+                                                document.getElementById('searchResultTableContainer').style.display = 'none';
+                                                document.getElementById('searchResultTableBody').innerHTML = '';
+
+                                                // Fetch API
+                                                fetch('/TrainingRequest/GetEmployeeTrainingHistory?userId=' + encodeURIComponent(empCode))
+                                                    .then(function (response) { return response.json(); })
+                                                    .then(function (result) {
+                                                        document.getElementById('searchResultLoading').style.display = 'none';
+
+                                                        if (result.success && result.data && result.data.length > 0) {
+                                                            document.getElementById('searchResultTableContainer').style.display = 'block';
+                                                            var tbody = document.getElementById('searchResultTableBody');
+                                                            tbody.innerHTML = '';
+
+                                                            result.data.forEach(function (item) {
+                                                                // แปลง date เป็น dd/mm/yyyy สำหรับแสดง
+                                                                var dateDisplay = '';
+                                                                if (item.openDate) {
+                                                                    var parts = item.openDate.split('-');
+                                                                    if (parts.length === 3) {
+                                                                        dateDisplay = parts[2] + '/' + parts[1] + '/' + parts[0];
+                                                                    }
+                                                                }
+
+                                                                var row = document.createElement('tr');
+                                                                row.style.cursor = 'pointer';
+                                                                row.dataset.courseName = item.courseName || '';
+                                                                row.dataset.openDate = item.openDate || '';
+                                                                row.innerHTML =
+                                                                    '<td class="text-center align-middle">' + (item.userId || '') + '</td>' +
+                                                                    '<td class="align-middle">' + (item.fullName || '') + '</td>' +
+                                                                    '<td class="align-middle">' + (item.courseName || '') + '</td>' +
+                                                                    '<td class="text-center align-middle">' + dateDisplay + '</td>';
+
+                                                                // ✅ คลิกเลือกแถว → auto-fill ข้อมูลลงใน Modal เดิม
+                                                                row.addEventListener('click', function () {
+                                                                    var courseName = this.dataset.courseName;
+                                                                    var openDate = this.dataset.openDate;
+
+                                                                    // ใส่ชื่อหลักสูตร
+                                                                    document.getElementById('historyCourseName').value = courseName;
+
+                                                                    // ใส่วันที่ (ผ่าน flatpickr ถ้ามี, ไม่งั้นใส่ตรง)
+                                                                    var historyDateEl = document.getElementById('historyDate');
+                                                                    if (historyDateEl._flatpickr && openDate) {
+                                                                        historyDateEl._flatpickr.setDate(openDate, true);
+                                                                    } else if (openDate) {
+                                                                        historyDateEl.value = openDate;
+                                                                    }
+
+                                                                    // ปิด Modal ค้นหา
+                                                                    var searchModalInstance = bootstrap.Modal.getInstance(document.getElementById('trainingSearchResultModal'));
+                                                                    if (searchModalInstance) searchModalInstance.hide();
+                                                                });
+
+                                                                tbody.appendChild(row);
+                                                            });
+                                                        } else {
+                                                            document.getElementById('searchResultEmpty').style.display = 'block';
+                                                        }
+                                                    })
+                                                    .catch(function (error) {
+                                                        document.getElementById('searchResultLoading').style.display = 'none';
+                                                        document.getElementById('searchResultEmpty').style.display = 'block';
+                                                        console.error('❌ Error fetching training history:', error);
+                                                    });
+                                            });
+
+                                            // ✅ ปุ่มปิด/ยกเลิก Modal ค้นหาประวัติ
+                                            document.getElementById('btnCloseSearchResult').addEventListener('click', function () {
+                                                var searchModalInstance = bootstrap.Modal.getInstance(document.getElementById('trainingSearchResultModal'));
+                                                if (searchModalInstance) searchModalInstance.hide();
+                                            });
+                                            document.getElementById('btnCancelSearchResult').addEventListener('click', function () {
+                                                var searchModalInstance = bootstrap.Modal.getInstance(document.getElementById('trainingSearchResultModal'));
+                                                if (searchModalInstance) searchModalInstance.hide();
+                                            });
 
                                             // Sync before form submit
                                             var form = document.querySelector('form');
