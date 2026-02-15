@@ -2281,6 +2281,70 @@ namespace TrainingRequestApp.Controllers
             }
         }
 
+        // ====================================================================
+        // ✅ API: ค้นหาประวัติการอบรมจากระบบ TimeStramp/OpenCourse/Course
+        // ====================================================================
+        [HttpGet]
+        public async Task<IActionResult> GetEmployeeTrainingHistory(string userId)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(userId))
+                {
+                    return Json(new { success = false, message = "กรุณาระบุรหัสพนักงาน" });
+                }
+
+                string connectionString = _configuration.GetConnectionString("DefaultConnection");
+                var results = new List<object>();
+
+                using (SqlConnection conn = new SqlConnection(connectionString))
+                {
+                    await conn.OpenAsync();
+
+                    string query = @"
+                        SELECT DISTINCT
+                            dbo.Employees.UserID,
+                            dbo.Employees.Prefix + ' ' + dbo.Employees.Name + ' ' + dbo.Employees.lastname AS FullName,
+                            dbo.Course.CName,
+                            dbo.OpenCourse.OOpenDate
+                        FROM dbo.TimeStramp
+                        INNER JOIN dbo.OpenCourse ON dbo.TimeStramp.OID = dbo.OpenCourse.OID
+                        INNER JOIN dbo.Course ON dbo.OpenCourse.OCID = dbo.Course.ID
+                        INNER JOIN dbo.Employees ON dbo.TimeStramp.Emp = dbo.Employees.ID_emp
+                        WHERE dbo.Employees.UserID = @UserId
+                        ORDER BY dbo.OpenCourse.OOpenDate DESC";
+
+                    using (SqlCommand cmd = new SqlCommand(query, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@UserId", userId);
+
+                        using (var reader = await cmd.ExecuteReaderAsync())
+                        {
+                            while (await reader.ReadAsync())
+                            {
+                                results.Add(new
+                                {
+                                    userId = reader["UserID"]?.ToString(),
+                                    fullName = reader["FullName"]?.ToString(),
+                                    courseName = reader["CName"]?.ToString(),
+                                    openDate = reader["OOpenDate"] != DBNull.Value
+                                        ? ((DateTime)reader["OOpenDate"]).ToString("yyyy-MM-dd")
+                                        : ""
+                                });
+                            }
+                        }
+                    }
+                }
+
+                return Json(new { success = true, data = results });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Error in GetEmployeeTrainingHistory: {ex.Message}");
+                return Json(new { success = false, message = "เกิดข้อผิดพลาดในการค้นหาประวัติ" });
+            }
+        }
+
     }
 
 
