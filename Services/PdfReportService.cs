@@ -113,9 +113,9 @@ namespace TrainingRequestApp.Services
                 yPos += section3And4Height;
 
                 // === FP-HR01-02-R.2 นอกกรอบมุมขวาล่าง ===
-                // [FIX v5.8] เพิ่มระยะห่างจากเส้นกรอบ (yPos + 5 → yPos + 10)
+                // [FIX v5.9] ขยับเส้นกรอบขึ้น 10pt แล้วให้ข้อความตามขึ้นมา
                 DrawThaiString(gfx,"FP-HR01-02-R.2", _fontTiny, XBrushes.Black,
-                    new XPoint(margin + pageWidth - gfx.MeasureString("FP-HR01-02-R.2", _fontTiny).Width, yPos + 10));
+                    new XPoint(margin + pageWidth - gfx.MeasureString("FP-HR01-02-R.2", _fontTiny).Width, yPos + 5));
 
                 using (var stream = new System.IO.MemoryStream())
                 {
@@ -481,7 +481,7 @@ namespace TrainingRequestApp.Services
             double textOffsetY = 10;
             double lineHeight = 13;
             double labelToDataGap = 3;
-            double sectionHeight = 142; // [FIX v5.2] เพิ่มจาก 130 → 142 เพื่อให้มีพื้นที่มากขึ้น
+            double sectionHeight = 132; // [FIX v5.9] ลดจาก 142 → 132 เพื่อให้ FP-HR01-02-R.2 ไม่ล้นหน้า
 
             // คำนวณความกว้างของแต่ละส่วน
             double totalContentWidth = width - (vlabelWidth * 2); // หักพื้นที่ vertical label ทั้ง 2 ส่วน
