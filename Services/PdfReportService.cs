@@ -113,8 +113,9 @@ namespace TrainingRequestApp.Services
                 yPos += section3And4Height;
 
                 // === FP-HR01-02-R.2 นอกกรอบมุมขวาล่าง ===
+                // [FIX v5.8] เพิ่มระยะห่างจากเส้นกรอบ (yPos + 5 → yPos + 10)
                 DrawThaiString(gfx,"FP-HR01-02-R.2", _fontTiny, XBrushes.Black,
-                    new XPoint(margin + pageWidth - gfx.MeasureString("FP-HR01-02-R.2", _fontTiny).Width, yPos + 5));
+                    new XPoint(margin + pageWidth - gfx.MeasureString("FP-HR01-02-R.2", _fontTiny).Width, yPos + 10));
 
                 using (var stream = new System.IO.MemoryStream())
                 {
@@ -716,7 +717,7 @@ namespace TrainingRequestApp.Services
         }
 
         // ==========================================
-        // [NEW v5.0] Helper: Wrap text to fit width
+        // [FIX v5.8] Helper: Wrap text to fit width - รองรับภาษาไทย (character-based wrapping)
         // ==========================================
         private List<string> WrapText(XGraphics gfx, string text, XFont font, double maxWidth)
         {
@@ -728,20 +729,50 @@ namespace TrainingRequestApp.Services
 
             foreach (string word in words)
             {
-                string testLine = string.IsNullOrEmpty(currentLine) ? word : currentLine + " " + word;
-                XSize size = gfx.MeasureString(testLine, font);
-
-                if (size.Width <= maxWidth)
+                // ถ้าคำเดียวยาวเกิน maxWidth ให้ตัดทีละตัวอักษร (สำหรับภาษาไทยที่ไม่มี space)
+                if (gfx.MeasureString(word, font).Width > maxWidth)
                 {
-                    currentLine = testLine;
-                }
-                else
-                {
+                    // บันทึก currentLine ก่อน (ถ้ามี)
                     if (!string.IsNullOrEmpty(currentLine))
                     {
                         lines.Add(currentLine);
+                        currentLine = "";
                     }
-                    currentLine = word;
+
+                    // ตัดทีละตัวอักษร
+                    string segment = "";
+                    foreach (char c in word)
+                    {
+                        string testSegment = segment + c;
+                        if (gfx.MeasureString(testSegment, font).Width > maxWidth && segment.Length > 0)
+                        {
+                            lines.Add(segment);
+                            segment = c.ToString();
+                        }
+                        else
+                        {
+                            segment = testSegment;
+                        }
+                    }
+                    currentLine = segment;
+                }
+                else
+                {
+                    string testLine = string.IsNullOrEmpty(currentLine) ? word : currentLine + " " + word;
+                    XSize size = gfx.MeasureString(testLine, font);
+
+                    if (size.Width <= maxWidth)
+                    {
+                        currentLine = testLine;
+                    }
+                    else
+                    {
+                        if (!string.IsNullOrEmpty(currentLine))
+                        {
+                            lines.Add(currentLine);
+                        }
+                        currentLine = word;
+                    }
                 }
             }
 
