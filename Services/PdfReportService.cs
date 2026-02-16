@@ -115,7 +115,7 @@ namespace TrainingRequestApp.Services
                 // === FP-HR01-02-R.2 นอกกรอบมุมขวาล่าง ===
                 // [FIX v5.9] ขยับเส้นกรอบขึ้น 10pt แล้วให้ข้อความตามขึ้นมา
                 DrawThaiString(gfx,"FP-HR01-02-R.2", _fontTiny, XBrushes.Black,
-                    new XPoint(margin + pageWidth - gfx.MeasureString("FP-HR01-02-R.2", _fontTiny).Width, yPos + 5));
+                    new XPoint(margin + pageWidth - gfx.MeasureString("FP-HR01-02-R.2", _fontTiny).Width, yPos + 10));
 
                 using (var stream = new System.IO.MemoryStream())
                 {
