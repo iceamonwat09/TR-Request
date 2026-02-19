@@ -110,6 +110,12 @@ namespace TrainingRequestApp.Services
 
                 // ส่วนที่ 3 (ซ้าย) & ส่วนที่ 4 (ขวา) - อยู่เคียงข้างกัน
                 double section3And4Height = DrawSection3And4(gfx, data, margin, yPos, pageWidth, vlabelWidth);
+                yPos += section3And4Height;
+
+                // === FP-HR01-02-R.2 Eff.1/3/69 นอกกรอบมุมขวาล่าง ===
+                // [FIX v5.9] ขยับเส้นกรอบขึ้น 10pt + offset +10 ให้พอดี
+                DrawThaiString(gfx,"FP-HR01-02-R.2 Eff.1/3/69", _fontTiny, XBrushes.Black,
+                    new XPoint(margin + pageWidth - gfx.MeasureString("FP-HR01-02-R.2 Eff.1/3/69", _fontTiny).Width, yPos + 10));
 
                 using (var stream = new System.IO.MemoryStream())
                 {
@@ -150,10 +156,11 @@ namespace TrainingRequestApp.Services
             DrawThaiString(gfx,"(Inhouse/Public Training Request)", _fontSmall,
                 XBrushes.Black, new XRect(x + colWidth, y + 20, colWidth, 12), XStringFormats.Center);
 
-            // ช่องขวา: DocNo (กึ่งกลางทั้งช่อง)
-            // [FIX v4.5] ลบ "ลำดับที่ใบขอ (เฉพาะ HR)" และจัด DocNo กึ่งกลาง
+            // ช่องขวา: "ลำดับที่ใบขอ (เฉพาะ HR)" + DocNo (2 บรรทัด กึ่งกลาง)
+            DrawThaiString(gfx,"ลำดับที่ใบขอ (เฉพาะ HR)", _fontSmall,
+                XBrushes.Black, new XRect(x + (colWidth * 2), y + 5, colWidth, 14), XStringFormats.Center);
             DrawThaiString(gfx,data.DocNo ?? "", _fontBold,
-                XBrushes.Black, new XRect(x + (colWidth * 2), y, colWidth, headerHeight), XStringFormats.Center);
+                XBrushes.Black, new XRect(x + (colWidth * 2), y + 18, colWidth, 14), XStringFormats.Center);
 
             return headerHeight;
         }
@@ -264,7 +271,15 @@ namespace TrainingRequestApp.Services
             // === Row 14: วัตถุประสงค์ ===
             currentY = DrawObjectivesSection(gfx, data, contentX, currentY, contentWidth, padding, textOffsetY);
 
-            // === Row 14.5: Knowledge Management (ทั้ง In-House และ Public) ===
+            // === Row 15: ผลที่คาดว่าจะได้รับ (ย้ายมาต่อจากวัตถุประสงค์) ===
+            DrawThaiString(gfx,"ผลที่คาดว่าจะได้รับ:", _fontBold, XBrushes.Black, new XPoint(labelX, currentY + textOffsetY));
+            DrawUnderlineText(gfx, labelX + 110, currentY + textOffsetY, contentWidth - 120, data.ExpectedOutcome ?? "", 3);
+            currentY += rowHeight;
+
+            // === Row 16: งบประมาณ (ย้ายมาต่อจากผลที่คาดว่าจะได้รับ) ===
+            currentY = DrawBudgetSection(gfx, data, contentX, currentY, contentWidth, padding, textOffsetY);
+
+            // === Row 16.5: Knowledge Management (ย้ายลงมาหลังงบประมาณ) ===
             {
                 currentY += 3;
                 gfx.DrawLine(new XPen(XColors.Black, 0.5), contentX, currentY, contentX + contentWidth, currentY);
@@ -301,14 +316,6 @@ namespace TrainingRequestApp.Services
                 DrawUnderlineText(gfx, lineStartX, currentY + textOffsetY, lineWidth, sharingDate, 0);
                 currentY += rowHeight;
             }
-
-            // === Row 15: ผลที่คาดว่าจะได้รับ ===
-            DrawThaiString(gfx,"ผลที่คาดว่าจะได้รับ:", _fontBold, XBrushes.Black, new XPoint(labelX, currentY + textOffsetY));
-            DrawUnderlineText(gfx, labelX + 110, currentY + textOffsetY, contentWidth - 120, data.ExpectedOutcome ?? "", 3);
-            currentY += rowHeight;
-
-            // === Row 16: งบประมาณ ===
-            currentY = DrawBudgetSection(gfx, data, contentX, currentY, contentWidth, padding, textOffsetY);
 
             // === เส้นแบ่งหนา ก่อนส่วนลายเซ็น ===
             currentY += 3;
@@ -379,7 +386,7 @@ namespace TrainingRequestApp.Services
 
             // === Row 4: ประวัติการอบรม (คำอธิบาย) ===
             DrawThaiString(gfx,"ประวัติการอบรม :", _fontBold, XBrushes.Black, new XPoint(labelX, currentY + textOffsetY));
-            DrawThaiString(gfx,"จากการตรวจสอบประวัติการฝึกอบรมของพนักงานพบว่า (กรณีมีจำนวนมากให้แนบเอกสารเพิ่มได้)", _fontTiny, XBrushes.Black, new XPoint(labelX + 95, currentY + textOffsetY));
+            DrawThaiString(gfx,"จากการตรวจสอบประวัติการฝึกอบรมของพนักงานพบว่า (กรณีเปิด Publicโดยมีพนักงาน จำนวนมากกว่า 3 คน ต้องเปิดเอกสารใหม่)", _fontTiny, XBrushes.Black, new XPoint(labelX + 95, currentY + textOffsetY));
             currentY += rowHeight;
 
             // === Row 5: ตารางประวัติการอบรม ===
@@ -474,7 +481,7 @@ namespace TrainingRequestApp.Services
             double textOffsetY = 10;
             double lineHeight = 13;
             double labelToDataGap = 3;
-            double sectionHeight = 142; // [FIX v5.2] เพิ่มจาก 130 → 142 เพื่อให้มีพื้นที่มากขึ้น
+            double sectionHeight = 132; // [FIX v5.9] ลดจาก 142 → 132 เพื่อให้ FP-HR01-02-R.2 ไม่ล้นหน้า
 
             // คำนวณความกว้างของแต่ละส่วน
             double totalContentWidth = width - (vlabelWidth * 2); // หักพื้นที่ vertical label ทั้ง 2 ส่วน
@@ -710,7 +717,7 @@ namespace TrainingRequestApp.Services
         }
 
         // ==========================================
-        // [NEW v5.0] Helper: Wrap text to fit width
+        // [FIX v5.8] Helper: Wrap text to fit width - รองรับภาษาไทย (character-based wrapping)
         // ==========================================
         private List<string> WrapText(XGraphics gfx, string text, XFont font, double maxWidth)
         {
@@ -722,20 +729,50 @@ namespace TrainingRequestApp.Services
 
             foreach (string word in words)
             {
-                string testLine = string.IsNullOrEmpty(currentLine) ? word : currentLine + " " + word;
-                XSize size = gfx.MeasureString(testLine, font);
-
-                if (size.Width <= maxWidth)
+                // ถ้าคำเดียวยาวเกิน maxWidth ให้ตัดทีละตัวอักษร (สำหรับภาษาไทยที่ไม่มี space)
+                if (gfx.MeasureString(word, font).Width > maxWidth)
                 {
-                    currentLine = testLine;
-                }
-                else
-                {
+                    // บันทึก currentLine ก่อน (ถ้ามี)
                     if (!string.IsNullOrEmpty(currentLine))
                     {
                         lines.Add(currentLine);
+                        currentLine = "";
                     }
-                    currentLine = word;
+
+                    // ตัดทีละตัวอักษร
+                    string segment = "";
+                    foreach (char c in word)
+                    {
+                        string testSegment = segment + c;
+                        if (gfx.MeasureString(testSegment, font).Width > maxWidth && segment.Length > 0)
+                        {
+                            lines.Add(segment);
+                            segment = c.ToString();
+                        }
+                        else
+                        {
+                            segment = testSegment;
+                        }
+                    }
+                    currentLine = segment;
+                }
+                else
+                {
+                    string testLine = string.IsNullOrEmpty(currentLine) ? word : currentLine + " " + word;
+                    XSize size = gfx.MeasureString(testLine, font);
+
+                    if (size.Width <= maxWidth)
+                    {
+                        currentLine = testLine;
+                    }
+                    else
+                    {
+                        if (!string.IsNullOrEmpty(currentLine))
+                        {
+                            lines.Add(currentLine);
+                        }
+                        currentLine = word;
+                    }
                 }
             }
 
@@ -942,9 +979,9 @@ namespace TrainingRequestApp.Services
 
             DrawThaiString(gfx,"งบประมาณ:", _fontBold, XBrushes.Black, new XPoint(labelX, currentY + textOffsetY));
 
-            // === แถว 1: ค่าลงทะเบียน/วิทยากร + ค่าวิทยากร ===
+            // === แถว 1: ค่าลงทะเบียน + ค่าวิทยากร ===
             DrawCheckbox(gfx, col1X, currentY + 4, data.RegistrationCost > 0);
-            DrawThaiString(gfx,"ค่าลงทะเบียน/วิทยากร", _fontSmall, XBrushes.Black, new XPoint(col1TextX, currentY + textOffsetY));
+            DrawThaiString(gfx,"ค่าลงทะเบียน", _fontSmall, XBrushes.Black, new XPoint(col1TextX, currentY + textOffsetY));
             DrawUnderlineText(gfx, col1ValueX, currentY + textOffsetY, underlineWidth, data.RegistrationCost.ToString("N0"), 3);
             DrawThaiString(gfx,"บาท", _fontSmall, XBrushes.Black, new XPoint(col1BahtX, currentY + textOffsetY));
 
