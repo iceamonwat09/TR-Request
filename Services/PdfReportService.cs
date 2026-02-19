@@ -112,10 +112,10 @@ namespace TrainingRequestApp.Services
                 double section3And4Height = DrawSection3And4(gfx, data, margin, yPos, pageWidth, vlabelWidth);
                 yPos += section3And4Height;
 
-                // === FP-HR01-02-R.2 นอกกรอบมุมขวาล่าง ===
-                // [FIX v5.9] ขยับเส้นกรอบขึ้น 10pt แล้วให้ข้อความตามขึ้นมา
-                DrawThaiString(gfx,"FP-HR01-02-R.2", _fontTiny, XBrushes.Black,
-                    new XPoint(margin + pageWidth - gfx.MeasureString("FP-HR01-02-R.2", _fontTiny).Width, yPos + 10));
+                // === FP-HR01-02-R.2 Eff.1/3/69 นอกกรอบมุมขวาล่าง ===
+                // [FIX v5.9] ขยับเส้นกรอบขึ้น 10pt + offset +10 ให้พอดี
+                DrawThaiString(gfx,"FP-HR01-02-R.2 Eff.1/3/69", _fontTiny, XBrushes.Black,
+                    new XPoint(margin + pageWidth - gfx.MeasureString("FP-HR01-02-R.2 Eff.1/3/69", _fontTiny).Width, yPos + 10));
 
                 using (var stream = new System.IO.MemoryStream())
                 {
