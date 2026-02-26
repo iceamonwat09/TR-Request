@@ -63,7 +63,8 @@ namespace TrainingRequestApp.Services
                 "WAITING_FOR_HRD_ADMIN" => request.HRDAdminId,
                 "WAITING_FOR_HRD_CONFIRMATION" => request.HRDConfirmationId,
                 "WAITING_FOR_MANAGING_DIRECTOR" => request.ManagingDirectorId,
-                "WAITING_FOR_DEPUTY_MANAGING_DIRECTOR" => request.DeputyManagingDirectorId, // 🆕
+                "WAITING_FOR_DEPUTY_MANAGING_DIRECTOR" => request.DeputyManagingDirectorId,
+                "Revision Admin" => request.HRDAdminId, // Revision Admin → HRD Admin เป็นผู้ดำเนินการ
                 _ => null
             };
 
