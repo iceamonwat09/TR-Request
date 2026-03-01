@@ -45,7 +45,17 @@ namespace TrainingRequestApp.Controllers
             // ส่ง returnUrl ไปยัง View ผ่าน ViewBag
             ViewBag.ReturnUrl = returnUrl;
 
-            return View("Login");
+            // ✅ Remember Me: อ่าน Cookie UserID เพื่อ pre-fill ช่อง UserID
+            var model = new LoginViewModel();
+            string savedUserID = Request.Cookies["UserID"];
+            if (!string.IsNullOrEmpty(savedUserID))
+            {
+                model.UserID = savedUserID;
+                model.RememberMe = true;
+                Console.WriteLine($"🟢 Remember Me: Pre-filled UserID from Cookie: {savedUserID}");
+            }
+
+            return View("Login", model);
         }
 
         // 🔹 POST: ทำการล็อกอิน
