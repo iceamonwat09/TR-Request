@@ -139,7 +139,7 @@ namespace TrainingRequestApp.Controllers
                                     if (model.RememberMe)
                                     {
                                         Console.WriteLine("🟢 Remember Me Enabled");
-                                        Response.Cookies.Append("UserEmail", displayName, new CookieOptions
+                                        Response.Cookies.Append("UserID", userID, new CookieOptions
                                         {
                                             Expires = DateTime.Now.AddDays(30),
                                             HttpOnly = true,
@@ -213,7 +213,7 @@ namespace TrainingRequestApp.Controllers
         {
             Console.WriteLine("🟠 Logout Called!");
             HttpContext.Session.Clear();
-            Response.Cookies.Delete("UserEmail");
+            Response.Cookies.Delete("UserID");
             return RedirectToAction("Index", "Login");
         }
 
