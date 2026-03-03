@@ -90,7 +90,7 @@ namespace TrainingRequestApp.Controllers
                         if (!reader.Read())
                         {
                             Console.WriteLine("🔴 User not found: " + model.UserID);
-                            ViewBag.ErrorMessage = "❌ Invalid UserID or password.";
+                            ViewBag.ErrorMessage = "❌ รหัสผู้ใช้หรือรหัสผ่านไม่ถูกต้อง";
                             return View("Login", model);
                         }
 
@@ -115,7 +115,7 @@ namespace TrainingRequestApp.Controllers
                         // 🔍 Debug Information
                         Console.WriteLine("🟡 Debug Info:");
                         Console.WriteLine("   - UserID Input: " + model.UserID);
-                        Console.WriteLine("   - Password Input: " + model.Password);
+                        Console.WriteLine("   - Password Input: [REDACTED]");
                         Console.WriteLine("   - DB UserID: " + userID);
                         Console.WriteLine("   - DB Name: " + firstName + " " + lastName);
                         Console.WriteLine("   - DB Email: " + (string.IsNullOrWhiteSpace(email) ? "NULL/EMPTY" : email));
@@ -183,7 +183,7 @@ namespace TrainingRequestApp.Controllers
                                 {
                                     // รหัสผ่านไม่ถูกต้อง
                                     Console.WriteLine("🔴 Invalid password for user: " + model.UserID);
-                                    ViewBag.ErrorMessage = "❌ รหัสผ่านไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง";
+                                    ViewBag.ErrorMessage = "❌ รหัสผู้ใช้หรือรหัสผ่านไม่ถูกต้อง";
                                     return View("Login", model);
                                 }
                             }

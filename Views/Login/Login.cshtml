@@ -1,5 +1,9 @@
 ﻿@model TrainingRequestApp.Models.LoginViewModel
 
+<!-- ✅ Load FontAwesome & Google Fonts (ก่อน Content เพื่อป้องกัน FOUC) -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+
 <!-- 🌟 Center Card in View -->
 <div class="d-flex justify-content-center align-items-center min-vh-100">
     <div class="login-container">
@@ -26,7 +30,7 @@
             }
 
             <!-- 🛠️ Form -->
-            <form method="post" action="/Login/Authenticate" autocomplete="off" onsubmit="return validateLogin()">
+            <form id="loginForm" method="post" action="/Login/Authenticate" autocomplete="off" onsubmit="return validateLogin()">
                 @Html.AntiForgeryToken() <!-- ✅ ป้องกัน CSRF -->
 
                 @* ✅ Version 1: ส่ง returnUrl กลับไปยัง Authenticate action *@
@@ -59,7 +63,7 @@
                 </div>
 
                 <!-- 🔘 Login Button -->
-                <button type="submit" class="btn btn-primary login-btn mt-3">Login</button>
+                <button type="submit" id="loginBtn" class="btn btn-primary login-btn mt-3">Login</button>
 
                 <!-- 📝 Register & Forgot Password -->
                @*  <div class="text-center mt-3">
@@ -76,17 +80,22 @@
     function validateLogin() {
         var userid = document.getElementById("userid").value;
         var password = document.getElementById("passwordInput").value;
+        var loginBtn = document.getElementById("loginBtn");
 
         if (userid.trim() === "" || password.trim() === "") {
             alert("⚠️ Please enter both UserID and Password!");
             return false;
         }
-        
+
         if (userid.length !== 7) {
             alert("⚠️ UserID must be exactly 7 characters!");
             return false;
         }
-        
+
+        // ✅ Double Submit Prevention: ป้องกันกดซ้ำ
+        loginBtn.disabled = true;
+        loginBtn.textContent = "Logging in...";
+
         return true;
     }
 
@@ -197,6 +206,3 @@
         }
 </style>
 
-<!-- ✅ Load FontAwesome -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
