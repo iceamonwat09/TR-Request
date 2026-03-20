@@ -30,7 +30,7 @@
             }
 
             <!-- 🛠️ Form -->
-            <form id="loginForm" method="post" action="/Login/Authenticate" autocomplete="off" onsubmit="return validateLogin()">
+            <form id="loginForm" method="post" action="/Login/Authenticate" autocomplete="on" onsubmit="return validateLogin()">
                 @Html.AntiForgeryToken() <!-- ✅ ป้องกัน CSRF -->
 
                 @* ✅ Version 1: ส่ง returnUrl กลับไปยัง Authenticate action *@
