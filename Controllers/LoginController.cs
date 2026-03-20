@@ -67,6 +67,9 @@ namespace TrainingRequestApp.Controllers
             {
                 Console.WriteLine("🟢 Authenticate() called!");
 
+                // ✅ รักษา returnUrl ไว้ทุกกรณี เพื่อไม่ให้หายเมื่อ Login ผิด
+                ViewBag.ReturnUrl = returnUrl;
+
                 if (!ModelState.IsValid)
                 {
                     Console.WriteLine("🔴 ModelState Invalid!");

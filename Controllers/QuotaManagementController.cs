@@ -18,9 +18,36 @@ namespace TrainingRequestApp.Controllers
             _configuration = configuration;
         }
 
+        // ✅ Helper: ตรวจสอบ Session + สิทธิ์ Admin/HRD
+        private bool IsAuthorized(out IActionResult? redirectResult)
+        {
+            redirectResult = null;
+
+            if (string.IsNullOrEmpty(HttpContext.Session.GetString("UserEmail")))
+            {
+                redirectResult = RedirectToAction("Index", "Login");
+                return false;
+            }
+
+            string? userRole = HttpContext.Session.GetString("UserRole");
+            if (string.IsNullOrEmpty(userRole) ||
+                !(userRole.Contains("Admin") || userRole.Contains("HRD") || userRole.Contains("System")))
+            {
+                TempData["Error"] = "คุณไม่มีสิทธิ์เข้าถึงหน้านี้";
+                redirectResult = RedirectToAction("Index", "Home");
+                return false;
+            }
+
+            return true;
+        }
+
         // GET: QuotaManagement/Index
         public IActionResult Index(string yearFilter = null)
         {
+            // ✅ Session + Role Check
+            if (!IsAuthorized(out IActionResult? redirect))
+                return redirect!;
+
             if (string.IsNullOrEmpty(yearFilter))
             {
                 yearFilter = DateTime.Now.Year.ToString();
@@ -36,6 +63,10 @@ namespace TrainingRequestApp.Controllers
         // GET: QuotaManagement/Create
         public IActionResult Create()
         {
+            // ✅ Session + Role Check
+            if (!IsAuthorized(out IActionResult? redirect))
+                return redirect!;
+
             ViewBag.Departments = GetDepartments();
             ViewBag.Years = GetYearList();
             return View();
@@ -46,6 +77,10 @@ namespace TrainingRequestApp.Controllers
         [ValidateAntiForgeryToken]
         public IActionResult Create(TrainingRequestCost model)
         {
+            // ✅ Session + Role Check
+            if (!IsAuthorized(out IActionResult? redirect))
+                return redirect!;
+
             // 🔍 DEBUG: Log incoming data
             Console.WriteLine("=== QuotaManagement Create POST ===");
             Console.WriteLine($"Department: [{model.Department}]");
@@ -162,6 +197,10 @@ namespace TrainingRequestApp.Controllers
         // GET: QuotaManagement/Edit/5
         public IActionResult Edit(int id)
         {
+            // ✅ Session + Role Check
+            if (!IsAuthorized(out IActionResult? redirect))
+                return redirect!;
+
             var quota = GetQuotaById(id);
             if (quota == null)
             {
@@ -178,6 +217,10 @@ namespace TrainingRequestApp.Controllers
         [ValidateAntiForgeryToken]
         public IActionResult Edit(int id, TrainingRequestCost model)
         {
+            // ✅ Session + Role Check
+            if (!IsAuthorized(out IActionResult? redirect))
+                return redirect!;
+
             if (id != model.ID)
             {
                 return NotFound();
@@ -277,6 +320,10 @@ namespace TrainingRequestApp.Controllers
         [ValidateAntiForgeryToken]
         public IActionResult Delete(int id, string yearFilter)
         {
+            // ✅ Session + Role Check
+            if (!IsAuthorized(out IActionResult? redirect))
+                return redirect!;
+
             string connectionString = _configuration.GetConnectionString("DefaultConnection");
 
             using (SqlConnection connection = new SqlConnection(connectionString))

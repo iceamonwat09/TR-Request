@@ -41,6 +41,12 @@ namespace TrainingRequestApp.Controllers
         // ====================================================================
         public IActionResult Create()
         {
+            // ✅ Session Check: ต้อง Login ก่อนสร้างใบขอ
+            if (string.IsNullOrEmpty(HttpContext.Session.GetString("UserEmail")))
+            {
+                return RedirectToAction("Index", "Login");
+            }
+
             return View();
         }
 
@@ -522,6 +528,13 @@ namespace TrainingRequestApp.Controllers
         [HttpGet]
         public async Task<IActionResult> ApprovalFlow(string docNo)
         {
+            // ✅ Session Check: ต้อง Login ก่อนดูข้อมูลอนุมัติ
+            if (string.IsNullOrEmpty(HttpContext.Session.GetString("UserEmail")))
+            {
+                string returnUrl = HttpContext.Request.Path + HttpContext.Request.QueryString;
+                return RedirectToAction("Index", "Login", new { returnUrl = returnUrl });
+            }
+
             if (string.IsNullOrEmpty(docNo))
             {
                 TempData["Error"] = "ไม่พบ Document Number";
@@ -1755,6 +1768,13 @@ namespace TrainingRequestApp.Controllers
 
         public async Task<IActionResult> Details(int id)
         {
+            // ✅ Session Check: ต้อง Login ก่อนดูรายละเอียดใบขอ
+            if (string.IsNullOrEmpty(HttpContext.Session.GetString("UserEmail")))
+            {
+                string returnUrl = HttpContext.Request.Path + HttpContext.Request.QueryString;
+                return RedirectToAction("Index", "Login", new { returnUrl = returnUrl });
+            }
+
             var trainingRequest = await _trainingRequestService.GetTrainingRequestByIdAsync(id);
             if (trainingRequest == null)
             {
@@ -1766,6 +1786,12 @@ namespace TrainingRequestApp.Controllers
 
         public async Task<IActionResult> Index()
         {
+            // ✅ Session Check: ต้อง Login ก่อนดูรายการใบขอทั้งหมด
+            if (string.IsNullOrEmpty(HttpContext.Session.GetString("UserEmail")))
+            {
+                return RedirectToAction("Index", "Login");
+            }
+
             var trainingRequests = await _trainingRequestService.GetAllTrainingRequestsAsync();
             return View(trainingRequests);
         }
