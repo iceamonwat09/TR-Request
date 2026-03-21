@@ -45,7 +45,17 @@ namespace TrainingRequestApp.Controllers
             // ส่ง returnUrl ไปยัง View ผ่าน ViewBag
             ViewBag.ReturnUrl = returnUrl;
 
-            return View("Login");
+            // ✅ Remember Me: อ่าน Cookie UserID เพื่อ pre-fill ช่อง UserID
+            var model = new LoginViewModel();
+            string savedUserID = Request.Cookies["UserID"];
+            if (!string.IsNullOrEmpty(savedUserID))
+            {
+                model.UserID = savedUserID;
+                model.RememberMe = true;
+                Console.WriteLine($"🟢 Remember Me: Pre-filled UserID from Cookie: {savedUserID}");
+            }
+
+            return View("Login", model);
         }
 
         // 🔹 POST: ทำการล็อกอิน
@@ -56,6 +66,9 @@ namespace TrainingRequestApp.Controllers
             try
             {
                 Console.WriteLine("🟢 Authenticate() called!");
+
+                // ✅ รักษา returnUrl ไว้ทุกกรณี เพื่อไม่ให้หายเมื่อ Login ผิด
+                ViewBag.ReturnUrl = returnUrl;
 
                 if (!ModelState.IsValid)
                 {
@@ -80,7 +93,7 @@ namespace TrainingRequestApp.Controllers
                         if (!reader.Read())
                         {
                             Console.WriteLine("🔴 User not found: " + model.UserID);
-                            ViewBag.ErrorMessage = "❌ Invalid UserID or password.";
+                            ViewBag.ErrorMessage = "❌ รหัสผู้ใช้หรือรหัสผ่านไม่ถูกต้อง";
                             return View("Login", model);
                         }
 
@@ -105,7 +118,7 @@ namespace TrainingRequestApp.Controllers
                         // 🔍 Debug Information
                         Console.WriteLine("🟡 Debug Info:");
                         Console.WriteLine("   - UserID Input: " + model.UserID);
-                        Console.WriteLine("   - Password Input: " + model.Password);
+                        Console.WriteLine("   - Password Input: [REDACTED]");
                         Console.WriteLine("   - DB UserID: " + userID);
                         Console.WriteLine("   - DB Name: " + firstName + " " + lastName);
                         Console.WriteLine("   - DB Email: " + (string.IsNullOrWhiteSpace(email) ? "NULL/EMPTY" : email));
@@ -139,7 +152,7 @@ namespace TrainingRequestApp.Controllers
                                     if (model.RememberMe)
                                     {
                                         Console.WriteLine("🟢 Remember Me Enabled");
-                                        Response.Cookies.Append("UserEmail", displayName, new CookieOptions
+                                        Response.Cookies.Append("UserID", userID, new CookieOptions
                                         {
                                             Expires = DateTime.Now.AddDays(30),
                                             HttpOnly = true,
@@ -173,7 +186,7 @@ namespace TrainingRequestApp.Controllers
                                 {
                                     // รหัสผ่านไม่ถูกต้อง
                                     Console.WriteLine("🔴 Invalid password for user: " + model.UserID);
-                                    ViewBag.ErrorMessage = "❌ รหัสผ่านไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง";
+                                    ViewBag.ErrorMessage = "❌ รหัสผู้ใช้หรือรหัสผ่านไม่ถูกต้อง";
                                     return View("Login", model);
                                 }
                             }
@@ -213,7 +226,7 @@ namespace TrainingRequestApp.Controllers
         {
             Console.WriteLine("🟠 Logout Called!");
             HttpContext.Session.Clear();
-            Response.Cookies.Delete("UserEmail");
+            Response.Cookies.Delete("UserID");
             return RedirectToAction("Index", "Login");
         }
 
