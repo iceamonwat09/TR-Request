@@ -1898,43 +1898,53 @@ namespace TrainingRequestApp.Controllers
                 FROM TrainingRequests tr
                 WHERE CAST(tr.StartDate AS DATE) BETWEEN @StartDate AND @EndDate";
 
-                    // ✅ กรองข้อมูลตาม viewMode สำหรับ User ทั่วไป (Admin เห็นทุกอย่าง)
-                    if (!isAdmin)
+                    // ✅ กรองข้อมูลตาม viewMode (ใช้ทุก Role)
+                    // SQL condition สำหรับ "เอกสารที่เคยดำเนินการอนุมัติ" (Approved / Reject / Revise)
+                    string approvedCondition = @"(
+                        (tr.SectionManagerId = @UserEmail AND tr.Status_SectionManager IS NOT NULL)
+                        OR (tr.DepartmentManagerId = @UserEmail AND tr.Status_DepartmentManager IS NOT NULL)
+                        OR (tr.HRDAdminId = @UserEmail AND tr.Status_HRDAdmin IS NOT NULL)
+                        OR (tr.HRDConfirmationId = @UserEmail AND tr.Status_HRDConfirmation IS NOT NULL)
+                        OR (tr.ManagingDirectorId = @UserEmail AND tr.Status_ManagingDirector IS NOT NULL)
+                        OR (tr.DeputyManagingDirectorId = @UserEmail AND tr.Status_DeputyManagingDirector IS NOT NULL)
+                    )";
+
+                    bool needsUserEmail = true; // ทุก viewMode ใช้ @UserEmail ยกเว้น admin_all
+
+                    switch (viewMode?.ToLower())
                     {
-                        // SQL condition สำหรับ "เอกสารที่เคยดำเนินการอนุมัติ" (Approved / Reject / Revise)
-                        string approvedCondition = @"(
-                            (tr.SectionManagerId = @UserEmail AND tr.Status_SectionManager IS NOT NULL)
-                            OR (tr.DepartmentManagerId = @UserEmail AND tr.Status_DepartmentManager IS NOT NULL)
-                            OR (tr.HRDAdminId = @UserEmail AND tr.Status_HRDAdmin IS NOT NULL)
-                            OR (tr.HRDConfirmationId = @UserEmail AND tr.Status_HRDConfirmation IS NOT NULL)
-                            OR (tr.ManagingDirectorId = @UserEmail AND tr.Status_ManagingDirector IS NOT NULL)
-                            OR (tr.DeputyManagingDirectorId = @UserEmail AND tr.Status_DeputyManagingDirector IS NOT NULL)
-                        )";
-
-                        switch (viewMode?.ToLower())
-                        {
-                            case "approved":
-                                // เอกสารที่ฉันเคยดำเนินการอนุมัติ
-                                query += " AND " + approvedCondition;
-                                Console.WriteLine($"🔒 User filter: viewMode=approved for {userEmail}");
-                                break;
-
-                            case "all":
-                                // ทั้งหมด (ของฉัน + เคยดำเนินการ)
-                                query += " AND (tr.CreatedBy = @UserEmail OR " + approvedCondition + ")";
-                                Console.WriteLine($"🔒 User filter: viewMode=all for {userEmail}");
-                                break;
-
-                            default: // "my"
-                                // เอกสารของฉัน (เหมือนเดิม)
+                        case "admin_all":
+                            // เอกสารทั้งระบบ (เฉพาะ Admin เท่านั้นที่มีตัวเลือกนี้)
+                            if (!isAdmin)
+                            {
+                                // ป้องกัน User ส่ง viewMode=admin_all มาเอง → fallback เป็น "my"
                                 query += " AND tr.CreatedBy = @UserEmail";
-                                Console.WriteLine($"🔒 User filter: viewMode=my, CreatedBy = {userEmail}");
-                                break;
-                        }
-                    }
-                    else
-                    {
-                        Console.WriteLine($"✅ Admin: Show all data");
+                                Console.WriteLine($"⚠️ Non-admin tried admin_all, fallback to my: {userEmail}");
+                            }
+                            else
+                            {
+                                needsUserEmail = false;
+                                Console.WriteLine($"✅ Admin: viewMode=admin_all, Show all data");
+                            }
+                            break;
+
+                        case "approved":
+                            // เอกสารที่ฉันเคยดำเนินการอนุมัติ
+                            query += " AND " + approvedCondition;
+                            Console.WriteLine($"🔒 viewMode=approved for {userEmail}");
+                            break;
+
+                        case "all":
+                            // ทั้งหมด (ของฉัน + เคยดำเนินการ)
+                            query += " AND (tr.CreatedBy = @UserEmail OR " + approvedCondition + ")";
+                            Console.WriteLine($"🔒 viewMode=all for {userEmail}");
+                            break;
+
+                        default: // "my"
+                            // เอกสารของฉัน
+                            query += " AND tr.CreatedBy = @UserEmail";
+                            Console.WriteLine($"🔒 viewMode=my, CreatedBy = {userEmail}");
+                            break;
                     }
 
                     // เพิ่มเงื่อนไขการกรอง
@@ -1954,8 +1964,8 @@ namespace TrainingRequestApp.Controllers
                         cmd.Parameters.AddWithValue("@StartDate", filterStart);
                         cmd.Parameters.AddWithValue("@EndDate", filterEnd);
 
-                        // ✅ เพิ่ม parameter UserEmail สำหรับ User (ใช้ทุก viewMode)
-                        if (!isAdmin)
+                        // ✅ เพิ่ม parameter UserEmail (ใช้ทุก viewMode ยกเว้น admin_all)
+                        if (needsUserEmail)
                             cmd.Parameters.AddWithValue("@UserEmail", userEmail);
 
                         if (!string.IsNullOrEmpty(docNo))

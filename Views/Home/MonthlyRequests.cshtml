@@ -326,19 +326,20 @@
                         </div>
                     </div>
                     <div class="row mt-3">
-                        @if (ViewBag.UserRole == null || !((string)ViewBag.UserRole).Contains("Admin", StringComparison.OrdinalIgnoreCase))
-                        {
-                            <div class="col-md-3">
-                                <label class="form-label fw-bold">
-                                    <i class="fas fa-eye"></i> มุมมองข้อมูล
-                                </label>
-                                <select id="viewMode" class="form-select">
-                                    <option value="my" selected>เอกสารของฉัน</option>
-                                    <option value="approved">เอกสารที่อนุมัติ</option>
-                                    <option value="all">ทั้งหมด</option>
-                                </select>
-                            </div>
-                        }
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold">
+                                <i class="fas fa-eye"></i> มุมมองข้อมูล
+                            </label>
+                            <select id="viewMode" class="form-select">
+                                @if (ViewBag.UserRole != null && ((string)ViewBag.UserRole).Contains("Admin", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    <option value="admin_all" selected>เอกสารทั้งระบบ</option>
+                                }
+                                <option value="my" @(ViewBag.UserRole == null || !((string)ViewBag.UserRole).Contains("Admin", StringComparison.OrdinalIgnoreCase) ? "selected" : "")>เอกสารของฉัน</option>
+                                <option value="approved">เอกสารที่อนุมัติ</option>
+                                <option value="all">เอกสารทั้งหมด</option>
+                            </select>
+                        </div>
                         <div class="col text-end d-flex align-items-end justify-content-end">
                             <button class="btn btn-secondary me-2" onclick="resetFilters()">
                                 <i class="fas fa-redo"></i> รีเซ็ต
@@ -594,7 +595,10 @@
             $('#docNo').val('');
             $('#company').val('');
             $('#status').val('');
-            if ($('#viewMode').length) $('#viewMode').val('my');
+            if ($('#viewMode').length) {
+                var hasAdminAll = $('#viewMode option[value="admin_all"]').length > 0;
+                $('#viewMode').val(hasAdminAll ? 'admin_all' : 'my');
+            }
 
             loadData();
         }
