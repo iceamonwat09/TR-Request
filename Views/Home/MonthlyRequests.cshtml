@@ -326,8 +326,22 @@
                         </div>
                     </div>
                     <div class="row mt-3">
-                        <div class="col-12 text-end">
-                            <button class="btn btn-secondary" onclick="resetFilters()">
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold">
+                                <i class="fas fa-eye"></i> มุมมองข้อมูล
+                            </label>
+                            <select id="viewMode" class="form-select">
+                                @if (ViewBag.UserRole != null && ((string)ViewBag.UserRole).Contains("Admin", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    <option value="admin_all" selected>เอกสารทั้งระบบ</option>
+                                }
+                                <option value="my" @(ViewBag.UserRole == null || !((string)ViewBag.UserRole).Contains("Admin", StringComparison.OrdinalIgnoreCase) ? "selected" : "")>เอกสารของฉัน</option>
+                                <option value="approved">เอกสารที่อนุมัติ</option>
+                                <option value="all">เอกสารทั้งหมด</option>
+                            </select>
+                        </div>
+                        <div class="col text-end d-flex align-items-end justify-content-end">
+                            <button class="btn btn-secondary me-2" onclick="resetFilters()">
                                 <i class="fas fa-redo"></i> รีเซ็ต
                             </button>
                             <button class="btn btn-primary" onclick="loadData()">
@@ -427,10 +441,12 @@
             var docNo = $('#docNo').val();
             var company = $('#company').val();
             var status = $('#status').val();
+            var viewMode = $('#viewMode').length ? $('#viewMode').val() : 'my';
 
             console.log('🔍 loadData() - Values being sent:');
             console.log('   startDate:', JSON.stringify(startDate));
             console.log('   endDate:', JSON.stringify(endDate));
+            console.log('   viewMode:', viewMode);
             console.log('   #startDate type:', document.getElementById('startDate') ? document.getElementById('startDate').type : 'NOT FOUND');
 
             showLoading();
@@ -443,7 +459,8 @@
                     endDate: endDate,
                     docNo: docNo,
                     company: company,
-                    status: status
+                    status: status,
+                    viewMode: viewMode
                 },
                 success: function(response) {
                     hideLoading();
@@ -578,6 +595,10 @@
             $('#docNo').val('');
             $('#company').val('');
             $('#status').val('');
+            if ($('#viewMode').length) {
+                var hasAdminAll = $('#viewMode option[value="admin_all"]').length > 0;
+                $('#viewMode').val(hasAdminAll ? 'admin_all' : 'my');
+            }
 
             loadData();
         }
