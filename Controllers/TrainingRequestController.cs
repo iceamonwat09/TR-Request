@@ -849,6 +849,76 @@ namespace TrainingRequestApp.Controllers
         }
 
         // ====================================================================
+        // GET: /TrainingRequest/GetEmailLogs?trainingRequestId=xxx
+        // ดึง Email Logs ทั้งหมดของ TrainingRequest สำหรับแสดงใน Popup
+        // ====================================================================
+        [HttpGet]
+        public async Task<IActionResult> GetEmailLogs(int trainingRequestId)
+        {
+            try
+            {
+                // Session Check
+                if (string.IsNullOrEmpty(HttpContext.Session.GetString("UserEmail")))
+                {
+                    return Json(new { success = false, message = "กรุณาล็อกอินใหม่" });
+                }
+
+                if (trainingRequestId <= 0)
+                {
+                    return Json(new { success = false, message = "TrainingRequestId ไม่ถูกต้อง" });
+                }
+
+                string connectionString = _configuration.GetConnectionString("DefaultConnection");
+                var logs = new List<object>();
+
+                using (SqlConnection conn = new SqlConnection(connectionString))
+                {
+                    await conn.OpenAsync();
+
+                    string query = @"
+                        SELECT
+                            Id, TrainingRequestId, DocNo, RecipientEmail, EmailType,
+                            Subject, SentDate, Status, ErrorMessage, RetryCount
+                        FROM [HRDSYSTEM].[dbo].[EmailLogs]
+                        WHERE TrainingRequestId = @TrainingRequestId
+                        ORDER BY SentDate DESC";
+
+                    using (SqlCommand cmd = new SqlCommand(query, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@TrainingRequestId", trainingRequestId);
+
+                        using (var reader = await cmd.ExecuteReaderAsync())
+                        {
+                            while (await reader.ReadAsync())
+                            {
+                                logs.Add(new
+                                {
+                                    id = reader.GetInt32(reader.GetOrdinal("Id")),
+                                    trainingRequestId = reader["TrainingRequestId"] != DBNull.Value ? (int?)reader.GetInt32(reader.GetOrdinal("TrainingRequestId")) : null,
+                                    docNo = reader["DocNo"]?.ToString(),
+                                    recipientEmail = reader["RecipientEmail"]?.ToString(),
+                                    emailType = reader["EmailType"]?.ToString(),
+                                    subject = reader["Subject"]?.ToString(),
+                                    sentDate = reader["SentDate"] != DBNull.Value ? reader.GetDateTime(reader.GetOrdinal("SentDate")).ToString("dd/MM/yyyy HH:mm:ss") : "",
+                                    status = reader["Status"]?.ToString(),
+                                    errorMessage = reader["ErrorMessage"]?.ToString(),
+                                    retryCount = reader["RetryCount"] != DBNull.Value ? reader.GetInt32(reader.GetOrdinal("RetryCount")) : 0
+                                });
+                            }
+                        }
+                    }
+                }
+
+                return Json(new { success = true, data = logs, totalCount = logs.Count });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Error in GetEmailLogs: {ex.Message}");
+                return Json(new { success = false, message = "เกิดข้อผิดพลาดในการดึงข้อมูล Email Logs" });
+            }
+        }
+
+        // ====================================================================
         // Approver APIs - เพิ่มใหม่
         // ====================================================================
 

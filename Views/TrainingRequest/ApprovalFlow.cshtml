@@ -319,9 +319,93 @@
             </button>
         }
 
+        <button id="btnEmailLogs" class="send-email-btn" style="background: #6c5ce7; margin-left: 10px;">
+            <i class="fas fa-envelope-open-text"></i> Email Logs
+        </button>
+
         <button onclick="window.location.href='/Home/MonthlyRequests'" class="back-btn">
             ← กลับ
         </button>
+    </div>
+
+    <!-- Email Logs Modal -->
+    <div class="modal fade" id="emailLogsModal" tabindex="-1" aria-labelledby="emailLogsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header" style="background: #6c5ce7; color: #fff;">
+                    <h5 class="modal-title" id="emailLogsModalLabel">
+                        <i class="fas fa-envelope-open-text"></i> Email Logs - @Model.DocNo
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Summary -->
+                    <div id="emailLogsSummary" class="mb-3" style="display:none;">
+                        <div class="row text-center">
+                            <div class="col-md-4">
+                                <div class="p-2 rounded" style="background: #f0f0f0;">
+                                    <strong>Total</strong><br>
+                                    <span id="totalCount" class="fs-4 fw-bold">0</span>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="p-2 rounded" style="background: #d4edda;">
+                                    <strong>Sent</strong><br>
+                                    <span id="sentCount" class="fs-4 fw-bold text-success">0</span>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="p-2 rounded" style="background: #f8d7da;">
+                                    <strong>Failed</strong><br>
+                                    <span id="failedCount" class="fs-4 fw-bold text-danger">0</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Loading -->
+                    <div id="emailLogsLoading" class="text-center py-4">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-2 text-muted">กำลังโหลดข้อมูล Email Logs...</p>
+                    </div>
+
+                    <!-- Error -->
+                    <div id="emailLogsError" class="alert alert-danger" style="display:none;"></div>
+
+                    <!-- Empty -->
+                    <div id="emailLogsEmpty" class="text-center py-4" style="display:none;">
+                        <i class="fas fa-inbox fa-3x text-muted"></i>
+                        <p class="mt-2 text-muted">ไม่พบข้อมูล Email Logs สำหรับเอกสารนี้</p>
+                    </div>
+
+                    <!-- Table -->
+                    <div id="emailLogsTableWrapper" style="display:none;">
+                        <div class="table-responsive">
+                            <table class="table table-sm table-hover table-bordered align-middle" id="emailLogsTable">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th style="width:40px;">#</th>
+                                        <th>วันที่ส่ง</th>
+                                        <th>ผู้รับ</th>
+                                        <th>ประเภท</th>
+                                        <th>หัวข้อ</th>
+                                        <th style="width:80px;">สถานะ</th>
+                                        <th>ข้อผิดพลาด</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="emailLogsBody">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ปิด</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Timeline -->
@@ -628,6 +712,7 @@
 </div>
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 $(document).ready(function() {
     console.log('%c╔═══════════════════════════════════════════════════════════╗', 'color: #4CAF50; font-weight: bold;');
@@ -700,6 +785,87 @@ $(document).ready(function() {
 
                 alert('เกิดข้อผิดพลาดในการส่ง Email\n\nStatus: ' + status + '\nError: ' + error + '\n\n💡 เปิด Browser Console (F12) เพื่อดู details');
                 $('#sendEmailBtn').prop('disabled', false).text('📧 ส่ง Email เริ่มกระบวนการอนุมัติ');
+            }
+        });
+    });
+
+    // ═══════════════════════════════════════════════════════════
+    // 📧 Email Logs Button Handler
+    // ═══════════════════════════════════════════════════════════
+    $('#btnEmailLogs').click(function() {
+        console.log('%c📧 Email Logs Button Clicked', 'color: #6c5ce7; font-weight: bold; font-size: 14px;');
+        console.log('TrainingRequest Id:', @Model.Id);
+
+        // Reset modal state
+        $('#emailLogsLoading').show();
+        $('#emailLogsError').hide();
+        $('#emailLogsEmpty').hide();
+        $('#emailLogsTableWrapper').hide();
+        $('#emailLogsSummary').hide();
+        $('#emailLogsBody').empty();
+
+        // Show modal
+        var modal = new bootstrap.Modal(document.getElementById('emailLogsModal'));
+        modal.show();
+
+        // Fetch data
+        $.ajax({
+            url: '/TrainingRequest/GetEmailLogs',
+            type: 'GET',
+            data: { trainingRequestId: @Model.Id },
+            success: function(response) {
+                console.log('📧 Email Logs Response:', response);
+                $('#emailLogsLoading').hide();
+
+                if (!response.success) {
+                    $('#emailLogsError').text(response.message).show();
+                    return;
+                }
+
+                if (!response.data || response.data.length === 0) {
+                    $('#emailLogsEmpty').show();
+                    return;
+                }
+
+                // Calculate summary
+                var total = response.data.length;
+                var sent = response.data.filter(function(l) { return l.status === 'SENT'; }).length;
+                var failed = total - sent;
+                $('#totalCount').text(total);
+                $('#sentCount').text(sent);
+                $('#failedCount').text(failed);
+                $('#emailLogsSummary').show();
+
+                // Build table rows
+                var html = '';
+                $.each(response.data, function(index, log) {
+                    var statusBadge = log.status === 'SENT'
+                        ? '<span class="badge bg-success">SENT</span>'
+                        : '<span class="badge bg-danger">FAILED</span>';
+                    var errorMsg = log.errorMessage ? '<small class="text-danger">' + $('<span>').text(log.errorMessage).html() + '</small>' : '-';
+                    var emailTypeDisplay = $('<span>').text(log.emailType).html();
+                    var subjectDisplay = log.subject ? $('<span>').text(log.subject).html() : '-';
+                    var recipientDisplay = $('<span>').text(log.recipientEmail).html();
+
+                    html += '<tr>' +
+                        '<td class="text-center">' + (index + 1) + '</td>' +
+                        '<td style="white-space:nowrap;">' + log.sentDate + '</td>' +
+                        '<td>' + recipientDisplay + '</td>' +
+                        '<td><span class="badge bg-info text-dark">' + emailTypeDisplay + '</span></td>' +
+                        '<td><small>' + subjectDisplay + '</small></td>' +
+                        '<td class="text-center">' + statusBadge + '</td>' +
+                        '<td>' + errorMsg + '</td>' +
+                        '</tr>';
+                });
+
+                $('#emailLogsBody').html(html);
+                $('#emailLogsTableWrapper').show();
+                console.log('%c📧 Email Logs loaded: ' + total + ' records', 'color: #6c5ce7; font-weight: bold;');
+            },
+            error: function(xhr, status, error) {
+                console.error('📧 Email Logs AJAX Error:', { xhr: xhr, status: status, error: error });
+                $('#emailLogsLoading').hide();
+                $('#emailLogsError').text('เกิดข้อผิดพลาดในการโหลดข้อมูล: ' + error).show();
             }
         });
     });
